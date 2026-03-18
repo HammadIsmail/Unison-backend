@@ -1,0 +1,11 @@
+import { Module } from '@nestjs/common';
+import { NotificationController } from './notification.controller';
+import { NotificationService } from './notification.service';
+import { Neo4jModule } from '../neo4j/neo4j.module';
+
+@Module({
+  imports: [Neo4jModule],
+  controllers: [NotificationController],
+  providers: [NotificationService]
+})
+export class NotificationModule {}
