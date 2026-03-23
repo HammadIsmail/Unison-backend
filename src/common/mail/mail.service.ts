@@ -9,7 +9,7 @@ export class MailService {
 
     constructor(private config: ConfigService) {
         this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
-        this.fromEmail = 'onboarding@resend.dev'; // Default for testing, change to verified domain later
+this.fromEmail = 'no-reply@shareride.site';
     }
 
     async sendOtp(to: string, otp: string): Promise<void> {
