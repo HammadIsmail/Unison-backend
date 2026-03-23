@@ -37,6 +37,8 @@ export class AlumniService {
 
     return {
       name: user.name,
+      username: user.username,
+      display_name: user.display_name || user.name,
       email: user.email,
       bio: user.bio,
       graduation_year: typeof user.graduation_year?.toNumber === 'function' ? user.graduation_year.toNumber() : user.graduation_year,

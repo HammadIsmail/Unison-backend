@@ -1,7 +1,14 @@
 import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { RejectAccountDto } from './dto/admin.dto';
+import {
+  AdminAlumniPaginationResponseDto,
+  AdminStudentPaginationResponseDto,
+  DashboardStatsResponseDto,
+  PendingAccountResponseDto,
+} from './dto/admin-response.dto';
+import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -16,33 +23,38 @@ export class AdminController {
 
   @Get('pending-accounts')
   @ApiOperation({ summary: 'List all accounts pending approval' })
+  @ApiResponse({ status: 200, type: [PendingAccountResponseDto] })
   getPendingAccounts() {
     return this.adminService.getPendingAccounts();
   }
 
   @Patch('approve-account/:id')
   @ApiOperation({ summary: 'Approve a pending account' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   approveAccount(@Param('id') id: string) {
     return this.adminService.approveAccount(id);
   }
 
   @Patch('reject-account/:id')
   @ApiOperation({ summary: 'Reject a pending account request' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   rejectAccount(@Param('id') id: string, @Body() dto: RejectAccountDto) {
     return this.adminService.rejectAccount(id, dto);
   }
 
   @Get('dashboard-stats')
   @ApiOperation({ summary: 'Get overall dashboard statistics' })
+  @ApiResponse({ status: 200, type: DashboardStatsResponseDto })
   getDashboardStats() {
     return this.adminService.getDashboardStats();
   }
 
   @Get('all-alumni')
   @ApiOperation({ summary: 'Get all approved alumni with pagination' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by name' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)', example: 10 })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by name', example: 'Ahmed' })
+  @ApiResponse({ status: 200, type: AdminAlumniPaginationResponseDto })
   getAllAlumni(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -60,9 +72,10 @@ export class AdminController {
 
   @Get('all-students')
   @ApiOperation({ summary: 'Get all approved students with pagination' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
-  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by name' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)', example: 10 })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Search by name', example: 'Ali' })
+  @ApiResponse({ status: 200, type: AdminStudentPaginationResponseDto })
   getAllStudents(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -80,6 +93,7 @@ export class AdminController {
 
   @Delete('remove-account/:id')
   @ApiOperation({ summary: 'Completely remove an account' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   removeAccount(@Param('id') id: string) {
     return this.adminService.removeAccount(id);
   }

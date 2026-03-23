@@ -7,7 +7,7 @@ export enum UserRole {
 }
 
 export class RejectAccountDto {
-  @ApiProperty({ description: 'Reason for rejecting the account registration' })
+  @ApiProperty({ description: 'Reason for rejecting the account registration', example: 'Invalid roll number provided.' })
   @IsString()
   @IsNotEmpty()
   rejection_reason: string;

@@ -25,6 +25,8 @@ export class StudentService {
 
     return {
       name: user.name,
+      username: user.username,
+      display_name: user.display_name || user.name,
       email: user.email,
       roll_number: user.roll_number,
       semester: typeof user.semester?.toNumber === 'function' ? user.semester.toNumber() : user.semester,

@@ -1,5 +1,5 @@
 import { Controller, Get, Put, Post, Patch, Delete, Param, Body, UseGuards, ForbiddenException } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AlumniService } from './alumni.service';
 import {
   UpdateAlumniProfileDto,
@@ -9,6 +9,12 @@ import {
   ConnectDto,
 } from './dto/alumni.dto';
 import { RespondToConnectionDto } from './dto/connection.dto';
+import {
+  AlumniProfileResponseDto,
+  ConnectionRequestResponseDto,
+  NetworkUserResponseDto,
+} from './dto/alumni-response.dto';
+import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -25,6 +31,7 @@ export class AlumniController {
   @Get('me')
   @Roles('alumni')
   @ApiOperation({ summary: 'Get your own alumni profile' })
+  @ApiResponse({ status: 200, type: AlumniProfileResponseDto })
   getMe(@GetUser('sub') userId: string) {
     return this.alumniService.getProfile(userId);
   }
@@ -32,6 +39,7 @@ export class AlumniController {
   @Put('me')
   @Roles('alumni')
   @ApiOperation({ summary: 'Update your own alumni profile' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   updateMe(@GetUser('sub') userId: string, @Body() dto: UpdateAlumniProfileDto) {
     return this.alumniService.updateProfile(userId, dto);
   }
@@ -40,6 +48,7 @@ export class AlumniController {
   @Post('work-experience')
   @Roles('alumni')
   @ApiOperation({ summary: 'Add a new work experience record' })
+  @ApiResponse({ status: 201, type: MessageResponseDto })
   addWorkExperience(@GetUser('sub') userId: string, @Body() dto: CreateWorkExperienceDto) {
     return this.alumniService.addWorkExperience(userId, dto);
   }
@@ -47,6 +56,7 @@ export class AlumniController {
   @Put('work-experience/:id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Update an existing work experience record' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   updateWorkExperience(
     @GetUser('sub') userId: string,
     @Param('id') expId: string,
@@ -58,6 +68,7 @@ export class AlumniController {
   @Delete('work-experience/:id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Delete a work experience record' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   deleteWorkExperience(@GetUser('sub') userId: string, @Param('id') expId: string) {
     return this.alumniService.deleteWorkExperience(userId, expId);
   }
@@ -65,6 +76,7 @@ export class AlumniController {
   @Post('skills')
   @Roles('alumni')
   @ApiOperation({ summary: 'Add a new skill to your profile' })
+  @ApiResponse({ status: 201, type: MessageResponseDto })
   addSkill(@GetUser('sub') userId: string, @Body() dto: AddSkillDto) {
     return this.alumniService.addSkill(userId, dto);
   }
@@ -72,6 +84,7 @@ export class AlumniController {
   @Delete('skills/:skill_id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Remove a skill from your profile' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   deleteSkill(@GetUser('sub') userId: string, @Param('skill_id') skillId: string) {
     return this.alumniService.deleteSkill(userId, skillId);
   }
@@ -79,6 +92,7 @@ export class AlumniController {
   @Get('network')
   @Roles('alumni')
   @ApiOperation({ summary: 'Get your professional network' })
+  @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getNetwork(@GetUser('sub') userId: string) {
     return this.alumniService.getNetwork(userId);
   }
@@ -86,6 +100,7 @@ export class AlumniController {
   @Post('connect/:target_id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Send a connection request to another user' })
+  @ApiResponse({ status: 201, type: MessageResponseDto })
   connectWith(
     @GetUser('sub') userId: string,
     @Param('target_id') targetId: string,
@@ -97,6 +112,7 @@ export class AlumniController {
   @Get('connections/requests')
   @Roles('alumni')
   @ApiOperation({ summary: 'Get pending connection requests' })
+  @ApiResponse({ status: 200, type: [ConnectionRequestResponseDto] })
   getPendingRequests(@GetUser('sub') userId: string) {
     return this.alumniService.getPendingRequests(userId);
   }
@@ -104,6 +120,7 @@ export class AlumniController {
   @Patch('connections/requests/:sender_id/respond')
   @Roles('alumni')
   @ApiOperation({ summary: 'Respond to a connection request' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   respondToRequest(
     @GetUser('sub') userId: string,
     @Param('sender_id') senderId: string,
@@ -115,6 +132,7 @@ export class AlumniController {
   @Get('batch-mates')
   @Roles('alumni')
   @ApiOperation({ summary: 'Find your batch mates' })
+  @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getBatchMates(@GetUser('sub') userId: string) {
     return this.alumniService.getBatchMates(userId);
   }

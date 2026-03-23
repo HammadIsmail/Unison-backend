@@ -7,7 +7,7 @@ export enum ConnectionAction {
 }
 
 export class RespondToConnectionDto {
-  @ApiProperty({ enum: ConnectionAction, description: 'Accept or reject the connection request' })
+  @ApiProperty({ enum: ConnectionAction, description: 'Accept or reject the connection request', example: ConnectionAction.ACCEPT })
   @IsNotEmpty()
   @IsEnum(ConnectionAction)
   action: ConnectionAction;

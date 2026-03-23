@@ -88,4 +88,32 @@ export class SearchService {
       apply_link: r.get('apply_link'),
     }));
   }
+
+  async findByUsername(username: string) {
+    const query = `
+      MATCH (u:User {username: $username, account_status: 'approved'})
+      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+      OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
+      RETURN u.id AS id, u.name AS name, u.username AS username, u.display_name AS display_name, 
+             u.role AS role, u.degree AS degree, u.graduation_year AS graduation_year, 
+             w.company_name AS company, w.role AS job_role, 
+             collect(DISTINCT s.name) AS skills
+    `;
+    const result = await this.neo4j.run(query, { username });
+    if (!result.records.length) return null;
+
+    const r = result.records[0];
+    return {
+      id: r.get('id'),
+      name: r.get('name'),
+      username: r.get('username'),
+      display_name: r.get('display_name'),
+      role: r.get('role'),
+      degree: r.get('degree'),
+      graduation_year: typeof r.get('graduation_year')?.toNumber === 'function' ? r.get('graduation_year').toNumber() : r.get('graduation_year'),
+      company: r.get('company') || null,
+      job_role: r.get('job_role') || null,
+      skills: r.get('skills'),
+    };
+  }
 }

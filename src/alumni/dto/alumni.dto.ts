@@ -2,34 +2,39 @@ import { IsString, IsOptional, IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsIn
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateAlumniProfileDto {
-  @ApiPropertyOptional({ description: 'A short bio of the alumni' })
+  @ApiPropertyOptional({ example: 'Ahmed The Dev' })
+  @IsOptional()
+  @IsString()
+  display_name?: string;
+
+  @ApiPropertyOptional({ description: 'A short bio of the alumni', example: 'Experienced software engineer specialized in NestJS and Neo4j.' })
   @IsOptional()
   @IsString()
   bio?: string;
 
-  @ApiPropertyOptional({ description: 'LinkedIn profile URL' })
+  @ApiPropertyOptional({ description: 'LinkedIn profile URL', example: 'https://linkedin.com/in/ahmedhassan' })
   @IsOptional()
   @IsString()
   linkedin_url?: string;
 
-  @ApiPropertyOptional({ description: 'Phone number' })
+  @ApiPropertyOptional({ description: 'Phone number', example: '+923001234567' })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'Profile picture URL' })
+  @ApiPropertyOptional({ description: 'Profile picture URL', example: 'https://cloudinary.com/ahmed_profile.jpg' })
   @IsOptional()
   @IsString()
   profile_picture?: string;
 }
 
 export class CreateWorkExperienceDto {
-  @ApiProperty({ description: 'Name of the company' })
+  @ApiProperty({ description: 'Name of the company', example: 'Google' })
   @IsNotEmpty()
   @IsString()
   company_name: string;
 
-  @ApiProperty({ description: 'Job role or title' })
+  @ApiProperty({ description: 'Job role or title', example: 'Senior Software Engineer' })
   @IsNotEmpty()
   @IsString()
   role: string;
@@ -44,7 +49,7 @@ export class CreateWorkExperienceDto {
   @IsDateString()
   end_date?: string;
 
-  @ApiProperty({ description: 'Whether this is the current job' })
+  @ApiProperty({ description: 'Whether this is the current job', example: true })
   @IsNotEmpty()
   @IsBoolean()
   is_current: boolean;
@@ -56,7 +61,7 @@ export class CreateWorkExperienceDto {
 }
 
 export class UpdateWorkExperienceDto {
-  @ApiPropertyOptional({ description: 'Updated job role or title' })
+  @ApiPropertyOptional({ description: 'Updated job role or title', example: 'Tech Lead' })
   @IsOptional()
   @IsString()
   role?: string;
@@ -66,19 +71,19 @@ export class UpdateWorkExperienceDto {
   @IsDateString()
   end_date?: string;
 
-  @ApiPropertyOptional({ description: 'Whether this is now the current job' })
+  @ApiPropertyOptional({ description: 'Whether this is now the current job', example: false })
   @IsOptional()
   @IsBoolean()
   is_current?: boolean;
 }
 
 export class AddSkillDto {
-  @ApiProperty({ description: 'Name of the skill' })
+  @ApiProperty({ description: 'Name of the skill', example: 'TypeScript' })
   @IsNotEmpty()
   @IsString()
   skill_name: string;
 
-  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)' })
+  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Programming' })
   @IsNotEmpty()
   @IsString()
   category: string;
@@ -88,16 +93,15 @@ export class AddSkillDto {
   @IsEnum(['beginner', 'intermediate', 'expert'])
   proficiency_level: string;
 
-  @ApiPropertyOptional({ description: 'Years of experience in this skill' })
+  @ApiPropertyOptional({ description: 'Years of experience in this skill', example: 3 })
   @IsOptional()
   @IsInt()
   years_experience?: number;
 }
 
 export class ConnectDto {
-  @ApiProperty({ description: 'Type of connection', enum: ['batchmate', 'colleague', 'mentor'] })
+  @ApiProperty({ description: 'Type of connection', enum: ['batchmate', 'colleague', 'mentor'], example: 'mentor' })
   @IsNotEmpty()
-
   @IsEnum(['batchmate', 'colleague', 'mentor'])
   connection_type: string;
 }

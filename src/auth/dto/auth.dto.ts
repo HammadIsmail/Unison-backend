@@ -35,68 +35,78 @@ export class VerifyOtpDto {
 }
 
 export class RegisterDto {
-    @ApiProperty()
+    @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
     @IsString()
     @IsNotEmpty()
     verified_token: string;
 
-    @ApiProperty()
+    @ApiProperty({ example: 'Ahmed Hassan' })
     @IsString()
     @IsNotEmpty()
     name: string;
 
-    @ApiProperty()
+    @ApiProperty({ example: 'ahmed_h' })
+    @IsString()
+    @IsNotEmpty()
+    username: string;
+
+    @ApiPropertyOptional({ example: 'Ahmed The Dev' })
+    @IsString()
+    @IsOptional()
+    display_name?: string;
+
+    @ApiProperty({ example: 'ahmed@uet.edu.pk' })
     @IsEmail()
     email: string;
 
-    @ApiProperty()
+    @ApiProperty({ example: 'StrongPassword123' })
     @IsString()
     @MinLength(8)
     password: string;
 
-    @ApiProperty({ enum: ['alumni', 'student'] })
+    @ApiProperty({ enum: ['alumni', 'student'], example: 'alumni' })
     @IsEnum(['alumni', 'student'])
     role: 'alumni' | 'student';
 
-    @ApiProperty()
+    @ApiProperty({ example: '2021-CS-101' })
     @IsString()
     @IsNotEmpty()
     roll_number: string;
 
-    @ApiProperty()
+    @ApiProperty({ example: 'BS Computer Science' })
     @IsString()
     @IsNotEmpty()
     degree: string;
 
-    @ApiPropertyOptional({ description: 'Alumni only' })
+    @ApiPropertyOptional({ description: 'Alumni only', example: 2025 })
     @IsOptional()
     @IsInt()
     graduation_year?: number;
 
-    @ApiPropertyOptional({ description: 'Student only' })
+    @ApiPropertyOptional({ description: 'Student only', example: 6 })
     @IsOptional()
     @IsInt()
     semester?: number;
 }
 
 export class LoginDto {
-    @ApiProperty()
+    @ApiProperty({ example: 'ahmed@uet.edu.pk' })
     @IsEmail()
     email: string;
 
-    @ApiProperty()
+    @ApiProperty({ example: 'StrongPassword123' })
     @IsString()
     @IsNotEmpty()
     password: string;
 }
 
 export class ResetPasswordDto {
-    @ApiProperty()
+    @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' })
     @IsString()
     @IsNotEmpty()
     verified_token: string;
 
-    @ApiProperty()
+    @ApiProperty({ example: 'NewStrongPassword456' })
     @IsString()
     @MinLength(8)
     new_password: string;

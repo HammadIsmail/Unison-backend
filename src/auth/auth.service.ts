@@ -102,13 +102,22 @@ export class AuthService {
             throw new BadRequestException('Email mismatch with verified_token.');
         }
 
-        // Check duplicate
-        const existing = await this.neo4j.run(
+        // Check duplicate email
+        const existingEmail = await this.neo4j.run(
             'MATCH (u:User {email: $email}) RETURN u',
             { email: dto.email },
         );
-        if (existing.records.length) {
+        if (existingEmail.records.length) {
             throw new ConflictException('An account with this email already exists.');
+        }
+
+        // Check duplicate username
+        const existingUsername = await this.neo4j.run(
+            'MATCH (u:User {username: $username}) RETURN u',
+            { username: dto.username },
+        );
+        if (existingUsername.records.length) {
+            throw new ConflictException('Username is already taken.');
         }
 
         const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -123,15 +132,17 @@ export class AuthService {
 
         await this.neo4j.run(
             `CREATE (u:User {
-         id: $id,
-         name: $name,
-         email: $email,
-         password: $password,
-         role: $role,
-         roll_number: $roll_number,
-         degree: $degree,
-         account_status: 'pending',
-         created_at: $now,
+          id: $id,
+          name: $name,
+          username: $username,
+          display_name: $display_name,
+          email: $email,
+          password: $password,
+          role: $role,
+          roll_number: $roll_number,
+          degree: $degree,
+          account_status: 'pending',
+          created_at: $now,
          ${extraProps}
          profile_picture: null,
          bio: null,
@@ -140,6 +151,8 @@ export class AuthService {
             {
                 id: userId,
                 name: dto.name,
+                username: dto.username,
+                display_name: dto.display_name || dto.name,
                 email: dto.email,
                 password: hashedPassword,
                 role: dto.role,
@@ -197,6 +210,8 @@ export class AuthService {
         const profile = {
             id: user.id,
             name: user.name,
+            username: user.username,
+            display_name: user.display_name || user.name,
             email: user.email,
             role: user.role,
             degree: user.degree,

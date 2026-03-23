@@ -12,6 +12,7 @@ import { SkillModule } from './skill/skill.module';
 import { NetworkModule } from './network/network.module';
 import { NotificationModule } from './notification/notification.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { ConstraintsSeed } from './seed/constraints.seed';
 
 @Module({
   imports: [
@@ -29,6 +30,6 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     NotificationModule,
     CloudinaryModule,
   ],
+  providers: [ConstraintsSeed],
 })
 export class AppModule { }
-

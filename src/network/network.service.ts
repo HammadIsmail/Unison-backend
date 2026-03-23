@@ -85,7 +85,7 @@ export class NetworkService {
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:CONNECTED_TO]-(c:User)
       WITH u.batch AS batch, count(u) AS total_alumni, collect(DISTINCT w.company_name) AS companies, 
-           collect(DISTINCT w.role) AS roles, avg(size((u)-[:CONNECTED_TO]-())) AS avg_conns
+           collect(DISTINCT w.role) AS roles, avg(COUNT { (u)-[:CONNECTED_TO]-() }) AS avg_conns
       RETURN batch, total_alumni, companies[..2] AS top_companies, roles[..2] AS top_roles, 
              toInt(avg_conns) AS avg_connections
       ORDER BY batch DESC
