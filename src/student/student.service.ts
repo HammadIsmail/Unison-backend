@@ -24,9 +24,8 @@ export class StudentService {
     const skills = record.get('skills').filter((s: any) => s.id !== null);
 
     return {
-      name: user.name,
       username: user.username,
-      display_name: user.display_name || user.name,
+      display_name: user.display_name,
       email: user.email,
       roll_number: user.roll_number,
       semester: typeof user.semester?.toNumber === 'function' ? user.semester.toNumber() : user.semester,
@@ -76,7 +75,7 @@ export class StudentService {
       `MATCH (student:User {id: $userId, role: 'student'})-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(alumni:User {role: 'alumni', account_status: 'approved'})
        OPTIONAL MATCH (alumni)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN alumni.id AS alumni_id, 
-              alumni.name AS name, 
+              alumni.display_name AS display_name, 
               s.category AS domain, 
               w.company_name AS company,
               count(s) AS common_skills
@@ -87,7 +86,7 @@ export class StudentService {
 
     return result.records.map((r) => ({
       alumni_id: r.get('alumni_id'),
-      name: r.get('name'),
+      display_name: r.get('display_name'),
       domain: r.get('domain'),
       company: r.get('company') || null,
     }));

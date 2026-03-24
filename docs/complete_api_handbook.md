@@ -52,9 +52,8 @@ Handle user entry, verification, and security.
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
 | `verified_token` | String | **Required** | Token received from Verify OTP endpoint |
-| `name` | String | **Required** | User's full name |
 | `username` | String | **Required** | Unique identifier (e.g., `ahmed_h`) |
-| `display_name` | String | *Optional* | Preferred name (defaults to `name`) |
+| `display_name` | String | **Required** | Preferred name |
 | `email` | String | **Required** | Must match verified email |
 | `password` | String | **Required** | Min 8 characters |
 | `role` | Enum | **Required** | `alumni` or `student` |
@@ -88,7 +87,6 @@ Handle user entry, verification, and security.
   "account_status": "approved",
   "profile": {
     "id": "uuid-user-123",
-    "name": "Ahmed Hassan",
     "username": "ahmed_h",
     "display_name": "Ahmed The Dev",
     "email": "ahmed@uet.edu.pk",
@@ -133,7 +131,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 [
   {
     "id": "uuid-user-123",
-    "name": "Zainab Ahmed",
+    "display_name": "Zainab Ahmed",
     "email": "zainab@uet.edu.pk",
     "role": "student",
     "registered_at": "2024-03-23T10:00:00Z"
@@ -197,7 +195,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 | :--- | :--- | :--- | :--- | :--- |
 | `page` | Number | *Optional* | `1` | Page number |
 | `limit` | Number | *Optional* | `10` | Items per page |
-| `search` | String | *Optional* | `""` | Search by name |
+| `search` | String | *Optional* | `""` | Search by display name |
 
 **Response (200)**:
 ```json
@@ -207,7 +205,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
   "data": [
     {
       "id": "uuid-alumni-123",
-      "name": "Hammad Ismail",
+      "display_name": "Hammad Ismail",
       "company": "Google",
       "role": "Software Engineer"
     }
@@ -229,7 +227,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
   "data": [
     {
       "id": "uuid-student-123",
-      "name": "Ali Khan",
+      "display_name": "Ali Khan",
       "roll_number": "2021-CS-110",
       "semester": 6
     }
@@ -260,7 +258,6 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 **Response (200)**:
 ```json
 {
-  "name": "Ahmed Hassan",
   "username": "ahmed_h",
   "display_name": "Ahmed The Dev",
   "email": "ahmed@uet.edu.pk",
@@ -387,7 +384,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 [
   {
     "id": "uuid-123",
-    "name": "Ali Khan",
+    "display_name": "Ali Khan",
     "company": "Microsoft",
     "role": "Product Manager",
     "connection_type": "colleague"
@@ -422,7 +419,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 [
   {
     "sender_id": "uuid-sender-123",
-    "sender_name": "Zainab Ahmed",
+    "sender_display_name": "Zainab Ahmed",
     "connection_type": "mentor",
     "requested_at": "2024-03-23T10:00:00Z"
   }
@@ -465,7 +462,7 @@ Requires `Bearer JWT`. Role restriction: `student`.
 **Response (200)**:
 ```json
 {
-  "name": "Ali Khan",
+  "display_name": "Ali Khan",
   "email": "ali@uet.edu.pk",
   "roll_number": "2021-CS-110",
   "semester": 6,
@@ -515,7 +512,7 @@ Requires `Bearer JWT`. Role restriction: `student`.
 [
   {
     "alumni_id": "uuid-alumni-123",
-    "name": "Ahmed Hassan",
+    "display_name": "Ahmed Hassan",
     "domain": "Programming",
     "company": "Google"
   }
@@ -628,7 +625,7 @@ Requires `Bearer JWT`.
 **Query Parameters**:
 | Parameter | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
-| `name` | String | *Optional* | Partial name search |
+| `display_name` | String | *Optional* | Partial name search |
 | `company` | String | *Optional* | Current employer |
 | `skill` | String | *Optional* | Specific skill name |
 | `batch_year` | String | *Optional* | Graduation year |
@@ -639,7 +636,7 @@ Requires `Bearer JWT`.
 [
   {
     "id": "uuid-alumni-123",
-    "name": "Hammad Ismail",
+    "display_name": "Hammad Ismail",
     "username": "hammad_i",
     "email": "hammad@uet.edu.pk",
     "current_company": "Google",
@@ -691,7 +688,6 @@ Requires `Bearer JWT`.
 ```json
 {
   "id": "uuid-user-123",
-  "name": "Ahmed Hassan",
   "username": "ahmed_h",
   "display_name": "Ahmed The Dev",
   "role": "alumni",
@@ -724,7 +720,7 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`, `alumni`.
 [
   {
     "alumni_id": "uuid-alumni-123",
-    "name": "Hammad Ismail",
+    "display_name": "Hammad Ismail",
     "connections": 50,
     "centrality_score": 0.5
   }

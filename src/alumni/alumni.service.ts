@@ -36,9 +36,8 @@ export class AlumniService {
     const connections_count = record.get('connections_count').toNumber();
 
     return {
-      name: user.name,
       username: user.username,
-      display_name: user.display_name || user.name,
+      display_name: user.display_name,
       email: user.email,
       bio: user.bio,
       graduation_year: typeof user.graduation_year?.toNumber === 'function' ? user.graduation_year.toNumber() : user.graduation_year,
@@ -158,13 +157,13 @@ export class AlumniService {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN c.id AS id, c.name AS name, w.company_name AS company, w.role AS role, r.connection_type AS connection_type`,
+       RETURN c.id AS id, c.display_name AS display_name, w.company_name AS company, w.role AS role, r.connection_type AS connection_type`,
       { userId }
     );
 
     return result.records.map((r) => ({
       id: r.get('id'),
-      name: r.get('name'),
+      display_name: r.get('display_name'),
       company: r.get('company') || null,
       role: r.get('role') || null,
       connection_type: r.get('connection_type') || null,
@@ -194,13 +193,13 @@ export class AlumniService {
   async getPendingRequests(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User)-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
-       RETURN u.id AS id, u.name AS name, r.connection_type AS connection_type, r.created_at AS created_at`,
+       RETURN u.id AS id, u.display_name AS display_name, r.connection_type AS connection_type, r.created_at AS created_at`,
       { userId }
     );
 
     return result.records.map((r) => ({
       sender_id: r.get('id'),
-      sender_name: r.get('name'),
+      sender_name: r.get('display_name'),
       connection_type: r.get('connection_type'),
       requested_at: r.get('created_at'),
     }));
@@ -241,13 +240,13 @@ export class AlumniService {
       `MATCH (c:User {batch: $batch, role: 'alumni'})
        WHERE c.id <> $userId AND c.account_status = 'approved'
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN c.id AS id, c.name AS name, w.company_name AS company, w.role AS role`,
+       RETURN c.id AS id, c.display_name AS display_name, w.company_name AS company, w.role AS role`,
       { batch, userId }
     );
 
     return result.records.map((r) => ({
       id: r.get('id'),
-      name: r.get('name'),
+      display_name: r.get('display_name'),
       company: r.get('company') || null,
       role: r.get('role') || null,
     }));

@@ -4,8 +4,8 @@ export class SearchAlumniResponseDto {
     @ApiProperty({ example: 'uuid-alumni-123' })
     id: string;
 
-    @ApiProperty({ example: 'Hammad Ismail' })
-    name: string;
+    @ApiProperty({ example: 'Ahmed The Dev' })
+    display_name: string;
 
     @ApiPropertyOptional({ example: 'Google' })
     company?: string;
@@ -41,8 +41,6 @@ export class UserDetailResponseDto {
     @ApiProperty({ example: 'uuid-user-123' })
     id: string;
 
-    @ApiProperty({ example: 'Ahmed Hassan' })
-    name: string;
 
     @ApiProperty({ example: 'ahmed_h' })
     username: string;

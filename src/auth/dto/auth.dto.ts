@@ -40,20 +40,16 @@ export class RegisterDto {
     @IsNotEmpty()
     verified_token: string;
 
-    @ApiProperty({ example: 'Ahmed Hassan' })
-    @IsString()
-    @IsNotEmpty()
-    name: string;
 
     @ApiProperty({ example: 'ahmed_h' })
     @IsString()
     @IsNotEmpty()
     username: string;
 
-    @ApiPropertyOptional({ example: 'Ahmed The Dev' })
+    @ApiProperty({ example: 'Ahmed The Dev' })
     @IsString()
-    @IsOptional()
-    display_name?: string;
+    @IsNotEmpty()
+    display_name: string;
 
     @ApiProperty({ example: 'ahmed@uet.edu.pk' })
     @IsEmail()

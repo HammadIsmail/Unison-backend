@@ -25,8 +25,6 @@ export class UserProfileDto {
     @ApiProperty({ example: 'uuid-user-123' })
     id: string;
 
-    @ApiProperty({ example: 'Ahmed Hassan' })
-    name: string;
 
     @ApiProperty({ example: 'ahmed_h' })
     username: string;

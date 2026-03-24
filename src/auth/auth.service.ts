@@ -133,7 +133,6 @@ export class AuthService {
         await this.neo4j.run(
             `CREATE (u:User {
           id: $id,
-          name: $name,
           username: $username,
           display_name: $display_name,
           email: $email,
@@ -150,9 +149,8 @@ export class AuthService {
        })`,
             {
                 id: userId,
-                name: dto.name,
                 username: dto.username,
-                display_name: dto.display_name || dto.name,
+                display_name: dto.display_name,
                 email: dto.email,
                 password: hashedPassword,
                 role: dto.role,
@@ -209,9 +207,8 @@ export class AuthService {
         // Build profile (omit password)
         const profile = {
             id: user.id,
-            name: user.name,
             username: user.username,
-            display_name: user.display_name || user.name,
+            display_name: user.display_name,
             email: user.email,
             role: user.role,
             degree: user.degree,

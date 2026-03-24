@@ -9,7 +9,7 @@ export class SearchService {
     let matchClause = `MATCH (u:User {role: 'alumni', account_status: 'approved'})`;
     const whereClauses: string[] = [];
     
-    if (name) whereClauses.push(`toLower(u.name) CONTAINS toLower($name)`);
+    if (name) whereClauses.push(`toLower(u.display_name) CONTAINS toLower($name)`);
     if (batch_year) whereClauses.push(`u.graduation_year = toInteger($batch_year) OR u.batch CONTAINS $batch_year`);
     if (degree) whereClauses.push(`toLower(u.degree) CONTAINS toLower($degree)`);
 
@@ -34,7 +34,7 @@ export class SearchService {
       ${matchClause}
       ${whereString}
       WITH u, w, collect(DISTINCT s.name) AS skills
-      RETURN u.id AS id, u.name AS name, w.company_name AS company, w.role AS role, skills
+      RETURN u.id AS id, u.display_name AS display_name, w.company_name AS company, w.role AS role, skills
       ORDER BY u.created_at DESC
       LIMIT 50
     `;
@@ -43,7 +43,7 @@ export class SearchService {
 
     return result.records.map((r) => ({
       id: r.get('id'),
-      name: r.get('name'),
+      display_name: r.get('display_name'),
       company: r.get('company') || null,
       role: r.get('role') || null,
       skills: r.get('skills'),
@@ -94,7 +94,7 @@ export class SearchService {
       MATCH (u:User {username: $username, account_status: 'approved'})
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
-      RETURN u.id AS id, u.name AS name, u.username AS username, u.display_name AS display_name, 
+      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, 
              u.role AS role, u.degree AS degree, u.graduation_year AS graduation_year, 
              w.company_name AS company, w.role AS job_role, 
              collect(DISTINCT s.name) AS skills
@@ -105,7 +105,6 @@ export class SearchService {
     const r = result.records[0];
     return {
       id: r.get('id'),
-      name: r.get('name'),
       username: r.get('username'),
       display_name: r.get('display_name'),
       role: r.get('role'),
