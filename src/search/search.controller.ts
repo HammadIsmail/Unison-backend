@@ -13,20 +13,20 @@ export class SearchController {
 
   @Get('alumni')
   @ApiOperation({ summary: 'Search for alumni with multiple filters' })
-  @ApiQuery({ name: 'name', required: false, type: String, example: 'Ahmed' })
+  @ApiQuery({ name: 'display_name', required: false, type: String, example: 'Ahmed' })
   @ApiQuery({ name: 'company', required: false, type: String, example: 'Google' })
   @ApiQuery({ name: 'skill', required: false, type: String, example: 'TypeScript' })
   @ApiQuery({ name: 'batch_year', required: false, type: String, example: '2020' })
   @ApiQuery({ name: 'degree', required: false, type: String, example: 'BSCS' })
   @ApiResponse({ status: 200, type: [SearchAlumniResponseDto] })
   searchAlumni(
-    @Query('name') name?: string,
+    @Query('display_name') display_name?: string,
     @Query('company') company?: string,
     @Query('skill') skill?: string,
     @Query('batch_year') batch_year?: string,
     @Query('degree') degree?: string,
   ) {
-    return this.searchService.searchAlumni(name, company, skill, batch_year, degree);
+    return this.searchService.searchAlumni(display_name, company, skill, batch_year, degree);
   }
 
   @Get('opportunities')

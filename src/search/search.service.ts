@@ -5,11 +5,11 @@ import { Neo4jService } from '../neo4j/neo4j.service';
 export class SearchService {
   constructor(private readonly neo4j: Neo4jService) {}
 
-  async searchAlumni(name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
+  async searchAlumni(display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
     let matchClause = `MATCH (u:User {role: 'alumni', account_status: 'approved'})`;
     const whereClauses: string[] = [];
     
-    if (name) whereClauses.push(`toLower(u.display_name) CONTAINS toLower($name)`);
+    if (display_name) whereClauses.push(`toLower(u.display_name) CONTAINS toLower($display_name)`);
     if (batch_year) whereClauses.push(`u.graduation_year = toInteger($batch_year) OR u.batch CONTAINS $batch_year`);
     if (degree) whereClauses.push(`toLower(u.degree) CONTAINS toLower($degree)`);
 
@@ -34,15 +34,16 @@ export class SearchService {
       ${matchClause}
       ${whereString}
       WITH u, w, collect(DISTINCT s.name) AS skills
-      RETURN u.id AS id, u.display_name AS display_name, w.company_name AS company, w.role AS role, skills
+      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, w.company_name AS company, w.role AS role, skills
       ORDER BY u.created_at DESC
       LIMIT 50
     `;
 
-    const result = await this.neo4j.run(query, { name, company, skill, batch_year, degree });
+    const result = await this.neo4j.run(query, { display_name, company, skill, batch_year, degree });
 
     return result.records.map((r) => ({
       id: r.get('id'),
+      username: r.get('username'),
       display_name: r.get('display_name'),
       company: r.get('company') || null,
       role: r.get('role') || null,

@@ -4,6 +4,9 @@ export class SearchAlumniResponseDto {
     @ApiProperty({ example: 'uuid-alumni-123' })
     id: string;
 
+    @ApiProperty({ example: 'ahmed_h' })
+    username: string;
+
     @ApiProperty({ example: 'Ahmed The Dev' })
     display_name: string;
 
