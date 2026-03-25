@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class StudentService {
-  constructor(private readonly neo4j: Neo4jService) {}
+  constructor(
+    private readonly neo4j: Neo4jService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   async getProfile(id: string) {
     const result = await this.neo4j.run(
@@ -40,6 +44,26 @@ export class StudentService {
   }
 
   async updateProfile(userId: string, dto: UpdateStudentProfileDto) {
+    if (dto.profile_picture) {
+      try {
+        const result = await this.neo4j.run(
+          `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
+          { userId }
+        );
+        if (result.records.length > 0) {
+          const oldPic = result.records[0].get('oldPic');
+          if (oldPic && oldPic !== dto.profile_picture) {
+            const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
+            if (publicId) {
+              await this.cloudinaryService.deleteImage(publicId);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to delete old profile picture from Cloudinary:', err);
+      }
+    }
+
     const setQuery = Object.keys(dto)
       .filter((k) => dto[k as keyof UpdateStudentProfileDto] !== undefined)
       .map((k) => `u.${k} = $${k}`)

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { v4 as uuidv4 } from 'uuid';
 import {
   UpdateAlumniProfileDto,
@@ -11,7 +12,10 @@ import {
 
 @Injectable()
 export class AlumniService {
-  constructor(private readonly neo4j: Neo4jService) {}
+  constructor(
+    private readonly neo4j: Neo4jService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) { }
 
   async getProfile(id: string) {
     const result = await this.neo4j.run(
@@ -56,6 +60,32 @@ export class AlumniService {
   }
 
   async updateProfile(userId: string, dto: UpdateAlumniProfileDto) {
+    if (dto.profile_picture) {
+      try {
+        const result = await this.neo4j.run(
+          `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
+          { userId }
+        );
+        if (result.records.length > 0) {
+          const oldPic = result.records[0].get('oldPic');
+          console.log('[Cloudinary] oldPic from DB:', oldPic);
+          console.log('[Cloudinary] new profile_picture:', dto.profile_picture);
+          if (oldPic && oldPic !== dto.profile_picture) {
+            const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
+            console.log('[Cloudinary] extracted publicId:', publicId);
+            if (publicId) {
+              await this.cloudinaryService.deleteImage(publicId);
+              console.log('[Cloudinary] deleted successfully:', publicId);
+            }
+          } else {
+            console.log('[Cloudinary] skip delete — oldPic is null or same as new URL');
+          }
+        }
+      } catch (err) {
+        console.error('[Cloudinary] Failed to delete old profile picture:', err);
+      }
+    }
+
     const setQuery = Object.keys(dto)
       .filter((k) => dto[k as keyof UpdateAlumniProfileDto] !== undefined)
       .map((k) => `u.${k} = $${k}`)
@@ -234,7 +264,7 @@ export class AlumniService {
       { userId }
     );
     if (!userResult.records.length) throw new NotFoundException('User not found.');
-    
+
     const batch = userResult.records[0].get('batch');
     if (!batch) return [];
 
