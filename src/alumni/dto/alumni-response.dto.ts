@@ -71,6 +71,12 @@ export class AlumniProfileResponseDto {
     @ApiPropertyOptional({ example: 'https://linkedin.com/in/ahmed' })
     linkedin_url?: string;
 
+    @ApiPropertyOptional({ example: '+923001234567' })
+    phone?: string;
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_profile.jpg' })
+    profile_picture?: string;
+
     @ApiProperty({ type: [WorkExperienceResponseDto] })
     work_experiences: WorkExperienceResponseDto[];
 

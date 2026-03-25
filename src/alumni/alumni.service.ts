@@ -48,6 +48,8 @@ export class AlumniService {
       batch: user.batch,
       connections_count,
       linkedin_url: user.linkedin_url || null,
+      phone: user.phone || null,
+      profile_picture: user.profile_picture || null,
       work_experiences: experiences,
       detailed_skills: skills,
     };

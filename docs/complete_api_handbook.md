@@ -95,7 +95,8 @@ Handle user entry, verification, and security.
     "roll_number": "2021-CS-101",
     "batch": "2021-2025",
     "graduation_year": 2025,
-    "phone": "+923001234567"
+    "phone": "+923001234567",
+    "profile_picture": "https://cloudinary.com/ahmed_profile.jpg"
   }
 }
 ```
@@ -270,6 +271,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   "batch": "2021-2025",
   "connections_count": 45,
   "linkedin_url": "https://linkedin.com/in/ahmed",
+  "phone": "+923001234567",
+  "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
   "work_experiences": [...],
   "detailed_skills": [...]
 }
