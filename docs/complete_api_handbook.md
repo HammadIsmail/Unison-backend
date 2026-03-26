@@ -451,7 +451,27 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 `GET /api/alumni/batch-mates`  
 **Summary**: Discovery based on graduation year.
 
-**Response (200)**: Array of `NetworkUserResponseDto`.
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-123",
+    "display_name": "Ali Khan",
+    "company": "Microsoft",
+    "role": "Product Manager",
+    "connection_type": "batchmate"
+  },
+  {
+    "id": "uuid-456",
+    "display_name": "Zainab Ahmed",
+    "company": null,
+    "role": null,
+    "connection_type": null
+  }
+]
+```
+
+> **Fields**: `id` (always present), `display_name` (always present), `company` / `role` / `connection_type` are optional and may be `null` if not set.
 
 ---
 
@@ -579,21 +599,78 @@ Requires `Bearer JWT`.
 `GET /api/opportunities`  
 **Query Parameters**: `page`, `limit`, `type`, `skill`, `is_remote`
 
-**Response (200)**: `OpportunityPaginationResponseDto`
+**Response (200)**:
+```json
+{
+  "total": 100,
+  "page": 1,
+  "data": [
+    {
+      "id": "uuid-opp-123",
+      "title": "Software Engineer",
+      "type": "full-time",
+      "company": "Google",
+      "location": "Mountain View, CA",
+      "is_remote": true,
+      "apply_link": "https://google.com/careers",
+      "posted_by": "Hammad Ismail",
+      "posted_at": "2024-03-23",
+      "deadline": "2024-04-01"
+    }
+  ]
+}
+```
+
 
 ---
 
 ### 3. Get Details
 `GET /api/opportunities/:id`
 
-**Response (200)**: `OpportunityDetailResponseDto`
+**Response (200)**:
+```json
+{
+  "id": "uuid-opp-123",
+  "title": "Software Engineer",
+  "type": "full-time",
+  "description": "Deep dive into NestJS and Neo4j.",
+  "requirements": "3+ years of experience in Node.js.",
+  "location": "Mountain View, CA",
+  "is_remote": true,
+  "apply_link": "https://google.com/careers",
+  "deadline": "2024-04-01",
+  "company": {
+    "name": "Google"
+  },
+  "required_skills": ["Node.js", "NestJS"],
+  "posted_by": {
+    "id": "uuid-user-123",
+    "name": "Hammad Ismail",
+    "role": "alumni"
+  }
+}
+```
+
 
 ---
 
 ### 4. Get My Posts
 `GET /api/opportunities/my-posts`
 
-**Response (200)**: `[MyOpportunityPostResponseDto]`
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-opp-123",
+    "title": "Software Engineer",
+    "company": "Google",
+    "status": "open",
+    "posted_at": "2024-03-23",
+    "deadline": "2024-04-01"
+  }
+]
+```
+
 
 ---
 
