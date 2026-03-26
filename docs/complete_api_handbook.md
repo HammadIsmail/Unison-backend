@@ -598,7 +598,13 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
       "location": "Mountain View, CA",
       "is_remote": true,
       "apply_link": "https://google.com/careers",
-      "posted_by": "Hammad Ismail",
+      "posted_by": {
+        "id": "uuid-user-123",
+        "display_name": "Hammad Ismail",
+        "username": "hammad_i",
+        "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+        "role": "alumni"
+      },
       "posted_at": "2024-03-23",
       "deadline": "2024-04-01",
       "media": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"]
@@ -631,7 +637,9 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
   "required_skills": ["Node.js", "NestJS"],
   "posted_by": {
     "id": "uuid-user-123",
-    "name": "Hammad Ismail",
+    "display_name": "Hammad Ismail",
+    "username": "hammad_i",
+    "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
     "role": "alumni"
   }
 }
@@ -738,7 +746,13 @@ Requires `Bearer JWT`.
     "company": "Google",
     "location": "Remote",
     "is_remote": true,
-    "posted_by": "Ahmed Hassan",
+    "posted_by": {
+      "id": "uuid-user-123",
+      "display_name": "Ahmed Hassan",
+      "username": "ahmed_h",
+      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "role": "alumni"
+    },
     "posted_at": "2024-03-23"
   }
 ]
@@ -781,6 +795,7 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`, `alumni`.
 
 ### 1. Influential Alumni (Centrality)
 `GET /api/network/centrality`  
+**Summary**: Retrieves top alumni based on the count of their **accepted** connections.
 **Response (200)**:
 ```json
 [
@@ -797,6 +812,7 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`, `alumni`.
 
 ### 2. Degree of Separation (Shortest Path)
 `GET /api/network/shortest-path`  
+**Summary**: Finds the shortest path through **accepted** connections only.
 **Query Parameters**:
 | Parameter | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
@@ -842,6 +858,7 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`, `alumni`.
 
 ### 5. Career Batch Analysis
 `GET /api/network/batch-analysis`  
+**Summary**: Engagement and success metrics by batch (based on **accepted** connections).
 **Response (200)**:
 ```json
 [

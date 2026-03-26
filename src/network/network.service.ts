@@ -8,7 +8,7 @@ export class NetworkService {
   async getCentrality() {
     const query = `
       MATCH (u:User {role: 'alumni', account_status: 'approved'})
-      OPTIONAL MATCH (u)-[:CONNECTED_TO]-(c:User)
+      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
       WITH u, count(c) AS connections_count
       RETURN u.id AS alumni_id, u.display_name AS display_name, connections_count,
              toFloat(connections_count) / 100.0 AS centrality_score
@@ -28,6 +28,7 @@ export class NetworkService {
     const query = `
       MATCH (u1:User {id: $fromId}), (u2:User {id: $toId})
       MATCH p = shortestPath((u1)-[:CONNECTED_TO*]-(u2))
+      WHERE all(r IN relationships(p) WHERE r.status = 'accepted')
       RETURN [n in nodes(p) | n.name] AS path, length(p) AS hops
     `;
     const result = await this.neo4j.run(query, { fromId, toId });
@@ -83,7 +84,7 @@ export class NetworkService {
     const query = `
       MATCH (u:User {role: 'alumni'})
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-      OPTIONAL MATCH (u)-[:CONNECTED_TO]-(c:User)
+      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
       WITH u.batch AS batch, u, collect(DISTINCT w.company_name) AS companies,
            collect(DISTINCT w.role) AS roles, count(DISTINCT c) AS conn_count
       WITH batch, count(u) AS total_alumni, 

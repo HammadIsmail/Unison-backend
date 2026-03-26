@@ -21,7 +21,7 @@ export class NetworkController {
 
   @Get('centrality')
   @Roles('admin', 'alumni')
-  @ApiOperation({ summary: 'Get top alumni by centrality (connections count)' })
+  @ApiOperation({ summary: 'Get top alumni by centrality (count of accepted connections)' })
   @ApiResponse({ status: 200, type: [CentralityResponseDto] })
   getCentrality() {
     return this.networkService.getCentrality();
@@ -29,7 +29,7 @@ export class NetworkController {
 
   @Get('shortest-path')
   @Roles('admin', 'alumni')
-  @ApiOperation({ summary: 'Find the shortest connection path between two users' })
+  @ApiOperation({ summary: 'Find the shortest connection path through accepted connections only' })
   @ApiResponse({ status: 200, type: ShortestPathResponseDto })
   getShortestPath(@Query('from') fromId: string, @Query('to') toId: string) {
     return this.networkService.getShortestPath(fromId, toId);
@@ -53,7 +53,7 @@ export class NetworkController {
 
   @Get('batch-analysis')
   @Roles('admin', 'alumni')
-  @ApiOperation({ summary: 'Engagement and success metrics by batch' })
+  @ApiOperation({ summary: 'Engagement and success metrics by batch (based on accepted connections)' })
   @ApiResponse({ status: 200, type: [BatchAnalysisResponseDto] })
   getBatchAnalysis() {
     return this.networkService.getBatchAnalysis();

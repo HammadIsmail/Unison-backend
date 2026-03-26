@@ -1,5 +1,27 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export class OpportunityCompanyResponseDto {
+    @ApiProperty({ example: 'Google' })
+    name: string;
+}
+
+export class OpportunityPosterResponseDto {
+    @ApiProperty({ example: 'uuid-user-123' })
+    id: string;
+
+    @ApiProperty({ example: 'Hammad Ismail' })
+    display_name: string;
+
+    @ApiProperty({ example: 'alumni' })
+    role: string;
+
+    @ApiProperty({ example: 'hammad' })
+    username: string;
+
+    @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg' })
+    profile_picture?: string;
+}
+
 export class OpportunityListResponseDto {
     @ApiProperty({ example: 'uuid-opp-123' })
     id: string;
@@ -22,8 +44,8 @@ export class OpportunityListResponseDto {
     @ApiProperty({ example: 'https://google.com/careers' })
     apply_link: string;
 
-    @ApiProperty({ example: 'Hammad Ismail' })
-    posted_by: string;
+    @ApiProperty({ type: OpportunityPosterResponseDto })
+    posted_by: OpportunityPosterResponseDto;
 
     @ApiProperty({ example: '2024-03-23' })
     posted_at: string;
@@ -44,22 +66,6 @@ export class OpportunityPaginationResponseDto {
 
     @ApiProperty({ type: [OpportunityListResponseDto] })
     data: OpportunityListResponseDto[];
-}
-
-export class OpportunityCompanyResponseDto {
-    @ApiProperty({ example: 'Google' })
-    name: string;
-}
-
-export class OpportunityPosterResponseDto {
-    @ApiProperty({ example: 'uuid-user-123' })
-    id: string;
-
-    @ApiProperty({ example: 'Hammad Ismail' })
-    name: string;
-
-    @ApiProperty({ example: 'alumni' })
-    role: string;
 }
 
 export class OpportunityDetailResponseDto {

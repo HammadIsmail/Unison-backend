@@ -77,7 +77,9 @@ export class OpportunityService {
       ${whereString}
       RETURN o.id AS id, o.title AS title, o.type AS type, o.company_name AS company, 
              o.location AS location, o.is_remote AS is_remote, o.apply_link AS apply_link,
-             o.deadline AS deadline, o.posted_at AS posted_at, u.name AS posted_by, o.media AS media
+             o.deadline AS deadline, o.posted_at AS posted_at, o.media AS media,
+             u.id AS poster_id, u.display_name AS poster_name, u.username AS poster_username, 
+             u.profile_picture AS poster_profile_picture, u.role AS poster_role
       ORDER BY o.posted_at DESC
       SKIP toInteger($skip) LIMIT toInteger($limit)
     `;
@@ -92,7 +94,13 @@ export class OpportunityService {
       location: r.get('location'),
       is_remote: r.get('is_remote'),
       apply_link: r.get('apply_link'),
-      posted_by: r.get('posted_by'),
+      posted_by: {
+        id: r.get('poster_id'),
+        display_name: r.get('poster_name'),
+        username: r.get('poster_username'),
+        profile_picture: r.get('poster_profile_picture'),
+        role: r.get('poster_role'),
+      },
       posted_at: r.get('posted_at'),
       deadline: r.get('deadline'),
       media: r.get('media'),
@@ -105,7 +113,8 @@ export class OpportunityService {
     const result = await this.neo4j.run(
       `MATCH (o:Opportunity {id: $id})<-[:POSTED]-(u:User)
        OPTIONAL MATCH (o)-[:REQUIRES_SKILL]->(s:Skill)
-       RETURN o, u.id AS poster_id, u.name AS poster_name, u.role AS poster_role, collect(s.name) AS required_skills`,
+       RETURN o, u.id AS poster_id, u.display_name AS poster_name, u.username AS poster_username, 
+              u.profile_picture AS poster_profile_picture, u.role AS poster_role, collect(s.name) AS required_skills`,
       { id }
     );
 
@@ -132,7 +141,9 @@ export class OpportunityService {
       required_skills: r.get('required_skills'),
       posted_by: {
         id: r.get('poster_id'),
-        name: r.get('poster_name'),
+        display_name: r.get('poster_name'),
+        username: r.get('poster_username'),
+        profile_picture: r.get('poster_profile_picture'),
         role: r.get('poster_role'),
       }
     };
