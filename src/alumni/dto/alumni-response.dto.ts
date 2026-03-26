@@ -106,7 +106,13 @@ export class ConnectionRequestResponseDto {
     sender_id: string;
 
     @ApiProperty({ example: 'Zainab Ahmed' })
-    sender_name: string;
+    sender_display_name: string;
+
+    @ApiProperty({ example: 'zainab' })
+    sender_username: string;
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/profile.jpg' })
+    sender_profile_picture?: string;
 
     @ApiProperty({ example: 'mentor' })
     connection_type: string;

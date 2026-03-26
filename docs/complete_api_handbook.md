@@ -423,6 +423,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   {
     "sender_id": "uuid-sender-123",
     "sender_display_name": "Zainab Ahmed",
+    "sender_username": "zainab",
+    "sender_profile_picture": "https://cloudinary.com/profile.jpg",
     "connection_type": "mentor",
     "requested_at": "2024-03-23T10:00:00Z"
   }
@@ -438,11 +440,11 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 **Request Body**:
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
-| `action` | Enum | **Required** | `approve` or `reject` |
+| `action` | Enum | **Required** | `accept` or `reject` |
 
 **Response (200)**:
 ```json
-{ "message": "Connection request {action}d." }
+{ "message": "Connection request accepted." }
 ```
 
 ---

@@ -221,13 +221,16 @@ export class AlumniService {
   async getPendingRequests(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User)-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
-       RETURN u.id AS id, u.display_name AS display_name, r.connection_type AS connection_type, r.created_at AS created_at`,
+       RETURN u.id AS id, u.display_name AS display_name, u.username AS username, 
+              u.profile_picture AS profile_picture, r.connection_type AS connection_type, r.created_at AS created_at`,
       { userId }
     );
 
     return result.records.map((r) => ({
       sender_id: r.get('id'),
-      sender_name: r.get('display_name'),
+      sender_display_name: r.get('display_name'),
+      sender_username: r.get('username'),
+      sender_profile_picture: r.get('profile_picture'),
       connection_type: r.get('connection_type'),
       requested_at: r.get('created_at'),
     }));
