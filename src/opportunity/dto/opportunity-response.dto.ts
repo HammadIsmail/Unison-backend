@@ -30,6 +30,9 @@ export class OpportunityListResponseDto {
 
     @ApiProperty({ example: '2024-04-01' })
     deadline: string;
+
+    @ApiPropertyOptional({ type: [String], example: ['https://res.cloudinary.com/demo/image/upload/sample.jpg'] })
+    media?: string[];
 }
 
 export class OpportunityPaginationResponseDto {
@@ -95,6 +98,9 @@ export class OpportunityDetailResponseDto {
 
     @ApiProperty({ type: OpportunityPosterResponseDto })
     posted_by: OpportunityPosterResponseDto;
+
+    @ApiPropertyOptional({ type: [String], example: ['https://res.cloudinary.com/demo/image/upload/sample.jpg'] })
+    media?: string[];
 }
 
 export class MyOpportunityPostResponseDto {

@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OpportunityService } from './opportunity.service';
 import { CreateOpportunityDto, UpdateOpportunityDto } from './dto/opportunity.dto';
 import {
@@ -23,10 +24,19 @@ export class OpportunityController {
 
   @Post()
   @Roles('alumni', 'admin')
-  @ApiOperation({ summary: 'Post a new job or internship opportunity' })
+  @UseInterceptors(FilesInterceptor('media', 10))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Post a new job or internship opportunity with optional images/videos (max 5)' })
   @ApiResponse({ status: 201, type: CreateOpportunityResponseDto })
-  create(@GetUser('sub') userId: string, @Body() dto: CreateOpportunityDto) {
-    return this.opportunityService.create(userId, dto);
+  create(
+    @GetUser('sub') userId: string,
+    @Body() dto: CreateOpportunityDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    if (files && files.length > 5) {
+      throw new BadRequestException('media cannot exceed more than 5');
+    }
+    return this.opportunityService.create(userId, dto, files);
   }
 
   @Get()

@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty, IsBoolean, IsDateString, IsArray, IsEnum, IsOptional, IsUrl } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 export enum OpportunityType {
   JOB = 'job',
@@ -38,7 +39,8 @@ export class CreateOpportunityDto {
   @IsNotEmpty()
   location: string;
 
-  @ApiProperty({ description: 'Whether the opportunity is remote', example: true })
+  @ApiProperty({ description: 'Whether the opportunity is remote (accepts "true"/"false" strings)', example: true })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   @IsNotEmpty()
   is_remote: boolean;
@@ -58,11 +60,20 @@ export class CreateOpportunityDto {
   @IsNotEmpty()
   apply_link: string;
 
-  @ApiProperty({ description: 'List of required skills', type: [String], example: ['Node.js', 'React'] })
+  @ApiProperty({ description: 'List of required skills (accepts array or comma-separated string)', type: [String], example: ['Node.js', 'React'] })
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map((s) => s.trim());
+    return value;
+  })
   @IsArray()
   @IsString({ each: true })
   @IsNotEmpty()
   required_skills: string[];
+
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string', format: 'binary' }, description: 'Optional media files (images or videos, max 5). Exceeding 5 returns a 400 error.' })
+  @IsOptional()
+  media?: any[];
 }
 
 export class UpdateOpportunityDto {

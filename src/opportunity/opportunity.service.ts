@@ -1,15 +1,26 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateOpportunityDto, UpdateOpportunityDto, OpportunityStatus } from './dto/opportunity.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class OpportunityService {
-  constructor(private readonly neo4j: Neo4jService) {}
+  constructor(
+    private readonly neo4j: Neo4jService,
+    private readonly cloudinary: CloudinaryService,
+  ) {}
 
-  async create(userId: string, dto: CreateOpportunityDto) {
+  async create(userId: string, dto: CreateOpportunityDto, files?: Express.Multer.File[]) {
     const opportunityId = uuidv4();
     
+    let mediaUrls: string[] = [];
+    if (files && files.length > 0) {
+      const uploadPromises = files.map(file => this.cloudinary.uploadFile(file));
+      const results = await Promise.all(uploadPromises);
+      mediaUrls = results.map(res => res.secure_url);
+    }
+
     // Create Opportunity node and connect to the user who posted it
     // We also link required skills
     await this.neo4j.run(
@@ -26,6 +37,7 @@ export class OpportunityService {
          company_name: $dto.company_name,
          apply_link: $dto.apply_link,
          status: 'open',
+         media: $mediaUrls,
          posted_at: date()
        })
        CREATE (u)-[:POSTED]->(o)
@@ -34,7 +46,7 @@ export class OpportunityService {
        MERGE (s:Skill {name: toLower(skillName)})
        ON CREATE SET s.id = randomUUID()
        MERGE (o)-[:REQUIRES_SKILL]->(s)`,
-      { userId, opportunityId, dto }
+      { userId, opportunityId, dto, mediaUrls }
     );
 
     return { message: 'Opportunity broadcasted to network successfully.', opportunity_id: opportunityId };
@@ -65,7 +77,7 @@ export class OpportunityService {
       ${whereString}
       RETURN o.id AS id, o.title AS title, o.type AS type, o.company_name AS company, 
              o.location AS location, o.is_remote AS is_remote, o.apply_link AS apply_link,
-             o.deadline AS deadline, o.posted_at AS posted_at, u.name AS posted_by
+             o.deadline AS deadline, o.posted_at AS posted_at, u.name AS posted_by, o.media AS media
       ORDER BY o.posted_at DESC
       SKIP toInteger($skip) LIMIT toInteger($limit)
     `;
@@ -83,6 +95,7 @@ export class OpportunityService {
       posted_by: r.get('posted_by'),
       posted_at: r.get('posted_at'),
       deadline: r.get('deadline'),
+      media: r.get('media'),
     }));
 
     return { total, page, data };
@@ -111,6 +124,7 @@ export class OpportunityService {
       is_remote: opp.is_remote,
       apply_link: opp.apply_link,
       deadline: opp.deadline,
+      media: opp.media,
       company: {
         name: opp.company_name,
         // Assume industry/website can be extracted later; docs had generic company objects

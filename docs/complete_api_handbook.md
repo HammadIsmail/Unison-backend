@@ -547,48 +547,33 @@ Requires `Bearer JWT`. Role restriction: `student`.
 ## 💼 Opportunities
 Broadcast and discover career prospects. Requires `Bearer JWT`.
 
-### 🖼️ Media Management
-Requires `Bearer JWT`.
-
-### 1. Image Upload
-`POST /api/upload/image`  
-**Summary**: Upload profile pictures or job banners to Cloudinary.
+### 1. Post a New Opportunity
+`POST /api/opportunities`  
+**Summary**: Restricted to `alumni` and `admin`. Allows posting job or internship opportunities with optional batch media (images/videos).
 
 **Request**: `multipart/form-data`
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
-| `image` | File | **Required** | Image file (binary, max 5MB) |
+| `title` | String | **Required** | Title of the role |
+| `type` | Enum | **Required** | `job`, `internship`, `freelance` |
+| `description`| String | **Required** | Job details |
+| `requirements`| String | **Required** | Skills needed |
+| `location` | String | **Required** | e.g. `Lahore`, `Remote` |
+| `is_remote` | Boolean | **Required** | Work from home? |
+| `deadline` | Date | **Required** | Applications close date |
+| `company_name`| String | **Required** | Name of the company |
+| `apply_link` | URL | **Required** | Direct application URL |
+| `required_skills`| String[]| **Required** | Required skills list |
+| `media` | File[] | *Optional* | Up to 5 images or videos |
+
+**Notes**:
+- **Media Limit**: Maximum 5 files (images/videos). Exceeding this returns a `400 Bad Request` with message: `"media cannot exceed more than 5"`.
+- **Data Transformation**: Fields like `is_remote` (boolean) and `required_skills` (array) are automatically transformed from their form-data string representations to the correct types before validation.
 
 **Response (201)**:
 ```json
 {
   "message": "Opportunity broadcasted to network successfully.",
-  "opportunity_id": "uuid-opp-123"
-}
-```
-
-### 1. Post a New Opportunity
-`POST /api/opportunities`  
-**Summary**: Restricted to `alumni` and `admin`.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `title` | String | **Required** | Title of the role |
-| `type` | Enum | **Required** | `job`, `internship`, `freelance` |
-| `description` | String | **Required** | Job details |
-| `requirements` | String | **Required** | Skills needed |
-| `location` | String | **Required** | e.g. `Lahore`, `Remote` |
-| `is_remote` | Boolean| **Required** | Work from home? |
-| `deadline` | Date | **Required** | Applications close date |
-| `company_name` | String | **Required** | Name of the company |
-| `apply_link` | URL | **Required** | Direct application URL |
-| `required_skills`| String[]| **Required** | Required skills list |
-
-**Response (201)**:
-```json
-{
-  "message": "Opportunity broadcasted successfully.",
   "opportunity_id": "uuid-opp-123"
 }
 ```
@@ -615,7 +600,8 @@ Requires `Bearer JWT`.
       "apply_link": "https://google.com/careers",
       "posted_by": "Hammad Ismail",
       "posted_at": "2024-03-23",
-      "deadline": "2024-04-01"
+      "deadline": "2024-04-01",
+      "media": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"]
     }
   ]
 }
