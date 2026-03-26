@@ -5,10 +5,10 @@ export class CentralityResponseDto {
     alumni_id: string;
 
     @ApiProperty({ example: 'Hammad Ismail' })
-    name: string;
+    display_name: string;
 
     @ApiProperty({ example: 50 })
-    connections: number;
+    connections_count: number;
 
     @ApiProperty({ example: 0.5 })
     centrality_score: number;

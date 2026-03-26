@@ -724,7 +724,7 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`, `alumni`.
   {
     "alumni_id": "uuid-alumni-123",
     "display_name": "Hammad Ismail",
-    "connections": 50,
+    "connections_count": 50,
     "centrality_score": 0.5
   }
 ]

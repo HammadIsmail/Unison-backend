@@ -9,17 +9,17 @@ export class NetworkService {
     const query = `
       MATCH (u:User {role: 'alumni', account_status: 'approved'})
       OPTIONAL MATCH (u)-[:CONNECTED_TO]-(c:User)
-      WITH u, count(c) AS connections
-      RETURN u.id AS alumni_id, u.name AS name, connections, 
-             toFloat(connections) / 100.0 AS centrality_score
-      ORDER BY connections DESC
+      WITH u, count(c) AS connections_count
+      RETURN u.id AS alumni_id, u.display_name AS display_name, connections_count,
+             toFloat(connections_count) / 100.0 AS centrality_score
+      ORDER BY connections_count DESC
       LIMIT 10
     `;
     const result = await this.neo4j.run(query);
     return result.records.map(r => ({
       alumni_id: r.get('alumni_id'),
-      name: r.get('name'),
-      connections: r.get('connections').toNumber(),
+      display_name: r.get('display_name'),
+      connections_count: r.get('connections_count').toNumber(),
       centrality_score: r.get('centrality_score'),
     }));
   }
@@ -84,10 +84,13 @@ export class NetworkService {
       MATCH (u:User {role: 'alumni'})
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:CONNECTED_TO]-(c:User)
-      WITH u.batch AS batch, count(u) AS total_alumni, collect(DISTINCT w.company_name) AS companies, 
-           collect(DISTINCT w.role) AS roles, avg(COUNT { (u)-[:CONNECTED_TO]-() }) AS avg_conns
-      RETURN batch, total_alumni, companies[..2] AS top_companies, roles[..2] AS top_roles, 
-             toInt(avg_conns) AS avg_connections
+      WITH u.batch AS batch, u, collect(DISTINCT w.company_name) AS companies,
+           collect(DISTINCT w.role) AS roles, count(DISTINCT c) AS conn_count
+      WITH batch, count(u) AS total_alumni, 
+           [x IN collect(DISTINCT companies) | x][..2] AS top_companies,
+           [x IN collect(DISTINCT roles) | x][..2] AS top_roles,
+           toInteger(avg(toFloat(conn_count))) AS avg_connections
+      RETURN batch, total_alumni, top_companies, top_roles, avg_connections
       ORDER BY batch DESC
     `;
     const result = await this.neo4j.run(query);
@@ -96,7 +99,7 @@ export class NetworkService {
       total_alumni: r.get('total_alumni').toNumber(),
       top_companies: r.get('top_companies'),
       top_roles: r.get('top_roles'),
-      avg_connections: r.get('avg_connections'),
+      avg_connections: r.get('avg_connections') != null ? r.get('avg_connections').toNumber() : 0,
     }));
   }
 }
