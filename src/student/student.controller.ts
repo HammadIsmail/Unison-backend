@@ -1,5 +1,6 @@
-import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
 import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
 import { MentorRecommendationResponseDto, StudentProfileResponseDto } from './dto/student-response.dto';
@@ -27,10 +28,16 @@ export class StudentController {
 
   @Put('me')
   @Roles('student')
+  @UseInterceptors(FileInterceptor('profile_picture'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update your own student profile' })
   @ApiResponse({ status: 200, type: MessageResponseDto })
-  updateMe(@GetUser('sub') userId: string, @Body() dto: UpdateStudentProfileDto) {
-    return this.studentService.updateProfile(userId, dto);
+  updateMe(
+    @GetUser('sub') userId: string,
+    @Body() dto: UpdateStudentProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.studentService.updateProfile(userId, dto, file);
   }
 
 

@@ -1,5 +1,6 @@
-import { Controller, Get, Put, Post, Patch, Delete, Param, Body, UseGuards, ForbiddenException } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Put, Post, Patch, Delete, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AlumniService } from './alumni.service';
 import {
   UpdateAlumniProfileDto,
@@ -38,10 +39,16 @@ export class AlumniController {
 
   @Put('me')
   @Roles('alumni')
+  @UseInterceptors(FileInterceptor('profile_picture'))
+  @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update your own alumni profile' })
   @ApiResponse({ status: 200, type: MessageResponseDto })
-  updateMe(@GetUser('sub') userId: string, @Body() dto: UpdateAlumniProfileDto) {
-    return this.alumniService.updateProfile(userId, dto);
+  updateMe(
+    @GetUser('sub') userId: string,
+    @Body() dto: UpdateAlumniProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.alumniService.updateProfile(userId, dto, file);
   }
 
 

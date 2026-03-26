@@ -59,30 +59,26 @@ export class AlumniService {
     };
   }
 
-  async updateProfile(userId: string, dto: UpdateAlumniProfileDto) {
-    if (dto.profile_picture) {
+  async updateProfile(userId: string, dto: UpdateAlumniProfileDto, file?: Express.Multer.File) {
+    if (file) {
       try {
         const result = await this.neo4j.run(
           `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
           { userId }
         );
-        if (result.records.length > 0) {
-          const oldPic = result.records[0].get('oldPic');
-          console.log('[Cloudinary] oldPic from DB:', oldPic);
-          console.log('[Cloudinary] new profile_picture:', dto.profile_picture);
-          if (oldPic && oldPic !== dto.profile_picture) {
-            const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
-            console.log('[Cloudinary] extracted publicId:', publicId);
-            if (publicId) {
-              await this.cloudinaryService.deleteImage(publicId);
-              console.log('[Cloudinary] deleted successfully:', publicId);
-            }
-          } else {
-            console.log('[Cloudinary] skip delete — oldPic is null or same as new URL');
+        const oldPic = result.records[0]?.get('oldPic');
+
+        const uploadResult = await this.cloudinaryService.uploadFile(file);
+        dto.profile_picture = uploadResult.secure_url;
+
+        if (oldPic) {
+          const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
+          if (publicId) {
+            await this.cloudinaryService.deleteImage(publicId);
           }
         }
       } catch (err) {
-        console.error('[Cloudinary] Failed to delete old profile picture:', err);
+        console.error('[Cloudinary] Profile picture update failed:', err);
       }
     }
 

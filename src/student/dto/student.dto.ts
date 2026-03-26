@@ -17,10 +17,9 @@ export class UpdateStudentProfileDto {
   @IsString()
   bio?: string;
 
-  @ApiPropertyOptional({ description: 'Profile picture URL', example: 'https://cloudinary.com/student_pro.jpg' })
+  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Profile picture file' })
   @IsOptional()
-  @IsString()
-  profile_picture?: string;
+  profile_picture?: any;
 }
 
 export class AddStudentSkillDto {

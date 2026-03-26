@@ -22,10 +22,9 @@ export class UpdateAlumniProfileDto {
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'Profile picture URL', example: 'https://cloudinary.com/ahmed_profile.jpg' })
+  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Profile picture file' })
   @IsOptional()
-  @IsString()
-  profile_picture?: string;
+  profile_picture?: any;
 }
 
 export class CreateWorkExperienceDto {

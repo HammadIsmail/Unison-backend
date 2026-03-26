@@ -284,14 +284,14 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 `PUT /api/alumni/me`  
 **Summary**: Updates personal profile information.
 
-**Request Body**:
+**Request**: `multipart/form-data`
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
 | `display_name` | String | *Optional* | Name displayed on profile |
 | `bio` | String | *Optional* | Professional summary |
 | `linkedin_url` | String | *Optional*| LinkedIn profile link |
 | `phone` | String | *Optional* | Contact phone number |
-| `profile_picture`| String | *Optional* | Cloudinary image URL |
+| `profile_picture`| File | *Optional* | Profile picture image file (binary) |
 
 **Response (200)**:
 ```json
@@ -503,13 +503,13 @@ Requires `Bearer JWT`. Role restriction: `student`.
 `PUT /api/student/me`  
 **Summary**: Updates personal profile information.
 
-**Request Body**:
+**Request**: `multipart/form-data`
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
 | `display_name` | String | *Optional* | Preferred name |
 | `phone` | String | *Optional* | Contact phone number |
 | `bio` | String | *Optional* | Short personal bio |
-| `profile_picture`| String | *Optional* | Cloudinary image URL |
+| `profile_picture`| File | *Optional* | Profile picture image file (binary) |
 
 ---
 
@@ -882,28 +882,4 @@ Requires `Bearer JWT`.
 **Response (200)**:
 ```json
 { "message": "Notification marked as read." }
-```
-
----
-
-## 🖼️ Media Management
-
-### 1. Image Upload
-`POST /api/upload/image`  
-**Summary**: Upload profile pictures or job banners to Cloudinary.
-
-**Request**: `multipart/form-data`
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `image` | File | **Required** | Image file (binary, max 5MB) |
-
-**Response (201)**:
-```json
-{
-  "url": "https://res.cloudinary.com/demo/image/upload/v12345/sample.jpg",
-  "public_id": "sample",
-  "format": "jpg",
-  "width": 800,
-  "height": 600
-}
 ```
