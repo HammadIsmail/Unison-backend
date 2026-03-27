@@ -20,7 +20,7 @@ export class NetworkController {
   constructor(private readonly networkService: NetworkService) {}
 
   @Get('centrality')
-  @Roles('admin', 'alumni')
+  @Roles('admin')
   @ApiOperation({ summary: 'Get top alumni by centrality (count of accepted connections)' })
   @ApiResponse({ status: 200, type: [CentralityResponseDto] })
   getCentrality() {
@@ -28,7 +28,7 @@ export class NetworkController {
   }
 
   @Get('shortest-path')
-  @Roles('admin', 'alumni')
+  @Roles('admin')
   @ApiOperation({ summary: 'Find the shortest connection path through accepted connections only' })
   @ApiResponse({ status: 200, type: ShortestPathResponseDto })
   getShortestPath(@Query('from') fromId: string, @Query('to') toId: string) {
@@ -36,7 +36,7 @@ export class NetworkController {
   }
 
   @Get('top-companies')
-  @Roles('admin', 'alumni')
+  @Roles('admin')
   @ApiOperation({ summary: 'Get companies with most alumni' })
   @ApiResponse({ status: 200, type: [TopCompanyResponseDto] })
   getTopCompanies() {
@@ -44,7 +44,7 @@ export class NetworkController {
   }
 
   @Get('skill-trends')
-  @Roles('admin', 'alumni')
+  @Roles('admin')
   @ApiOperation({ summary: 'Analyze skill supply and demand' })
   @ApiResponse({ status: 200, type: SkillTrendResponseDto })
   getSkillTrends() {
@@ -52,7 +52,7 @@ export class NetworkController {
   }
 
   @Get('batch-analysis')
-  @Roles('admin', 'alumni')
+  @Roles('admin')
   @ApiOperation({ summary: 'Engagement and success metrics by batch (based on accepted connections)' })
   @ApiResponse({ status: 200, type: [BatchAnalysisResponseDto] })
   getBatchAnalysis() {

@@ -886,7 +886,7 @@ Requires `Bearer JWT`.
 ---
 
 ## 📊 Network Science
-Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`, `alumni`.
+Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`.
 
 ### 1. Influential Alumni (Centrality)
 `GET /api/network/centrality`  
