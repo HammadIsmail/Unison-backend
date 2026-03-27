@@ -96,20 +96,44 @@ export class StudentService {
   }
 
   async getMentors(userId: string) {
-    // Recommend mentors (alumni) based on shared skills
     const result = await this.neo4j.run(
-      `MATCH (student:User {id: $userId, role: 'student'})-[:HAS_SKILL]->(s:Skill)
-       MATCH (alumni:User {role: 'alumni', account_status: 'approved'})-[:HAS_SKILL]->(s)
+      `MATCH (student:User {id: $userId, role: 'student'})
+       // 1. Find accepted mentors
+       OPTIONAL MATCH (student)-[:CONNECTED_TO {status: 'accepted', connection_type: 'mentor'}]->(am:User)
+       WITH student, collect(DISTINCT am) AS acceptedList
+
+       // 2. Find suggested alumni based on shared skills (do NOT filter yet to keep context alive)
+       OPTIONAL MATCH (student)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(sug:User {role: 'alumni', account_status: 'approved'})
+       WHERE NOT sug IN acceptedList AND sug.id <> student.id
+       WITH student, acceptedList, sug, count(s) AS commonSkills
+       ORDER BY commonSkills DESC
+       LIMIT 10
+
+       // 3. Collect suggestions - aggregation over zero rows here would kill the query if not for the student context
+       WITH student, acceptedList, collect(DISTINCT sug) AS suggestionList
+
+       // 4. Combine and finalize the list of alumni to return
+       WITH student, [x IN (acceptedList + suggestionList) WHERE x IS NOT NULL] AS allAlumni
+       UNWIND (CASE WHEN allAlumni = [] THEN [null] ELSE allAlumni END) AS alumni
+       WITH student, alumni WHERE alumni IS NOT NULL
+
+       // 5. Final detail retrieval for each alumni
+       MATCH (alumni)
        OPTIONAL MATCH (alumni)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN alumni.id AS alumni_id, 
-              alumni.username AS username,
-              alumni.display_name AS display_name, 
-              alumni.profile_picture AS profile_picture,
-              s.category AS domain, 
-              w.company_name AS company,
-              count(s) AS common_skills
-       ORDER BY common_skills DESC
-       LIMIT 10`,
+       OPTIONAL MATCH (student)-[:HAS_SKILL]->(sk:Skill)<-[:HAS_SKILL]-(alumni)
+       WITH alumni, w, collect(DISTINCT sk) AS sharedSkills
+
+       RETURN 
+           alumni.id AS alumni_id, 
+           alumni.username AS username,
+           alumni.display_name AS display_name, 
+           alumni.profile_picture AS profile_picture,
+           CASE 
+               WHEN size(sharedSkills) > 0 THEN sharedSkills[0].category 
+               ELSE 'Mentorship' 
+           END AS domain,
+           w.company_name AS company,
+           size(sharedSkills) AS common_skills`,
       { userId }
     );
 
