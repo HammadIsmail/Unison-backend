@@ -208,7 +208,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
     {
       "id": "uuid-alumni-123",
       "username": "hammad_i",
-      "name": "Hammad Ismail",
+      "display_name": "Hammad Ismail",
       "email": "hammad@example.com",
       "phone": "+923001234567",
       "bio": "Software engineer with 5 years of experience.",
@@ -219,7 +219,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
       "batch": "2016-2020",
       "linkedin_url": "https://linkedin.com/in/hammad",
       "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-      "registered_at": "2024-03-23T10:00:00Z"
+      "created_at": "2024-03-23T10:00:00Z"
     }
   ]
 }
@@ -240,7 +240,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
     {
       "id": "uuid-student-123",
       "username": "ali_k",
-      "name": "Ali Khan",
+      "display_name": "Ali Khan",
       "email": "ali@example.com",
       "phone": "+923451234567",
       "bio": "Passionate about web development.",
@@ -249,7 +249,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
       "degree": "BS Computer Science",
       "batch": "2021-2025",
       "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-      "registered_at": "2024-03-23T10:00:00Z"
+      "created_at": "2024-03-23T10:00:00Z"
     }
   ]
 }
@@ -264,6 +264,39 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 **Response (200)**:
 ```json
 { "message": "Account removed successfully." }
+```
+
+---
+
+### 8. Request Email Change
+`PATCH /api/admin/request-email-change`  
+**Summary**: Initiates an email change by sending a 6-digit OTP to the new email address.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `new_email` | String | **Required** | The new email address for the admin account |
+
+**Response (200)**:
+```json
+{ "message": "OTP sent to your new email address." }
+```
+
+---
+
+### 9. Verify Email Change
+`PATCH /api/admin/verify-email-change`  
+**Summary**: Verifies the OTP sent to the new email and updates the admin's email address.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `new_email` | String | **Required** | Must match the email OTP was sent to |
+| `otp` | String | **Required** | 6-digit code received via email |
+
+**Response (200)**:
+```json
+{ "message": "Admin email updated successfully." }
 ```
 
 ---

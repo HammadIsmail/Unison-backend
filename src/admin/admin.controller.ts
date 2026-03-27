@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { RejectAccountDto } from './dto/admin.dto';
+import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto } from './dto/admin.dto';
 import {
   AdminAlumniPaginationResponseDto,
   AdminStudentPaginationResponseDto,
@@ -12,6 +12,7 @@ import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Req } from '@nestjs/common';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -96,5 +97,20 @@ export class AdminController {
   @ApiResponse({ status: 200, type: MessageResponseDto })
   removeAccount(@Param('id') id: string) {
     return this.adminService.removeAccount(id);
+  }
+
+  @Patch('request-email-change')
+  @ApiOperation({ summary: 'Request an email change for the admin account (sends OTP to new email)' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  requestEmailChange(@Body() dto: RequestEmailChangeDto) {
+    return this.adminService.requestEmailChange(dto.new_email);
+  }
+
+  @Patch('verify-email-change')
+  @ApiOperation({ summary: 'Verify OTP and update admin email address' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  verifyEmailChange(@Req() req: any, @Body() dto: VerifyEmailChangeDto) {
+    const adminId = req.user.sub;
+    return this.adminService.verifyEmailChange(adminId, dto.new_email, dto.otp);
   }
 }

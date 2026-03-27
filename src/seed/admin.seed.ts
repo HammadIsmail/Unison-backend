@@ -24,7 +24,6 @@ async function seed() {
         `MERGE (u:User {email: $email})
      ON CREATE SET
        u.id = $id,
-       u.name = 'UNISON Admin',
        u.email = $email,
        u.password = $password,
        u.role = 'admin',

@@ -48,7 +48,7 @@ export class AdminAlumniListResponseDto {
     username: string;
 
     @ApiProperty({ example: 'Hammad Ismail' })
-    name: string;
+    display_name: string;
 
     @ApiProperty({ example: 'hammad@example.com' })
     email: string;
@@ -81,7 +81,7 @@ export class AdminAlumniListResponseDto {
     profile_picture: string | null;
 
     @ApiProperty({ example: '2024-03-23T10:00:00Z' })
-    registered_at: string;
+    created_at: string;
 }
 
 export class AdminAlumniPaginationResponseDto {
@@ -103,7 +103,7 @@ export class AdminStudentListResponseDto {
     username: string;
 
     @ApiProperty({ example: 'Ali Khan' })
-    name: string;
+    display_name: string;
 
     @ApiProperty({ example: 'ali@example.com' })
     email: string;
@@ -130,7 +130,7 @@ export class AdminStudentListResponseDto {
     profile_picture: string | null;
 
     @ApiProperty({ example: '2024-03-23T10:00:00Z' })
-    registered_at: string;
+    created_at: string;
 }
 
 export class AdminStudentPaginationResponseDto {

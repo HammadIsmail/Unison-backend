@@ -205,21 +205,24 @@ export class AuthService {
         );
 
         // Build profile (omit password)
-        const profile = {
+        const profile: any = {
             id: user.id,
-            username: user.username,
-            display_name: user.display_name,
             email: user.email,
             role: user.role,
-            degree: user.degree,
-            roll_number: user.roll_number,
-            graduation_year: user.graduation_year ?? undefined,
-            semester: user.semester ?? undefined,
-            bio: user.bio,
-            phone: user.phone,
-            profile_picture: user.profile_picture,
-            batch: user.batch ?? undefined,
         };
+
+        if (user.role !== 'admin') {
+            profile.username = user.username;
+            profile.display_name = user.display_name;
+            profile.degree = user.degree;
+            profile.roll_number = user.roll_number;
+            profile.graduation_year = user.graduation_year ?? undefined;
+            profile.semester = user.semester ?? undefined;
+            profile.bio = user.bio;
+            profile.phone = user.phone;
+            profile.profile_picture = user.profile_picture;
+            profile.batch = user.batch ?? undefined;
+        }
 
         return { token, role: user.role, account_status: user.account_status, profile };
     }
