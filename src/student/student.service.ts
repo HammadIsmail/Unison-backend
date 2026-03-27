@@ -98,10 +98,13 @@ export class StudentService {
   async getMentors(userId: string) {
     // Recommend mentors (alumni) based on shared skills
     const result = await this.neo4j.run(
-      `MATCH (student:User {id: $userId, role: 'student'})-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(alumni:User {role: 'alumni', account_status: 'approved'})
+      `MATCH (student:User {id: $userId, role: 'student'})-[:HAS_SKILL]->(s:Skill)
+       MATCH (alumni:User {role: 'alumni', account_status: 'approved'})-[:HAS_SKILL]->(s)
        OPTIONAL MATCH (alumni)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN alumni.id AS alumni_id, 
+              alumni.username AS username,
               alumni.display_name AS display_name, 
+              alumni.profile_picture AS profile_picture,
               s.category AS domain, 
               w.company_name AS company,
               count(s) AS common_skills
@@ -112,9 +115,12 @@ export class StudentService {
 
     return result.records.map((r) => ({
       alumni_id: r.get('alumni_id'),
+      username: r.get('username'),
       display_name: r.get('display_name'),
+      profile_picture: r.get('profile_picture') || null,
       domain: r.get('domain'),
       company: r.get('company') || null,
+      common_skills: typeof r.get('common_skills')?.toNumber === 'function' ? r.get('common_skills').toNumber() : r.get('common_skills'),
     }));
   }
 }

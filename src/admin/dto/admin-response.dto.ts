@@ -4,8 +4,11 @@ export class PendingAccountResponseDto {
     @ApiProperty({ example: 'uuid-user-123' })
     id: string;
 
+    @ApiProperty({ example: 'zain_a' })
+    username: string;
+
     @ApiProperty({ example: 'Zainab Ahmed' })
-    name: string;
+    display_name: string;
 
     @ApiProperty({ example: 'zainab@uet.edu.pk' })
     email: string;

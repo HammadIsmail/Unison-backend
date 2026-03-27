@@ -15,12 +15,13 @@ export class AdminService {
   async getPendingAccounts() {
     const result = await this.neo4j.run(
       `MATCH (u:User {account_status: 'pending'})
-       RETURN u.id AS id, u.name AS name, u.email AS email, u.role AS role, u.created_at AS registered_at, u.profile_picture AS profile_picture`
+       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, u.created_at AS registered_at, u.profile_picture AS profile_picture`
     );
 
     return result.records.map((record) => ({
       id: record.get('id'),
-      name: record.get('name'),
+      username: record.get('username'),
+      display_name: record.get('display_name'),
       email: record.get('email'),
       role: record.get('role'),
       registered_at: record.get('registered_at'),

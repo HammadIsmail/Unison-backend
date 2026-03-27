@@ -132,6 +132,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 [
   {
     "id": "uuid-user-123",
+    "username": "zain_a",
     "display_name": "Zainab Ahmed",
     "email": "zainab@uet.edu.pk",
     "role": "student",
@@ -621,9 +622,12 @@ Requires `Bearer JWT`. Role restriction: `student`.
 [
   {
     "alumni_id": "uuid-alumni-123",
+    "username": "ahmed_h",
     "display_name": "Ahmed Hassan",
+    "profile_picture": "https://cloudinary.com/ahmed.jpg",
     "domain": "Programming",
-    "company": "Google"
+    "company": "Google",
+    "common_skills": 5
   }
 ]
 ```
