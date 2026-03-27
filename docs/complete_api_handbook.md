@@ -207,10 +207,19 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
   "data": [
     {
       "id": "uuid-alumni-123",
-      "display_name": "Hammad Ismail",
+      "username": "hammad_i",
+      "name": "Hammad Ismail",
+      "email": "hammad@example.com",
+      "phone": "+923001234567",
+      "bio": "Software engineer with 5 years of experience.",
       "company": "Google",
       "role": "Software Engineer",
-      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+      "graduation_year": 2020,
+      "degree": "BS Computer Science",
+      "batch": "2016-2020",
+      "linkedin_url": "https://linkedin.com/in/hammad",
+      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "registered_at": "2024-03-23T10:00:00Z"
     }
   ]
 }
@@ -230,10 +239,17 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
   "data": [
     {
       "id": "uuid-student-123",
-      "display_name": "Ali Khan",
+      "username": "ali_k",
+      "name": "Ali Khan",
+      "email": "ali@example.com",
+      "phone": "+923451234567",
+      "bio": "Passionate about web development.",
       "roll_number": "2021-CS-110",
       "semester": 6,
-      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+      "degree": "BS Computer Science",
+      "batch": "2021-2025",
+      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "registered_at": "2024-03-23T10:00:00Z"
     }
   ]
 }

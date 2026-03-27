@@ -108,7 +108,9 @@ export class AdminService {
       `MATCH (u:User {role: 'alumni', account_status: 'approved'})
        WHERE 1=1 ${searchCondition}
        OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN u.id AS id, u.name AS name, w.company_name AS company, w.role AS role, u.profile_picture AS profile_picture
+       RETURN u.id AS id, u.username AS username, u.name AS name, u.email AS email, u.phone AS phone, u.bio AS bio,
+              w.company_name AS company, w.role AS role, u.graduation_year AS graduation_year, u.degree AS degree,
+              u.batch AS batch, u.linkedin_url AS linkedin_url, u.profile_picture AS profile_picture, u.created_at AS registered_at
        ORDER BY u.created_at DESC
        SKIP toInteger($skip) LIMIT toInteger($limit)`,
       { search, skip, limit }
@@ -116,10 +118,19 @@ export class AdminService {
 
     const data = result.records.map((record) => ({
       id: record.get('id'),
+      username: record.get('username'),
       name: record.get('name'),
+      email: record.get('email'),
+      phone: record.get('phone') || null,
+      bio: record.get('bio') || null,
       company: record.get('company') || null,
       role: record.get('role') || null,
+      graduation_year: typeof record.get('graduation_year')?.toNumber === 'function' ? record.get('graduation_year').toNumber() : record.get('graduation_year') || null,
+      degree: record.get('degree') || null,
+      batch: record.get('batch') || null,
+      linkedin_url: record.get('linkedin_url') || null,
       profile_picture: record.get('profile_picture') || null,
+      registered_at: record.get('registered_at'),
     }));
 
     return { total, page, data };
@@ -143,7 +154,9 @@ export class AdminService {
     const result = await this.neo4j.run(
       `MATCH (u:User {role: 'student', account_status: 'approved'})
        WHERE 1=1 ${searchCondition}
-       RETURN u.id AS id, u.name AS name, u.roll_number AS roll_number, u.semester AS semester, u.profile_picture AS profile_picture
+       RETURN u.id AS id, u.username AS username, u.name AS name, u.email AS email, u.phone AS phone, u.bio AS bio,
+              u.roll_number AS roll_number, u.semester AS semester, u.degree AS degree, u.batch AS batch,
+              u.profile_picture AS profile_picture, u.created_at AS registered_at
        ORDER BY u.created_at DESC
        SKIP toInteger($skip) LIMIT toInteger($limit)`,
       { search, skip, limit }
@@ -151,10 +164,17 @@ export class AdminService {
 
     const data = result.records.map((record) => ({
       id: record.get('id'),
+      username: record.get('username'),
       name: record.get('name'),
+      email: record.get('email'),
+      phone: record.get('phone') || null,
+      bio: record.get('bio') || null,
       roll_number: record.get('roll_number'),
       semester: typeof record.get('semester')?.toNumber === 'function' ? record.get('semester').toNumber() : record.get('semester') || null,
+      degree: record.get('degree') || null,
+      batch: record.get('batch') || null,
       profile_picture: record.get('profile_picture') || null,
+      registered_at: record.get('registered_at'),
     }));
 
     return { total, page, data };

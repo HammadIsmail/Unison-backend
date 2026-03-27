@@ -16,7 +16,7 @@ async function seed() {
     );
     const session = driver.session();
 
-    const adminEmail = 'admin@uet.edu.pk';
+    const adminEmail = 'ranahammadismail@gmail.com';
     const adminPassword = 'Admin@1234'; // Change after first login!
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 

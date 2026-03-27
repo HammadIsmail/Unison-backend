@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PendingAccountResponseDto {
     @ApiProperty({ example: 'uuid-user-123' })
@@ -44,8 +44,20 @@ export class AdminAlumniListResponseDto {
     @ApiProperty({ example: 'uuid-alumni-123' })
     id: string;
 
+    @ApiProperty({ example: 'hammad_i' })
+    username: string;
+
     @ApiProperty({ example: 'Hammad Ismail' })
     name: string;
+
+    @ApiProperty({ example: 'hammad@example.com' })
+    email: string;
+
+    @ApiPropertyOptional({ example: '+923001234567' })
+    phone?: string;
+
+    @ApiPropertyOptional({ example: 'Software engineer with 5 years of experience.' })
+    bio?: string;
 
     @ApiProperty({ example: 'Google' })
     company: string;
@@ -53,8 +65,23 @@ export class AdminAlumniListResponseDto {
     @ApiProperty({ example: 'Software Engineer' })
     role: string;
 
+    @ApiProperty({ example: 2020 })
+    graduation_year: number;
+
+    @ApiProperty({ example: 'BS Computer Science' })
+    degree: string;
+
+    @ApiProperty({ example: '2016-2020' })
+    batch: string;
+
+    @ApiPropertyOptional({ example: 'https://linkedin.com/in/hammad' })
+    linkedin_url?: string;
+
     @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
     profile_picture: string | null;
+
+    @ApiProperty({ example: '2024-03-23T10:00:00Z' })
+    registered_at: string;
 }
 
 export class AdminAlumniPaginationResponseDto {
@@ -72,8 +99,20 @@ export class AdminStudentListResponseDto {
     @ApiProperty({ example: 'uuid-student-123' })
     id: string;
 
+    @ApiProperty({ example: 'ali_k' })
+    username: string;
+
     @ApiProperty({ example: 'Ali Khan' })
     name: string;
+
+    @ApiProperty({ example: 'ali@example.com' })
+    email: string;
+
+    @ApiPropertyOptional({ example: '+923451234567' })
+    phone?: string;
+
+    @ApiPropertyOptional({ example: 'Passionate about web development.' })
+    bio?: string;
 
     @ApiProperty({ example: '2021-CS-110' })
     roll_number: string;
@@ -81,8 +120,17 @@ export class AdminStudentListResponseDto {
     @ApiProperty({ example: 6 })
     semester: number;
 
+    @ApiProperty({ example: 'BS Computer Science' })
+    degree: string;
+
+    @ApiProperty({ example: '2021-2025' })
+    batch: string;
+
     @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
     profile_picture: string | null;
+
+    @ApiProperty({ example: '2024-03-23T10:00:00Z' })
+    registered_at: string;
 }
 
 export class AdminStudentPaginationResponseDto {
