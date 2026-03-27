@@ -9,17 +9,11 @@ export class SearchService {
     let matchClause = `MATCH (u:User {role: 'alumni', account_status: 'approved'})`;
     const whereClauses: string[] = [];
 
-    if (display_name)
-      whereClauses.push(`
-    (
-      toLower(u.display_name) STARTS WITH toLower($display_name)
-      OR toLower(u.username) STARTS WITH toLower($display_name)
-    )
-  `);
+    if (display_name) whereClauses.push(`toLower(u.display_name) CONTAINS toLower($display_name)`);
     if (batch_year) whereClauses.push(`u.graduation_year = toInteger($batch_year) OR u.batch CONTAINS $batch_year`);
     if (degree) whereClauses.push(`toLower(u.degree) CONTAINS toLower($degree)`);
 
-    // Match skills and experiences if requested
+    // Match skills and experiences if requested ----
     if (skill) {
       matchClause += ` MATCH (u)-[:HAS_SKILL]->(s:Skill)`;
       whereClauses.push(`toLower(s.name) CONTAINS toLower($skill)`);
