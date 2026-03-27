@@ -9,12 +9,14 @@ import {
   AddSkillDto,
   ConnectDto,
 } from './dto/alumni.dto';
+import { ActivityService, ActivityType } from '../common/activity/activity.service';
 
 @Injectable()
 export class AlumniService {
   constructor(
     private readonly neo4j: Neo4jService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly activity: ActivityService,
   ) { }
 
   async getProfile(id: string) {
@@ -94,6 +96,18 @@ export class AlumniService {
       { userId, ...dto }
     );
 
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) RETURN u.display_name AS name`,
+      { userId }
+    );
+    const name = result.records[0]?.get('name') || 'User';
+
+    await this.activity.logActivity(
+      ActivityType.PROFILE_UPDATED,
+      `${name} updated their profile information`,
+      userId
+    );
+
     return { message: 'Profile updated successfully.' };
   }
 
@@ -112,6 +126,18 @@ export class AlumniService {
        })
        CREATE (u)-[:HAS_EXPERIENCE]->(w)`,
       { userId, expId, dto }
+    );
+
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) RETURN u.display_name AS name`,
+      { userId }
+    );
+    const name = result.records[0]?.get('name') || 'User';
+
+    await this.activity.logActivity(
+      ActivityType.EXPERIENCE_ADDED,
+      `${name} added a new work experience at ${dto.company_name}`,
+      expId
     );
 
     return { message: 'Work experience added successfully.' };

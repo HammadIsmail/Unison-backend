@@ -2,12 +2,14 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { RejectAccountDto } from './dto/admin.dto';
+import { ActivityService, ActivityType } from '../common/activity/activity.service';
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly neo4j: Neo4jService,
     private readonly mail: MailService,
+    private readonly activity: ActivityService,
   ) { }
 
   async getPendingAccounts() {
@@ -39,7 +41,13 @@ export class AdminService {
     }
 
     const user = result.records[0].get('u').properties;
-    await this.mail.sendApprovalEmail(user.email, user.name);
+    await this.mail.sendApprovalEmail(user.email, user.display_name || user.name);
+
+    await this.activity.logActivity(
+      ActivityType.ACCOUNT_APPROVED,
+      `Account approved for ${user.display_name || user.username}`,
+      id
+    );
 
     return { message: 'Account approved. Email sent to user.' };
   }
@@ -257,5 +265,22 @@ export class AdminService {
     );
 
     return { message: 'Admin email updated successfully.', new_email: newEmail };
+  }
+
+  async getRecentActivity(limit: number = 10) {
+    const result = await this.neo4j.run(
+      `MATCH (a:Activity)
+       RETURN a.id AS id, a.type AS type, a.description AS description, a.created_at AS created_at
+       ORDER BY a.created_at DESC
+       LIMIT toInteger($limit)`,
+      { limit }
+    );
+
+    return result.records.map((record) => ({
+      id: record.get('id'),
+      type: record.get('type'),
+      description: record.get('description'),
+      created_at: record.get('created_at'),
+    }));
   }
 }

@@ -304,6 +304,35 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
+### 10. Get Recent Activity
+`GET /api/admin/recent-activity`  
+**Summary**: Retrieves a list of recent platform activities (registrations, approvals, posts, etc.).
+
+**Query Parameters**:
+| Parameter | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `limit` | Number | Optional | Number of activities to return (default: 10) |
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-activity-1",
+    "type": "USER_REGISTERED",
+    "description": "New alumni registered: Sarah Chen",
+    "created_at": "2024-03-23T10:00:00Z"
+  },
+  {
+    "id": "uuid-activity-2",
+    "type": "ACCOUNT_APPROVED",
+    "description": "Account approved for John Smith",
+    "created_at": "2024-03-23T10:15:00Z"
+  }
+]
+```
+
+---
+
 ## 👤 Alumni
 Requires `Bearer JWT`. Role restriction: `alumni`.
 

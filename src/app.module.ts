@@ -12,6 +12,7 @@ import { SkillModule } from './skill/skill.module';
 import { NetworkModule } from './network/network.module';
 import { NotificationModule } from './notification/notification.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { ActivityModule } from './common/activity/activity.module';
 import { ConstraintsSeed } from './seed/constraints.seed';
 
 @Module({
@@ -29,6 +30,7 @@ import { ConstraintsSeed } from './seed/constraints.seed';
     NetworkModule,
     NotificationModule,
     CloudinaryModule,
+    ActivityModule,
   ],
   providers: [ConstraintsSeed],
 })

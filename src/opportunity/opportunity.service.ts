@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateOpportunityDto, UpdateOpportunityDto, OpportunityStatus } from './dto/opportunity.dto';
+import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class OpportunityService {
   constructor(
     private readonly neo4j: Neo4jService,
     private readonly cloudinary: CloudinaryService,
+    private readonly activity: ActivityService,
   ) {}
 
   async create(userId: string, dto: CreateOpportunityDto, files?: Express.Multer.File[]) {
@@ -47,6 +49,12 @@ export class OpportunityService {
        ON CREATE SET s.id = randomUUID()
        MERGE (o)-[:REQUIRES_SKILL]->(s)`,
       { userId, opportunityId, dto, mediaUrls }
+    );
+
+    await this.activity.logActivity(
+      ActivityType.OPPORTUNITY_POSTED,
+      `${dto.company_name} posted a new opportunity: ${dto.title}`,
+      opportunityId
     );
 
     return { message: 'Opportunity broadcasted to network successfully.', opportunity_id: opportunityId };

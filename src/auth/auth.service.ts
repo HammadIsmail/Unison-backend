@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
+import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import {
     LoginDto,
     RegisterDto,
@@ -22,10 +23,11 @@ import {
 @Injectable()
 export class AuthService {
     constructor(
-        private neo4j: Neo4jService,
-        private jwt: JwtService,
-        private config: ConfigService,
-        private mail: MailService,
+        private readonly neo4j: Neo4jService,
+        private readonly jwt: JwtService,
+        private readonly config: ConfigService,
+        private readonly mail: MailService,
+        private readonly activity: ActivityService,
     ) { }
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────

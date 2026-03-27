@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto } from './dto/admin.dto';
@@ -12,7 +12,6 @@ import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { Req } from '@nestjs/common';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -112,5 +111,13 @@ export class AdminController {
   verifyEmailChange(@Req() req: any, @Body() dto: VerifyEmailChangeDto) {
     const adminId = req.user.sub;
     return this.adminService.verifyEmailChange(adminId, dto.new_email, dto.otp);
+  }
+
+  @Get('recent-activity')
+  @ApiOperation({ summary: 'Get recent platform activities' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200 })
+  getRecentActivity(@Query('limit') limit: number = 10) {
+    return this.adminService.getRecentActivity(limit);
   }
 }
