@@ -1,1 +1,2712 @@
-{"openapi":"3.0.0","paths":{"/api/auth/send-otp":{"post":{"operationId":"AuthController_sendOtp","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/SendOtpDto"}}}},"responses":{"201":{"description":""}},"summary":"Send OTP to email for verification or forgot password","tags":["Authentication"]}},"/api/auth/verify-otp":{"post":{"operationId":"AuthController_verifyOtp","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/VerifyOtpDto"}}}},"responses":{"201":{"description":""}},"summary":"Verify OTP and receive a short-lived verified_token","tags":["Authentication"]}},"/api/auth/register":{"post":{"operationId":"AuthController_register","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RegisterDto"}}}},"responses":{"201":{"description":""}},"summary":"Register a new alumni or student account","tags":["Authentication"]}},"/api/auth/login":{"post":{"operationId":"AuthController_login","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/LoginDto"}}}},"responses":{"201":{"description":""}},"summary":"Login and receive a JWT token","tags":["Authentication"]}},"/api/auth/reset-password":{"post":{"operationId":"AuthController_resetPassword","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ResetPasswordDto"}}}},"responses":{"201":{"description":""}},"summary":"Reset password using verified_token from OTP step","tags":["Authentication"]}},"/api/admin/pending-accounts":{"get":{"operationId":"AdminController_getPendingAccounts","parameters":[],"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/admin/approve-account/{id}":{"patch":{"operationId":"AdminController_approveAccount","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ApproveAccountDto"}}}},"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/admin/reject-account/{id}":{"patch":{"operationId":"AdminController_rejectAccount","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RejectAccountDto"}}}},"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/admin/dashboard-stats":{"get":{"operationId":"AdminController_getDashboardStats","parameters":[],"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/admin/all-alumni":{"get":{"operationId":"AdminController_getAllAlumni","parameters":[{"name":"page","required":true,"in":"query","schema":{"type":"string"}},{"name":"limit","required":true,"in":"query","schema":{"type":"string"}},{"name":"search","required":true,"in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/admin/all-students":{"get":{"operationId":"AdminController_getAllStudents","parameters":[{"name":"page","required":true,"in":"query","schema":{"type":"string"}},{"name":"limit","required":true,"in":"query","schema":{"type":"string"}},{"name":"search","required":true,"in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/admin/remove-account/{id}":{"delete":{"operationId":"AdminController_removeAccount","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RemoveAccountDto"}}}},"responses":{"200":{"description":""}},"tags":["Admin"]}},"/api/alumni/profile/{id}":{"get":{"operationId":"AlumniController_getProfile","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Alumni"]},"put":{"operationId":"AlumniController_updateProfile","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateAlumniProfileDto"}}}},"responses":{"200":{"description":""}},"tags":["Alumni"]}},"/api/alumni/work-experience":{"post":{"operationId":"AlumniController_addWorkExperience","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateWorkExperienceDto"}}}},"responses":{"201":{"description":""}},"tags":["Alumni"]}},"/api/alumni/work-experience/{id}":{"put":{"operationId":"AlumniController_updateWorkExperience","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateWorkExperienceDto"}}}},"responses":{"200":{"description":""}},"tags":["Alumni"]},"delete":{"operationId":"AlumniController_deleteWorkExperience","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Alumni"]}},"/api/alumni/skills":{"post":{"operationId":"AlumniController_addSkill","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AddSkillDto"}}}},"responses":{"201":{"description":""}},"tags":["Alumni"]}},"/api/alumni/skills/{skill_id}":{"delete":{"operationId":"AlumniController_deleteSkill","parameters":[{"name":"skill_id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Alumni"]}},"/api/alumni/network":{"get":{"operationId":"AlumniController_getNetwork","parameters":[],"responses":{"200":{"description":""}},"tags":["Alumni"]}},"/api/alumni/connect/{target_id}":{"post":{"operationId":"AlumniController_connectWith","parameters":[{"name":"target_id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ConnectDto"}}}},"responses":{"201":{"description":""}},"tags":["Alumni"]}},"/api/alumni/batch-mates":{"get":{"operationId":"AlumniController_getBatchMates","parameters":[],"responses":{"200":{"description":""}},"tags":["Alumni"]}},"/api/student/profile/{id}":{"get":{"operationId":"StudentController_getProfile","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Student"]},"put":{"operationId":"StudentController_updateProfile","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateStudentProfileDto"}}}},"responses":{"200":{"description":""}},"tags":["Student"]}},"/api/student/skills":{"post":{"operationId":"StudentController_addSkill","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AddStudentSkillDto"}}}},"responses":{"201":{"description":""}},"tags":["Student"]}},"/api/student/mentors":{"get":{"operationId":"StudentController_getMentors","parameters":[],"responses":{"200":{"description":""}},"tags":["Student"]}},"/api/opportunities":{"post":{"operationId":"OpportunityController_create","parameters":[],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CreateOpportunityDto"}}}},"responses":{"201":{"description":""}},"tags":["Opportunity"]},"get":{"operationId":"OpportunityController_findAll","parameters":[{"name":"page","required":true,"in":"query","schema":{"type":"string"}},{"name":"limit","required":true,"in":"query","schema":{"type":"string"}},{"name":"type","required":true,"in":"query","schema":{"type":"string"}},{"name":"skill","required":true,"in":"query","schema":{"type":"string"}},{"name":"is_remote","required":true,"in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Opportunity"]}},"/api/opportunities/my-posts":{"get":{"operationId":"OpportunityController_findMyPosts","parameters":[],"responses":{"200":{"description":""}},"tags":["Opportunity"]}},"/api/opportunities/{id}":{"get":{"operationId":"OpportunityController_findOne","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Opportunity"]},"put":{"operationId":"OpportunityController_update","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateOpportunityDto"}}}},"responses":{"200":{"description":""}},"tags":["Opportunity"]},"delete":{"operationId":"OpportunityController_remove","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Opportunity"]}},"/api/search/alumni":{"get":{"operationId":"SearchController_searchAlumni","parameters":[{"name":"name","required":true,"in":"query","schema":{"type":"string"}},{"name":"company","required":true,"in":"query","schema":{"type":"string"}},{"name":"skill","required":true,"in":"query","schema":{"type":"string"}},{"name":"batch_year","required":true,"in":"query","schema":{"type":"string"}},{"name":"degree","required":true,"in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Search"]}},"/api/search/opportunities":{"get":{"operationId":"SearchController_searchOpportunities","parameters":[{"name":"title","required":true,"in":"query","schema":{"type":"string"}},{"name":"type","required":true,"in":"query","schema":{"type":"string"}},{"name":"skill","required":true,"in":"query","schema":{"type":"string"}},{"name":"location","required":true,"in":"query","schema":{"type":"string"}},{"name":"is_remote","required":true,"in":"query","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Search"]}},"/api/skills/all":{"get":{"operationId":"SkillController_findAll","parameters":[],"responses":{"200":{"description":""}},"tags":["Skill"]}},"/api/network/centrality":{"get":{"operationId":"NetworkController_getCentrality","parameters":[],"responses":{"200":{"description":""}},"tags":["Network"]}},"/api/network/shortest-path/{from_id}/{to_id}":{"get":{"operationId":"NetworkController_getShortestPath","parameters":[{"name":"from_id","required":true,"in":"path","schema":{"type":"string"}},{"name":"to_id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Network"]}},"/api/network/top-companies":{"get":{"operationId":"NetworkController_getTopCompanies","parameters":[],"responses":{"200":{"description":""}},"tags":["Network"]}},"/api/network/skill-trends":{"get":{"operationId":"NetworkController_getSkillTrends","parameters":[],"responses":{"200":{"description":""}},"tags":["Network"]}},"/api/network/batch-analysis":{"get":{"operationId":"NetworkController_getBatchAnalysis","parameters":[],"responses":{"200":{"description":""}},"tags":["Network"]}},"/api/notifications":{"get":{"operationId":"NotificationController_getNotifications","parameters":[],"responses":{"200":{"description":""}},"tags":["Notification"]}},"/api/notifications/{id}/read":{"patch":{"operationId":"NotificationController_markAsRead","parameters":[{"name":"id","required":true,"in":"path","schema":{"type":"string"}}],"responses":{"200":{"description":""}},"tags":["Notification"]}}},"info":{"title":"UNISON API","description":"Alumni Network — CS Department, UET Faisalabad","version":"1.0","contact":{}},"tags":[],"servers":[],"components":{"securitySchemes":{"bearer":{"scheme":"bearer","bearerFormat":"JWT","type":"http"}},"schemas":{"SendOtpDto":{"type":"object","properties":{"email":{"type":"string","example":"ahmed@uet.edu.pk"},"type":{"type":"string","enum":["email_verification","forgot_password"]}},"required":["email","type"]},"VerifyOtpDto":{"type":"object","properties":{"email":{"type":"string","example":"ahmed@uet.edu.pk"},"otp":{"type":"string","example":"482910"},"type":{"type":"string","enum":["email_verification","forgot_password"]}},"required":["email","otp","type"]},"RegisterDto":{"type":"object","properties":{"verified_token":{"type":"string"},"name":{"type":"string"},"email":{"type":"string"},"password":{"type":"string"},"role":{"type":"string","enum":["alumni","student"]},"roll_number":{"type":"string"},"degree":{"type":"string"},"graduation_year":{"type":"number","description":"Alumni only"},"semester":{"type":"number","description":"Student only"}},"required":["verified_token","name","email","password","role","roll_number","degree"]},"LoginDto":{"type":"object","properties":{"email":{"type":"string"},"password":{"type":"string"}},"required":["email","password"]},"ResetPasswordDto":{"type":"object","properties":{"verified_token":{"type":"string"},"new_password":{"type":"string"}},"required":["verified_token","new_password"]},"ApproveAccountDto":{"type":"object","properties":{}},"RejectAccountDto":{"type":"object","properties":{}},"RemoveAccountDto":{"type":"object","properties":{}},"UpdateAlumniProfileDto":{"type":"object","properties":{}},"CreateWorkExperienceDto":{"type":"object","properties":{}},"UpdateWorkExperienceDto":{"type":"object","properties":{}},"AddSkillDto":{"type":"object","properties":{}},"ConnectDto":{"type":"object","properties":{}},"UpdateStudentProfileDto":{"type":"object","properties":{}},"AddStudentSkillDto":{"type":"object","properties":{}},"CreateOpportunityDto":{"type":"object","properties":{}},"UpdateOpportunityDto":{"type":"object","properties":{}}}}}
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "UNISON API",
+    "description": "Alumni Network — CS Department, UET Faisalabad",
+    "version": "1.0",
+    "contact": {}
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Development server"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "User authentication and registration"
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative operations"
+    },
+    {
+      "name": "Alumni",
+      "description": "Alumni profile and networking"
+    },
+    {
+      "name": "Student",
+      "description": "Student profile management"
+    },
+    {
+      "name": "Opportunities",
+      "description": "Job and internship postings"
+    },
+    {
+      "name": "Search",
+      "description": "Search and discovery"
+    },
+    {
+      "name": "Skill",
+      "description": "Skills management"
+    },
+    {
+      "name": "Network",
+      "description": "Network analytics and insights"
+    },
+    {
+      "name": "Notification",
+      "description": "User notifications"
+    }
+  ],
+  "paths": {
+    "/auth/send-otp": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Send OTP to email for verification or forgot password",
+        "operationId": "sendOtp",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OTP sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Verify OTP and receive a short-lived verified_token",
+        "operationId": "verifyOtp",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "OTP verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyOtpResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new alumni or student account",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Account created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login and receive a JWT token",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Reset password using verified_token from OTP step",
+        "operationId": "resetPassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pending-accounts": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get all pending account approvals",
+        "operationId": "getPendingAccounts",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of pending accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingAccount"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/approve-account/{id}": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Approve a pending account",
+        "operationId": "approveAccount",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account approved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reject-account/{id}": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Reject a pending account",
+        "operationId": "rejectAccount",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account rejected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/dashboard-stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get dashboard statistics",
+        "operationId": "getDashboardStats",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStats"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/all-alumni": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get all approved alumni with pagination",
+        "operationId": "getAllAlumni",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of alumni",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAlumniResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/all-students": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get all approved students with pagination",
+        "operationId": "getAllStudents",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of students",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedStudentsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/remove-account/{id}": {
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Remove a user account permanently",
+        "operationId": "removeAccount",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/me": {
+      "get": {
+        "tags": ["Alumni"],
+        "summary": "Get current alumni profile",
+        "operationId": "getMyProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alumni profile data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlumniProfile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Alumni"],
+        "summary": "Update alumni profile",
+        "operationId": "updateMyProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAlumniProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/work-experience": {
+      "post": {
+        "tags": ["Alumni"],
+        "summary": "Add work experience",
+        "operationId": "addWorkExperience",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Work experience added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/work-experience/{id}": {
+      "put": {
+        "tags": ["Alumni"],
+        "summary": "Update work experience",
+        "operationId": "updateWorkExperience",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Work experience updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Alumni"],
+        "summary": "Delete work experience",
+        "operationId": "deleteWorkExperience",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Work experience deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/skills": {
+      "post": {
+        "tags": ["Alumni"],
+        "summary": "Add a skill",
+        "operationId": "addSkill",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSkillDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Skill added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/skills/{skill_id}": {
+      "delete": {
+        "tags": ["Alumni"],
+        "summary": "Remove a skill",
+        "operationId": "removeSkill",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skill_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/network": {
+      "get": {
+        "tags": ["Alumni"],
+        "summary": "Get professional network",
+        "operationId": "getNetwork",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/connect/{target_id}": {
+      "post": {
+        "tags": ["Alumni"],
+        "summary": "Send connection request",
+        "operationId": "connectWithUser",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Connection request sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/connections/requests": {
+      "get": {
+        "tags": ["Alumni"],
+        "summary": "Get pending connection requests",
+        "operationId": "getPendingRequests",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of pending requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingRequest"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/connections/requests/{sender_id}/respond": {
+      "patch": {
+        "tags": ["Alumni"],
+        "summary": "Respond to connection request",
+        "operationId": "respondToRequest",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sender_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondToRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request responded to successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/batch-mates": {
+      "get": {
+        "tags": ["Alumni"],
+        "summary": "Get batch mates",
+        "operationId": "getBatchMates",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of batch mates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BatchMate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/me": {
+      "get": {
+        "tags": ["Student"],
+        "summary": "Get current student profile",
+        "operationId": "getMyProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student profile data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProfile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Student"],
+        "summary": "Update student profile",
+        "operationId": "updateMyProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudentProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/skills": {
+      "post": {
+        "tags": ["Student"],
+        "summary": "Add a skill",
+        "operationId": "addSkill",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStudentSkillDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Skill added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/mentors": {
+      "get": {
+        "tags": ["Student"],
+        "summary": "Get mentor suggestions",
+        "operationId": "getMentors",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of potential mentors",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MentorSuggestion"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opportunities": {
+      "post": {
+        "tags": ["Opportunities"],
+        "summary": "Create a new opportunity",
+        "operationId": "createOpportunity",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Opportunity created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateOpportunityResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Opportunities"],
+        "summary": "Get opportunities with filters",
+        "operationId": "getOpportunities",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["job", "internship", "freelance"]
+            }
+          },
+          {
+            "name": "skill",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_remote",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated opportunities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedOpportunitiesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opportunities/my-posts": {
+      "get": {
+        "tags": ["Opportunities"],
+        "summary": "Get my posted opportunities",
+        "operationId": "getMyPosts",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of my opportunities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyOpportunity"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/opportunities/{id}": {
+      "get": {
+        "tags": ["Opportunities"],
+        "summary": "Get opportunity details",
+        "operationId": "getOpportunity",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opportunity details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Opportunities"],
+        "summary": "Update opportunity",
+        "operationId": "updateOpportunity",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Opportunity updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Opportunities"],
+        "summary": "Delete opportunity",
+        "operationId": "deleteOpportunity",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opportunity deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/alumni": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search alumni",
+        "operationId": "searchAlumni",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "display_name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "company",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "batch_year",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "degree",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlumniSearchResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/opportunities": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Search opportunities",
+        "operationId": "searchOpportunities",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["job", "internship", "freelance"]
+            }
+          },
+          {
+            "name": "skill",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_remote",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OpportunitySearchResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search/user/{username}": {
+      "get": {
+        "tags": ["Search"],
+        "summary": "Get user by username",
+        "operationId": "getUserByUsername",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/skills/all": {
+      "get": {
+        "tags": ["Skill"],
+        "summary": "Get all available skills",
+        "operationId": "getAllSkills",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all skills",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/centrality": {
+      "get": {
+        "tags": ["Network"],
+        "summary": "Get influential alumni by connection count",
+        "operationId": "getCentrality",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Centrality rankings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CentralityResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/shortest-path": {
+      "get": {
+        "tags": ["Network"],
+        "summary": "Find shortest path between users",
+        "operationId": "getShortestPath",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shortest path result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortestPathResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/top-companies": {
+      "get": {
+        "tags": ["Network"],
+        "summary": "Get top companies by alumni count",
+        "operationId": "getTopCompanies",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top companies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopCompany"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/skill-trends": {
+      "get": {
+        "tags": ["Network"],
+        "summary": "Get skill supply vs demand trends",
+        "operationId": "getSkillTrends",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Skill trends analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillTrends"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/batch-analysis": {
+      "get": {
+        "tags": ["Network"],
+        "summary": "Get batch analysis",
+        "operationId": "getBatchAnalysis",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch analysis results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BatchAnalysis"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": ["Notification"],
+        "summary": "Get user notifications",
+        "operationId": "getNotifications",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "tags": ["Notification"],
+        "summary": "Mark notification as read",
+        "operationId": "markAsRead",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "SendOtpDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["email_verification", "forgot_password"]
+          }
+        },
+        "required": ["email", "type"]
+      },
+      "OtpResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "OTP sent to your email."
+          },
+          "otp_expires_in": {
+            "type": "string",
+            "example": "10 minutes"
+          }
+        }
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "otp": {
+            "type": "string",
+            "example": "482910"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["email_verification", "forgot_password"]
+          }
+        },
+        "required": ["email", "otp", "type"]
+      },
+      "VerifyOtpResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "OTP verified successfully."
+          },
+          "verified_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1Ni..."
+          }
+        }
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "verified_token": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "example": "ahmed_h"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ahmed The Dev"
+          },
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "role": {
+            "type": "string",
+            "enum": ["alumni", "student"]
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-101"
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "graduation_year": {
+            "type": "number",
+            "description": "Alumni only"
+          },
+          "semester": {
+            "type": "number",
+            "description": "Student only"
+          }
+        },
+        "required": ["verified_token", "username", "display_name", "email", "password", "role", "roll_number", "degree"]
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["alumni", "student", "admin"]
+          },
+          "account_status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"]
+          },
+          "profile": {
+            "$ref": "#/components/schemas/UserProfile"
+          }
+        }
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "degree": {
+            "type": "string"
+          },
+          "roll_number": {
+            "type": "string"
+          },
+          "batch": {
+            "type": "string"
+          },
+          "graduation_year": {
+            "type": "number"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string"
+          }
+        }
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "verified_token": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "required": ["verified_token", "new_password"]
+      },
+      "PendingAccount": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "registered_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RejectAccountDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": ["reason"]
+      },
+      "DashboardStats": {
+        "type": "object",
+        "properties": {
+          "total_alumni": {
+            "type": "number"
+          },
+          "total_students": {
+            "type": "number"
+          },
+          "pending_accounts": {
+            "type": "number"
+          },
+          "total_opportunities": {
+            "type": "number"
+          },
+          "total_companies": {
+            "type": "number"
+          },
+          "most_common_skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PaginatedAlumniResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlumniSummary"
+            }
+          }
+        }
+      },
+      "AlumniSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginatedStudentsResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentSummary"
+            }
+          }
+        }
+      },
+      "StudentSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "roll_number": {
+            "type": "string"
+          },
+          "semester": {
+            "type": "number"
+          }
+        }
+      },
+      "AlumniProfile": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "graduation_year": {
+            "type": "number"
+          },
+          "degree": {
+            "type": "string"
+          },
+          "current_company": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "batch": {
+            "type": "string"
+          },
+          "connections_count": {
+            "type": "number"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string"
+          },
+          "work_experiences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkExperience"
+            }
+          },
+          "detailed_skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DetailedSkill"
+            }
+          }
+        }
+      },
+      "WorkExperience": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "employment_type": {
+            "type": "string",
+            "enum": ["full-time", "part-time", "freelance"]
+          }
+        }
+      },
+      "DetailedSkill": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "proficiency_level": {
+            "type": "string",
+            "enum": ["beginner", "intermediate", "expert"]
+          },
+          "years_experience": {
+            "type": "number"
+          }
+        }
+      },
+      "UpdateAlumniProfileDto": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "linkedin_url": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
+      "CreateWorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "employment_type": {
+            "type": "string",
+            "enum": ["full-time", "part-time", "freelance"]
+          }
+        },
+        "required": ["company_name", "role", "start_date", "is_current", "employment_type"]
+      },
+      "UpdateWorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "is_current": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AddSkillDto": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "proficiency_level": {
+            "type": "string",
+            "enum": ["beginner", "intermediate", "expert"]
+          },
+          "years_experience": {
+            "type": "number"
+          }
+        },
+        "required": ["skill_name", "category", "proficiency_level"]
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "connection_type": {
+            "type": "string"
+          }
+        }
+      },
+      "ConnectDto": {
+        "type": "object",
+        "properties": {
+          "connection_type": {
+            "type": "string",
+            "enum": ["batchmate", "colleague", "mentor"]
+          }
+        },
+        "required": ["connection_type"]
+      },
+      "PendingRequest": {
+        "type": "object",
+        "properties": {
+          "sender_id": {
+            "type": "string"
+          },
+          "sender_display_name": {
+            "type": "string"
+          },
+          "sender_username": {
+            "type": "string"
+          },
+          "sender_profile_picture": {
+            "type": "string"
+          },
+          "connection_type": {
+            "type": "string"
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RespondToRequestDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["accept", "reject"]
+          }
+        },
+        "required": ["action"]
+      },
+      "BatchMate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "connection_type": {
+            "type": "string"
+          }
+        }
+      },
+      "StudentProfile": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roll_number": {
+            "type": "string"
+          },
+          "semester": {
+            "type": "number"
+          },
+          "degree": {
+            "type": "string"
+          },
+          "batch": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateStudentProfileDto": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
+      "AddStudentSkillDto": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "proficiency_level": {
+            "type": "string",
+            "enum": ["beginner", "intermediate", "expert"]
+          }
+        },
+        "required": ["skill_name", "category", "proficiency_level"]
+      },
+      "MentorSuggestion": {
+        "type": "object",
+        "properties": {
+          "alumni_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["job", "internship", "freelance"]
+          },
+          "description": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "is_remote": {
+            "type": "boolean"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "apply_link": {
+            "type": "string",
+            "format": "uri"
+          },
+          "required_skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "maxItems": 5
+          }
+        },
+        "required": ["title", "type", "description", "requirements", "location", "is_remote", "deadline", "company_name", "apply_link", "required_skills"]
+      },
+      "CreateOpportunityResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "opportunity_id": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginatedOpportunitiesResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunitySummary"
+            }
+          }
+        }
+      },
+      "OpportunitySummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "is_remote": {
+            "type": "boolean"
+          },
+          "apply_link": {
+            "type": "string"
+          },
+          "posted_by": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "posted_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "MyOpportunity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "posted_at": {
+            "type": "string",
+            "format": "date"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "OpportunityDetails": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "is_remote": {
+            "type": "boolean"
+          },
+          "apply_link": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "company": {
+            "$ref": "#/components/schemas/Company"
+          },
+          "required_skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "posted_by": {
+            "$ref": "#/components/schemas/UserSummary"
+          }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "apply_link": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "AlumniSearchResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "current_company": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "batch": {
+            "type": "string"
+          }
+        }
+      },
+      "OpportunitySearchResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "is_remote": {
+            "type": "boolean"
+          },
+          "posted_by": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "posted_at": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "CentralityResult": {
+        "type": "object",
+        "properties": {
+          "alumni_id": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "connections_count": {
+            "type": "number"
+          },
+          "centrality_score": {
+            "type": "number"
+          }
+        }
+      },
+      "ShortestPathResult": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hops": {
+            "type": "number"
+          }
+        }
+      },
+      "TopCompany": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string"
+          },
+          "alumni_count": {
+            "type": "number"
+          }
+        }
+      },
+      "SkillTrends": {
+        "type": "object",
+        "properties": {
+          "most_required_in_opportunities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "most_common_among_alumni": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gap": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "BatchAnalysis": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "string"
+          },
+          "total_alumni": {
+            "type": "number"
+          },
+          "top_companies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "top_roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "avg_connections": {
+            "type": "number"
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "is_read": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

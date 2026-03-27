@@ -34,7 +34,7 @@ export class SearchService {
       ${matchClause}
       ${whereString}
       WITH u, w, collect(DISTINCT s.name) AS skills
-      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, w.company_name AS company, w.role AS role, skills
+      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, w.company_name AS company, w.role AS role, skills
       ORDER BY u.created_at DESC
       LIMIT 50
     `;
@@ -45,6 +45,7 @@ export class SearchService {
       id: r.get('id'),
       username: r.get('username'),
       display_name: r.get('display_name'),
+      profile_picture: r.get('profile_picture') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
       skills: r.get('skills'),
@@ -71,7 +72,10 @@ export class SearchService {
       ${matchClause}
       ${whereString}
       RETURN o.id AS id, o.title AS title, o.type AS type, o.company_name AS company,
-             o.location AS location, o.apply_link AS apply_link
+             o.location AS location, o.is_remote AS is_remote, o.apply_link AS apply_link,
+             o.posted_at AS posted_at, o.deadline AS deadline, o.media AS media,
+             u.id AS poster_id, u.display_name AS poster_name, u.username AS poster_username,
+             u.profile_picture AS poster_picture, u.role AS poster_role
       ORDER BY o.posted_at DESC
       LIMIT 50
     `;
@@ -86,7 +90,18 @@ export class SearchService {
       type: r.get('type'),
       company: r.get('company'),
       location: r.get('location'),
+      is_remote: r.get('is_remote'),
       apply_link: r.get('apply_link'),
+      posted_at: r.get('posted_at'),
+      deadline: r.get('deadline'),
+      media: r.get('media') || [],
+      posted_by: {
+        id: r.get('poster_id'),
+        display_name: r.get('poster_name'),
+        username: r.get('poster_username'),
+        profile_picture: r.get('poster_picture') || null,
+        role: r.get('poster_role'),
+      },
     }));
   }
 
@@ -95,7 +110,7 @@ export class SearchService {
       MATCH (u:User {username: $username, account_status: 'approved'})
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
-      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, 
+      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture,
              u.role AS role, u.degree AS degree, u.graduation_year AS graduation_year, 
              w.company_name AS company, w.role AS job_role, 
              collect(DISTINCT s.name) AS skills
@@ -108,6 +123,7 @@ export class SearchService {
       id: r.get('id'),
       username: r.get('username'),
       display_name: r.get('display_name'),
+      profile_picture: r.get('profile_picture') || null,
       role: r.get('role'),
       degree: r.get('degree'),
       graduation_year: typeof r.get('graduation_year')?.toNumber === 'function' ? r.get('graduation_year').toNumber() : r.get('graduation_year'),

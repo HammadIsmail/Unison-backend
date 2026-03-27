@@ -718,7 +718,8 @@ Requires `Bearer JWT`.
     "current_company": "Google",
     "role": "Software Engineer",
     "skills": ["TypeScript", "NestJS"],
-    "batch": "2021-2025"
+    "batch": "2021-2025",
+    "profile_picture": "https://cloudinary.com/ahmed_profile.jpg"
   }
 ]
 ```
@@ -748,6 +749,7 @@ Requires `Bearer JWT`.
     "company": "Google",
     "location": "Remote",
     "is_remote": true,
+    "apply_link": "https://google.com/careers",
     "posted_by": {
       "id": "uuid-user-123",
       "display_name": "Ahmed Hassan",
@@ -755,7 +757,9 @@ Requires `Bearer JWT`.
       "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
       "role": "alumni"
     },
-    "posted_at": "2024-03-23"
+    "posted_at": "2024-03-23",
+    "deadline": "2024-04-01",
+    "media": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"]
   }
 ]
 ```
@@ -778,7 +782,8 @@ Requires `Bearer JWT`.
   "company": "Google",
   "job_role": "Software Engineer",
   "skills": ["Node.js", "Neo4j"],
-  "linkedin_url": "https://linkedin.com/in/ahmed"
+  "linkedin_url": "https://linkedin.com/in/ahmed",
+  "profile_picture": "https://cloudinary.com/ahmed_profile.jpg"
 }
 ```
 

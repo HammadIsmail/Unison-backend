@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { OpportunityPosterResponseDto } from '../../opportunity/dto/opportunity-response.dto';
 
 export class SearchAlumniResponseDto {
     @ApiProperty({ example: 'uuid-alumni-123' })
@@ -18,6 +19,9 @@ export class SearchAlumniResponseDto {
 
     @ApiProperty({ type: [String], example: ['Node.js', 'Neo4j'] })
     skills: string[];
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_profile.jpg' })
+    profile_picture?: string;
 }
 
 export class SearchOpportunityResponseDto {
@@ -38,6 +42,21 @@ export class SearchOpportunityResponseDto {
 
     @ApiProperty({ example: 'https://startupx.com/apply' })
     apply_link: string;
+
+    @ApiProperty({ example: true })
+    is_remote: boolean;
+
+    @ApiProperty({ type: OpportunityPosterResponseDto })
+    posted_by: OpportunityPosterResponseDto;
+
+    @ApiProperty({ example: '2024-03-23' })
+    posted_at: string;
+
+    @ApiProperty({ example: '2024-04-01' })
+    deadline: string;
+
+    @ApiPropertyOptional({ type: [String], example: ['https://res.cloudinary.com/demo/image/upload/sample.jpg'] })
+    media?: string[];
 }
 
 export class UserDetailResponseDto {
@@ -68,4 +87,7 @@ export class UserDetailResponseDto {
 
     @ApiProperty({ type: [String], example: ['Node.js', 'Neo4j'] })
     skills: string[];
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_profile.jpg' })
+    profile_picture?: string;
 }
