@@ -3,13 +3,19 @@ import { Neo4jService } from '../neo4j/neo4j.service';
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly neo4j: Neo4jService) {}
+  constructor(private readonly neo4j: Neo4jService) { }
 
   async searchAlumni(display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
     let matchClause = `MATCH (u:User {role: 'alumni', account_status: 'approved'})`;
     const whereClauses: string[] = [];
-    
-    if (display_name) whereClauses.push(`toLower(u.display_name) CONTAINS toLower($display_name)`);
+
+    if (display_name)
+      whereClauses.push(`
+    (
+      toLower(u.display_name) STARTS WITH toLower($display_name)
+      OR toLower(u.username) STARTS WITH toLower($display_name)
+    )
+  `);
     if (batch_year) whereClauses.push(`u.graduation_year = toInteger($batch_year) OR u.batch CONTAINS $batch_year`);
     if (degree) whereClauses.push(`toLower(u.degree) CONTAINS toLower($degree)`);
 
