@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
+import { UpdateStudentProfileDto, AddStudentSkillDto, ConnectToMentorDto } from './dto/student.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -122,5 +122,31 @@ export class StudentService {
       company: r.get('company') || null,
       common_skills: typeof r.get('common_skills')?.toNumber === 'function' ? r.get('common_skills').toNumber() : r.get('common_skills'),
     }));
+  }
+
+  async connectToMentor(userId: string, targetId: string, dto: ConnectToMentorDto) {
+    if (userId === targetId) throw new ForbiddenException('Cannot connect with yourself.');
+
+    // Check if target is an alumni
+    const check = await this.neo4j.run(
+      `MATCH (t:User {id: $targetId}) RETURN t.role AS role`,
+      { targetId }
+    );
+    if (!check.records.length) throw new NotFoundException('Target user not found.');
+    
+    const role = check.records[0].get('role');
+    if (role !== 'alumni') {
+      throw new ForbiddenException('You can only send mentor connection requests to alumni.');
+    }
+
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
+       MERGE (u)-[r:CONNECTED_TO]->(t)
+       ON CREATE SET r.status = 'pending', r.created_at = datetime(), r.connection_type = $dto.connection_type
+       ON MATCH SET r.connection_type = $dto.connection_type`,
+      { userId, targetId, dto }
+    );
+
+    return { message: 'Connection request sent successfully.' };
   }
 }

@@ -38,3 +38,10 @@ export class AddStudentSkillDto {
   @IsEnum(['beginner', 'intermediate', 'expert'])
   proficiency_level: string;
 }
+
+export class ConnectToMentorDto {
+  @ApiProperty({ description: 'Type of connection', enum: ['mentor'], example: 'mentor' })
+  @IsNotEmpty()
+  @IsEnum(['mentor'])
+  connection_type: string;
+}

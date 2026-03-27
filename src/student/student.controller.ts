@@ -2,7 +2,7 @@ import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException,
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
+import { UpdateStudentProfileDto, AddStudentSkillDto, ConnectToMentorDto } from './dto/student.dto';
 import { MentorRecommendationResponseDto, StudentProfileResponseDto } from './dto/student-response.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -55,5 +55,17 @@ export class StudentController {
   @ApiResponse({ status: 200, type: [MentorRecommendationResponseDto] })
   getMentors(@GetUser('sub') userId: string) {
     return this.studentService.getMentors(userId);
+  }
+
+  @Post('connect/:target_id')
+  @Roles('student')
+  @ApiOperation({ summary: 'Send a mentor connection request to an alumni' })
+  @ApiResponse({ status: 201, type: MessageResponseDto })
+  connectWith(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+    @Body() dto: ConnectToMentorDto,
+  ) {
+    return this.studentService.connectToMentor(userId, targetId, dto);
   }
 }

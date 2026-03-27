@@ -634,6 +634,22 @@ Requires `Bearer JWT`. Role restriction: `student`.
 
 ---
 
+### 5. Send Mentor Connection Request
+`POST /api/student/connect/:target_id`  
+**Summary**: Sends a connection request to an alumni specifically for mentorship.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `connection_type` | Enum | **Required** | Must be `mentor` |
+
+**Response (201)**:
+```json
+{ "message": "Connection request sent successfully." }
+```
+
+---
+
 ## 💼 Opportunities
 Broadcast and discover career prospects. Requires `Bearer JWT`.
 
