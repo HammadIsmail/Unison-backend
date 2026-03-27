@@ -256,6 +256,6 @@ export class AdminService {
       { email: newEmail },
     );
 
-    return { message: 'Admin email updated successfully.' };
+    return { message: 'Admin email updated successfully.', new_email: newEmail };
   }
 }

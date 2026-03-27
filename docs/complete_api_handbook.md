@@ -296,7 +296,10 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 **Response (200)**:
 ```json
-{ "message": "Admin email updated successfully." }
+{ 
+  "message": "Admin email updated successfully.",
+  "new_email": "new-email@admin.unison.pk"
+}
 ```
 
 ---
