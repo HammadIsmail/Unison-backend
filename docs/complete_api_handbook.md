@@ -135,7 +135,8 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
     "display_name": "Zainab Ahmed",
     "email": "zainab@uet.edu.pk",
     "role": "student",
-    "registered_at": "2024-03-23T10:00:00Z"
+    "registered_at": "2024-03-23T10:00:00Z",
+    "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
   }
 ]
 ```
@@ -208,7 +209,8 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
       "id": "uuid-alumni-123",
       "display_name": "Hammad Ismail",
       "company": "Google",
-      "role": "Software Engineer"
+      "role": "Software Engineer",
+      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
     }
   ]
 }
@@ -230,7 +232,8 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
       "id": "uuid-student-123",
       "display_name": "Ali Khan",
       "roll_number": "2021-CS-110",
-      "semester": 6
+      "semester": 6,
+      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
     }
   ]
 }

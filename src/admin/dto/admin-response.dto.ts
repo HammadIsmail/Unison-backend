@@ -15,6 +15,9 @@ export class PendingAccountResponseDto {
 
     @ApiProperty({ example: '2024-03-23T10:00:00Z' })
     registered_at: string;
+
+    @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
+    profile_picture: string | null;
 }
 
 export class DashboardStatsResponseDto {
@@ -49,6 +52,9 @@ export class AdminAlumniListResponseDto {
 
     @ApiProperty({ example: 'Software Engineer' })
     role: string;
+
+    @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
+    profile_picture: string | null;
 }
 
 export class AdminAlumniPaginationResponseDto {
@@ -74,6 +80,9 @@ export class AdminStudentListResponseDto {
 
     @ApiProperty({ example: 6 })
     semester: number;
+
+    @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
+    profile_picture: string | null;
 }
 
 export class AdminStudentPaginationResponseDto {

@@ -13,7 +13,7 @@ export class AdminService {
   async getPendingAccounts() {
     const result = await this.neo4j.run(
       `MATCH (u:User {account_status: 'pending'})
-       RETURN u.id AS id, u.name AS name, u.email AS email, u.role AS role, u.created_at AS registered_at`
+       RETURN u.id AS id, u.name AS name, u.email AS email, u.role AS role, u.created_at AS registered_at, u.profile_picture AS profile_picture`
     );
 
     return result.records.map((record) => ({
@@ -22,6 +22,7 @@ export class AdminService {
       email: record.get('email'),
       role: record.get('role'),
       registered_at: record.get('registered_at'),
+      profile_picture: record.get('profile_picture') || null,
     }));
   }
 
@@ -107,7 +108,7 @@ export class AdminService {
       `MATCH (u:User {role: 'alumni', account_status: 'approved'})
        WHERE 1=1 ${searchCondition}
        OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN u.id AS id, u.name AS name, w.company_name AS company, w.role AS role
+       RETURN u.id AS id, u.name AS name, w.company_name AS company, w.role AS role, u.profile_picture AS profile_picture
        ORDER BY u.created_at DESC
        SKIP toInteger($skip) LIMIT toInteger($limit)`,
       { search, skip, limit }
@@ -118,6 +119,7 @@ export class AdminService {
       name: record.get('name'),
       company: record.get('company') || null,
       role: record.get('role') || null,
+      profile_picture: record.get('profile_picture') || null,
     }));
 
     return { total, page, data };
@@ -141,7 +143,7 @@ export class AdminService {
     const result = await this.neo4j.run(
       `MATCH (u:User {role: 'student', account_status: 'approved'})
        WHERE 1=1 ${searchCondition}
-       RETURN u.id AS id, u.name AS name, u.roll_number AS roll_number, u.semester AS semester
+       RETURN u.id AS id, u.name AS name, u.roll_number AS roll_number, u.semester AS semester, u.profile_picture AS profile_picture
        ORDER BY u.created_at DESC
        SKIP toInteger($skip) LIMIT toInteger($limit)`,
       { search, skip, limit }
@@ -152,6 +154,7 @@ export class AdminService {
       name: record.get('name'),
       roll_number: record.get('roll_number'),
       semester: typeof record.get('semester')?.toNumber === 'function' ? record.get('semester').toNumber() : record.get('semester') || null,
+      profile_picture: record.get('profile_picture') || null,
     }));
 
     return { total, page, data };
