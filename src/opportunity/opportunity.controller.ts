@@ -74,15 +74,21 @@ export class OpportunityController {
 
   @Put(':id')
   @Roles('alumni', 'admin')
-  @ApiOperation({ summary: 'Update an opportunity' })
+  @UseInterceptors(FilesInterceptor('media', 10))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Update an opportunity with optional images/videos' })
   @ApiResponse({ status: 200, type: MessageResponseDto })
   update(
     @GetUser('sub') userId: string,
     @GetUser('role') role: string,
     @Param('id') id: string,
     @Body() dto: UpdateOpportunityDto,
+    @UploadedFiles() files?: Express.Multer.File[],
   ) {
-    return this.opportunityService.update(userId, role, id, dto);
+    if (files && files.length > 5) {
+      throw new BadRequestException('media cannot exceed more than 5');
+    }
+    return this.opportunityService.update(userId, role, id, dto, files);
   }
 
   @Delete(':id')

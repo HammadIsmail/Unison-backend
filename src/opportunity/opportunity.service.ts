@@ -176,24 +176,65 @@ export class OpportunityService {
     }));
   }
 
-  async update(userId: string, userRole: string, id: string, dto: UpdateOpportunityDto) {
+  async update(userId: string, userRole: string, id: string, dto: UpdateOpportunityDto, files?: Express.Multer.File[]) {
     // Determine target poster
-    const oppResult = await this.neo4j.run(`MATCH (u:User)-[:POSTED]->(o:Opportunity {id: $id}) RETURN u.id AS poster_id`, { id });
+    const oppResult = await this.neo4j.run(`MATCH (u:User)-[:POSTED]->(o:Opportunity {id: $id}) RETURN u.id AS poster_id, o.media AS currentMedia`, { id });
     if (!oppResult.records.length) throw new NotFoundException('Opportunity not found.');
     
     const posterId = oppResult.records[0].get('poster_id');
+    const currentMedia = oppResult.records[0].get('currentMedia') || [];
+
     if (userId !== posterId && userRole !== 'admin') {
       throw new ForbiddenException('Only the poster or an admin can update this opportunity.');
     }
 
-    const setQuery = Object.keys(dto)
-      .filter((k) => dto[k as keyof UpdateOpportunityDto] !== undefined)
-      .map((k) => `o.${k} = $${k}`)
-      .join(', ');
+    let mediaUrls = [...currentMedia];
+    
+    // If existing media URLs are provided in the DTO, use them (allows removing specific images)
+    // Note: in multipart/form-data, if 'media' is sent as strings, they will be in dto.media
+    if (dto.media && Array.isArray(dto.media)) {
+      mediaUrls = dto.media.filter(m => typeof m === 'string');
+    } else if (typeof dto.media === 'string') {
+      mediaUrls = [dto.media];
+    }
 
-    if (!setQuery) return { message: 'No fields to update.' };
+    if (files && files.length > 0) {
+      const uploadPromises = files.map(file => this.cloudinary.uploadFile(file));
+      const results = await Promise.all(uploadPromises);
+      const newMediaUrls = results.map(res => res.secure_url);
+      mediaUrls = [...mediaUrls, ...newMediaUrls].slice(0, 5); // Keep max 5
+    }
 
-    await this.neo4j.run(`MATCH (o:Opportunity {id: $id}) SET ${setQuery} RETURN o`, { id, ...dto });
+    const { required_skills, media, ...updateData } = dto;
+
+    const setClauses = Object.keys(updateData)
+      .filter((k) => updateData[k as keyof typeof updateData] !== undefined)
+      .map((k) => `o.${k} = $${k}`);
+    
+    // Always update media if files were provided or dto.media was provided
+    if (files?.length || dto.media) {
+      setClauses.push(`o.media = $mediaUrls`);
+    }
+
+    const setQuery = setClauses.join(', ');
+
+    if (setQuery) {
+      await this.neo4j.run(`MATCH (o:Opportunity {id: $id}) SET ${setQuery} RETURN o`, { id, ...updateData, mediaUrls });
+    }
+
+    if (required_skills) {
+      // Refresh skills: delete old and add new
+      await this.neo4j.run(`MATCH (o:Opportunity {id: $id})-[r:REQUIRES_SKILL]->() DELETE r`, { id });
+      await this.neo4j.run(
+        `MATCH (o:Opportunity {id: $id})
+         WITH o
+         UNWIND $required_skills AS skillName
+         MERGE (s:Skill {name: toLower(skillName)})
+         ON CREATE SET s.id = randomUUID()
+         MERGE (o)-[:REQUIRES_SKILL]->(s)`,
+        { id, required_skills }
+      );
+    }
 
     return { message: 'Opportunity updated successfully.' };
   }

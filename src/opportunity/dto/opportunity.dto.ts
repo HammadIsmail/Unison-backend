@@ -83,11 +83,42 @@ export class UpdateOpportunityDto {
   @IsNotEmpty()
   title?: string;
 
+  @ApiPropertyOptional({ description: 'Updated type', enum: OpportunityType, example: OpportunityType.JOB })
+  @IsOptional()
+  @IsEnum(OpportunityType)
+  @IsNotEmpty()
+  type?: OpportunityType;
+
   @ApiPropertyOptional({ description: 'Updated description', example: 'We have updated the job description...' })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   description?: string;
+
+  @ApiPropertyOptional({ description: 'Updated requirements', example: '5+ years of experience in Node.js, React, and AWS.' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  requirements?: string;
+
+  @ApiPropertyOptional({ description: 'Updated location', example: 'Lahore' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  location?: string;
+
+  @ApiPropertyOptional({ description: 'Updated remote status', example: true })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  @IsNotEmpty()
+  is_remote?: boolean;
+
+  @ApiPropertyOptional({ description: 'Updated company name', example: 'Arfa Software Technology Park' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  company_name?: string;
 
   @ApiPropertyOptional({ description: 'Updated application link', example: 'https://careers.new.com' })
   @IsOptional()
@@ -106,4 +137,20 @@ export class UpdateOpportunityDto {
   @IsEnum(OpportunityStatus)
   @IsNotEmpty()
   status?: OpportunityStatus;
+
+  @ApiPropertyOptional({ description: 'Updated list of required skills', type: [String], example: ['Node.js', 'React'] })
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map((s) => s.trim());
+    return value;
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty()
+  required_skills?: string[];
+
+  @ApiPropertyOptional({ type: 'array', items: { type: 'string', format: 'binary' }, description: 'Updated media files' })
+  @IsOptional()
+  media?: any[];
 }

@@ -760,7 +760,30 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
 
 ### 5. Update Opportunity
 `PUT /api/opportunities/:id`  
-**Request Body**: `title`, `description`, `apply_link`, `deadline`, `status`
+**Summary**: Allows the poster or an admin to update any field of an opportunity, including media and skills.
+
+**Request**: `multipart/form-data` (Supports both JSON fields and file uploads)
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | String | *Optional* | Updated title |
+| `type` | Enum | *Optional* | `job`, `internship`, `freelance` |
+| `description`| String | *Optional* | Updated details |
+| `requirements`| String | *Optional* | Updated skills needed |
+| `location` | String | *Optional* | e.g. `Lahore`, `Remote` |
+| `is_remote` | Boolean | *Optional* | Updated remote status |
+| `deadline` | Date | *Optional* | Updated close date |
+| `company_name`| String | *Optional* | Updated company name |
+| `apply_link` | URL | *Optional* | Updated application URL |
+| `status` | Enum | *Optional* | `open`, `closed` |
+| `required_skills`| String[]| *Optional* | Updated skills list (refreshes all) |
+| `media` | File[]/URL[]| *Optional* | Update media (files to add, URLs to keep) |
+
+**Notes**:
+- **Skill Refresh**: Providing `required_skills` will replace all existing skills for this opportunity.
+- **Media Management**: 
+    - To keep existing images/videos, provide their URLs in the `media` field. 
+    - To add new media, upload files in the `media` field.
+    - Total media count is still limited to 5.
 
 **Response (200)**:
 ```json
