@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Neo4jModule } from './neo4j/neo4j.module';
 import { MailModule } from './common/mail/mail.module';
@@ -20,6 +20,9 @@ import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { MetricsModule } from './metrics/metrics.module';
+import { MetricsMiddleware } from './metrics/metrics.middleware';
+import { MetricsController } from './metrics/metrics.controller';
 
 @Module({
   imports: [
@@ -39,6 +42,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
         SENTRY_DSN: Joi.string().required(),
+        METRICS_TOKEN: Joi.string().required(),
       }),
     }),
     LoggerModule.forRoot({
@@ -65,7 +69,14 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     CloudinaryModule,
     ActivityModule,
     HealthModule,
-    PrometheusModule.register(),
+    MetricsModule,
+    PrometheusModule.register({
+      // Expose at /metrics (outside the /api global prefix)
+      // Protected by MetricsGuard — requires Bearer token
+      path: '/metrics',
+      defaultMetrics: { enabled: true },
+      controller: MetricsController,
+    }),
   ],
   providers: [
     ConstraintsSeed,
@@ -75,4 +86,9 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     },
   ],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Apply HTTP metrics instrumentation to every route
+    consumer.apply(MetricsMiddleware).forRoutes('*');
+  }
+}
