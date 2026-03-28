@@ -1,6 +1,9 @@
 # Node modules
 node_modules/
 
+#folders
+phases/
+
 # Build output
 dist/
 build/

@@ -2,9 +2,30 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // Catch unhandled exceptions & track perf
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      nodeProfilingIntegration(),
+    ],
+    tracesSampleRate: 1.0,
+    profilesSampleRate: 1.0,
+    sendDefaultPii: true,
+  });
+
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  // Use Pino globally
+  app.useLogger(app.get(Logger));
+
+  // Security headers (configured for cross-origin since frontend is on Vercel)
+  app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
   // Global prefix
   app.setGlobalPrefix('api');
@@ -34,6 +55,9 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
+
+  // Allow PM2 intercepts
+  app.enableShutdownHooks();
 
   const port = process.env.PORT || 5000;
   await app.listen(port);
