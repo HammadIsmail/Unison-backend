@@ -1,0 +1,38 @@
+// =============================================================================
+// Grafana Alloy config — UNISON Backend monitoring
+// Run with: alloy run config.alloy
+// =============================================================================
+
+// ── 1. Scrape NestJS /metrics from Render ────────────────────────────────────
+prometheus.scrape "unison_backend" {
+  targets = [
+    {
+      __address__ = "unison-backend-lxmu.onrender.com",
+    },
+  ]
+
+  scheme          = "https"
+  metrics_path    = "/metrics"
+  scrape_interval = "60s"   // free-tier minimum
+
+  // Must match the METRICS_TOKEN env var set in Render
+  authorization {
+    type        = "Bearer"
+    credentials = env("METRICS_TOKEN")
+  }
+
+  forward_to = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
+
+// ── 2. Push scraped metrics to Grafana Cloud ──────────────────────────────────
+prometheus.remote_write "metrics_hosted_prometheus" {
+  endpoint {
+    name = "hosted-prometheus"
+    url  = "https://prometheus-prod-43-prod-ap-south-1.grafana.net/api/prom/push"
+
+    basic_auth {
+      username = "3075096"
+      password = env("GRAFANA_ALLOY_TOKEN")
+    }
+  }
+}

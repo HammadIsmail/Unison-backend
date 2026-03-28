@@ -6,8 +6,12 @@ import helmet from 'helmet';
 import * as Sentry from '@sentry/node';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { Logger } from 'nestjs-pino';
+import { setupMetrics } from './otel';
 
 async function bootstrap() {
+  // Start OpenTelemetry metrics push
+  setupMetrics();
+
   // Catch unhandled exceptions & track perf
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
