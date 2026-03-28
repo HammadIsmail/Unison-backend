@@ -19,6 +19,7 @@ import { APP_GUARD } from '@nestjs/core';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { HealthModule } from './health/health.module';
     CloudinaryModule,
     ActivityModule,
     HealthModule,
+    PrometheusModule.register(),
   ],
   providers: [
     ConstraintsSeed,

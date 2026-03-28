@@ -111,7 +111,8 @@ export class SearchService {
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture,
-             u.bio AS bio, u.role AS role, u.degree AS degree, u.graduation_year AS graduation_year, 
+             u.bio AS bio, u.role AS role, u.degree AS degree, u.graduation_year AS graduation_year,
+             u.linkedin_url AS linkedin_url,
              w.company_name AS company, w.role AS job_role, 
              collect(DISTINCT s.name) AS skills
     `;
@@ -128,6 +129,7 @@ export class SearchService {
       role: r.get('role'),
       degree: r.get('degree'),
       graduation_year: typeof r.get('graduation_year')?.toNumber === 'function' ? r.get('graduation_year').toNumber() : r.get('graduation_year'),
+      linkedin_url: r.get('linkedin_url') || null,
       company: r.get('company') || null,
       job_role: r.get('job_role') || null,
       skills: r.get('skills'),

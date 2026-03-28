@@ -903,14 +903,15 @@ Requires `Bearer JWT`.
   "id": "uuid-user-123",
   "username": "ahmed_h",
   "display_name": "Ahmed The Dev",
+  "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
+  "bio": "Passionate software engineer from UET Faisalabad.",
   "role": "alumni",
   "degree": "BSCS",
   "graduation_year": 2024,
+  "linkedin_url": "https://linkedin.com/in/ahmed",
   "company": "Google",
   "job_role": "Software Engineer",
-  "skills": ["Node.js", "Neo4j"],
-  "linkedin_url": "https://linkedin.com/in/ahmed",
-  "profile_picture": "https://cloudinary.com/ahmed_profile.jpg"
+  "skills": ["Node.js", "Neo4j"]
 }
 ```
 

@@ -90,4 +90,10 @@ export class UserDetailResponseDto {
 
     @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_profile.jpg' })
     profile_picture?: string;
+
+    @ApiPropertyOptional({ example: 'Passionate software engineer from UET Faisalabad.' })
+    bio?: string;
+
+    @ApiPropertyOptional({ example: 'https://linkedin.com/in/ahmed' })
+    linkedin_url?: string;
 }
