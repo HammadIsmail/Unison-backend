@@ -3,6 +3,10 @@ import {
   PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+import { registerInstrumentations } from '@opentelemetry/instrumentation';
+import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { HostMetrics } from '@opentelemetry/host-metrics';
 
 /**
  * Initializes OpenTelemetry Metrics and starts the periodic push to Grafana Cloud.
@@ -42,6 +46,22 @@ export function setupMetrics() {
   const meterProvider = new MeterProvider({
     readers: [metricReader],
   });
+
+  // Automatically track HTTP and Express route performance
+  registerInstrumentations({
+    meterProvider: meterProvider,
+    instrumentations: [
+      new HttpInstrumentation(),
+      new ExpressInstrumentation(),
+    ],
+  });
+
+  // Track CPU, RAM, and process stats
+  const hostMetrics = new HostMetrics({
+    meterProvider: meterProvider,
+    name: 'unison-host-metrics',
+  });
+  hostMetrics.start();
 
   console.log('🚀 OpenTelemetry Metrics initialized. Pushing to Grafana Cloud.');
 
