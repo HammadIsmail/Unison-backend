@@ -19,10 +19,6 @@ import { APP_GUARD } from '@nestjs/core';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
-import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { MetricsModule } from './metrics/metrics.module';
-import { MetricsMiddleware } from './metrics/metrics.middleware';
-import { MetricsController } from './metrics/metrics.controller';
 
 @Module({
   imports: [
@@ -42,7 +38,6 @@ import { MetricsController } from './metrics/metrics.controller';
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
         SENTRY_DSN: Joi.string().required(),
-        METRICS_TOKEN: Joi.string().required(),
       }),
     }),
     LoggerModule.forRoot({
@@ -69,14 +64,6 @@ import { MetricsController } from './metrics/metrics.controller';
     CloudinaryModule,
     ActivityModule,
     HealthModule,
-    MetricsModule,
-    PrometheusModule.register({
-      // Expose at /metrics (outside the /api global prefix)
-      // Protected by MetricsGuard — requires Bearer token
-      path: '/metrics',
-      defaultMetrics: { enabled: true },
-      controller: MetricsController,
-    }),
   ],
   providers: [
     ConstraintsSeed,
@@ -88,7 +75,6 @@ import { MetricsController } from './metrics/metrics.controller';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    // Apply HTTP metrics instrumentation to every route
-    consumer.apply(MetricsMiddleware).forRoutes('*');
+    // Other global middleware can go here
   }
 }
