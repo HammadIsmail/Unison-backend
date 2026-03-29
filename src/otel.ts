@@ -16,22 +16,32 @@ import { HostMetrics } from '@opentelemetry/host-metrics';
  * - OTEL_EXPORTER_OTLP_METRICS_HEADERS: Your Authorization header (Basic auth)
  */
 export function setupMetrics() {
-  const endpoint = process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT;
-  const headers = process.env.OTEL_EXPORTER_OTLP_METRICS_HEADERS;
+  let endpoint = process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT;
+  let headers = process.env.OTEL_EXPORTER_OTLP_METRICS_HEADERS;
+
+  // Clean up any accidental quotes from Render dashboard
+  if (endpoint) endpoint = endpoint.replace(/^["'](.+)["']$/, '$1');
+  if (headers) headers = headers.replace(/^["'](.+)["']$/, '$1');
 
   if (!endpoint || !headers) {
     console.warn(
       '⚠️ OTEL metrics not configured. Missing ENDPOINT or HEADERS in env.',
     );
+    console.log('Available Env Keys:', Object.keys(process.env).filter(k => k.startsWith('OTEL')));
     return;
   }
 
   // Parse headers string "key1=val1,key2=val2" into an object
   const headerMap: Record<string, string> = {};
   headers.split(',').forEach((h) => {
-    const [key, value] = h.split('=');
+    const parts = h.split('=');
+    const key = parts[0];
+    const value = parts.slice(1).join('='); // Ensure we capture values that might contain '='
     if (key && value) headerMap[key.trim()] = value.trim();
   });
+
+  console.log('🔗 Connecting to OTLP Endpoint:', endpoint);
+  console.log('🔑 Headers Configured:', Object.keys(headerMap));
 
   const exporter = new OTLPMetricExporter({
     url: endpoint,
