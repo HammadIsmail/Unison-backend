@@ -2141,6 +2141,12 @@
           "role": {
             "type": "string"
           },
+          "username": {
+            "type": "string"
+          },
+          "profile_picture": {
+            "type": "string"
+          },
           "connection_type": {
             "type": "string"
           }
@@ -2203,6 +2209,12 @@
             "type": "string"
           },
           "role": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "profile_picture": {
             "type": "string"
           },
           "connection_type": {

@@ -20,4 +20,9 @@ export class HealthController {
       () => this.neo4jHealth.isHealthy('neo4j'),
     ]);
   }
+
+  @Get('test-error')
+  triggerError() {
+    throw new Error('🚀 Sentry Test Error: Monitoring is working!');
+  }
 }
