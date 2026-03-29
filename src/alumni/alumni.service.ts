@@ -211,13 +211,17 @@ export class AlumniService {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN c.id AS id, c.display_name AS display_name, w.company_name AS company, w.role AS role, r.connection_type AS connection_type`,
+       RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
+              c.profile_picture AS profile_picture, w.company_name AS company, 
+              w.role AS role, r.connection_type AS connection_type`,
       { userId }
     );
 
     return result.records.map((r) => ({
       id: r.get('id'),
       display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
       connection_type: r.get('connection_type') || null,
@@ -297,13 +301,16 @@ export class AlumniService {
       `MATCH (c:User {batch: $batch, role: 'alumni'})
        WHERE c.id <> $userId AND c.account_status = 'approved'
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       RETURN c.id AS id, c.display_name AS display_name, w.company_name AS company, w.role AS role`,
+       RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
+              c.profile_picture AS profile_picture, w.company_name AS company, w.role AS role`,
       { batch, userId }
     );
 
     return result.records.map((r) => ({
       id: r.get('id'),
       display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
     }));

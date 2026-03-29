@@ -473,6 +473,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   {
     "id": "uuid-123",
     "display_name": "Ali Khan",
+    "username": "alikhan",
+    "profile_picture": "https://cloudinary.com/profile.jpg",
     "company": "Microsoft",
     "role": "Product Manager",
     "connection_type": "colleague"
@@ -544,6 +546,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   {
     "id": "uuid-123",
     "display_name": "Ali Khan",
+    "username": "alikhan",
+    "profile_picture": "https://cloudinary.com/profile.jpg",
     "company": "Microsoft",
     "role": "Product Manager",
     "connection_type": "batchmate"
@@ -551,6 +555,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   {
     "id": "uuid-456",
     "display_name": "Zainab Ahmed",
+    "username": "zainab",
+    "profile_picture": null,
     "company": null,
     "role": null,
     "connection_type": null
@@ -558,7 +564,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 ]
 ```
 
-> **Fields**: `id` (always present), `display_name` (always present), `company` / `role` / `connection_type` are optional and may be `null` if not set.
+> **Fields**: `id`, `display_name`, `username` (always present), `profile_picture` (optional), `company` / `role` / `connection_type` (optional).
 
 ---
 

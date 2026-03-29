@@ -89,7 +89,13 @@ export class NetworkUserResponseDto {
     id: string;
 
     @ApiProperty({ example: 'Ali Khan' })
-    name: string;
+    display_name: string;
+
+    @ApiProperty({ example: 'alikhan' })
+    username: string;
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/profile.jpg' })
+    profile_picture?: string;
 
     @ApiPropertyOptional({ example: 'Microsoft' })
     company?: string;
