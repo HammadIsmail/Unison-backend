@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile, Delete } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
@@ -67,5 +67,24 @@ export class StudentController {
     @Body() dto: ConnectToMentorDto,
   ) {
     return this.studentService.connectToMentor(userId, targetId, dto);
+  }
+
+  @Get('connections')
+  @Roles('student')
+  @ApiOperation({ summary: 'Get your accepted mentorship connections' })
+  @ApiResponse({ status: 200, type: [MentorRecommendationResponseDto] }) 
+  getConnections(@GetUser('sub') userId: string) {
+    return this.studentService.getConnections(userId);
+  }
+
+  @Delete('connections/:target_id')
+  @Roles('student')
+  @ApiOperation({ summary: 'Remove an existing connection or cancel a pending request' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  removeConnection(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.studentService.removeConnection(userId, targetId);
   }
 }

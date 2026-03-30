@@ -10,6 +10,7 @@ import {
   ConnectDto,
 } from './dto/alumni.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AlumniService {
@@ -17,6 +18,7 @@ export class AlumniService {
     private readonly neo4j: Neo4jService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly activity: ActivityService,
+    private readonly notification: NotificationService,
   ) { }
 
   async getProfile(id: string) {
@@ -245,6 +247,26 @@ export class AlumniService {
       { userId, targetId, dto }
     );
 
+    const userResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`, 
+      { userId }
+    );
+    const senderUsername = userResult.records[0]?.get('username') || null;
+    const senderName = userResult.records[0]?.get('name') || 'Someone';
+    const senderPic = userResult.records[0]?.get('pic') || null;
+
+    await this.notification.createNotification(
+      targetId,
+      `${senderName} sent you a connection request.`,
+      'connection_request',
+      {
+        sender_username: senderUsername,
+        sender_display_name: senderName,
+        sender_profile_picture: senderPic,
+        reference_link: '/network/requests'
+      }
+    );
+
     return { message: 'Connection request sent successfully.' };
   }
 
@@ -275,6 +297,27 @@ export class AlumniService {
         { userId, senderId }
       );
       if (!result.records.length) throw new NotFoundException('Connection request not found.');
+
+      const userResult = await this.neo4j.run(
+        `MATCH (u:User {id: $userId}) RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`, 
+        { userId }
+      );
+      const responderUsername = userResult.records[0]?.get('username') || null;
+      const responderName = userResult.records[0]?.get('name') || 'Someone';
+      const responderPic = userResult.records[0]?.get('pic') || null;
+
+      await this.notification.createNotification(
+        senderId,
+        `${responderName} accepted your connection request.`,
+        'connection_accepted',
+        {
+          sender_username: responderUsername,
+          sender_display_name: responderName,
+          sender_profile_picture: responderPic,
+          reference_link: '/network'
+        }
+      );
+
       return { message: 'Connection request accepted.' };
     } else {
       const result = await this.neo4j.run(
@@ -314,5 +357,18 @@ export class AlumniService {
       company: r.get('company') || null,
       role: r.get('role') || null,
     }));
+  }
+
+  async removeConnection(userId: string, targetId: string) {
+    const query = `
+      MATCH (u:User {id: $userId})-[r:CONNECTED_TO]-(t:User {id: $targetId})
+      DELETE r
+      RETURN count(r) AS cnt
+    `;
+    const result = await this.neo4j.run(query, { userId, targetId });
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Connection or request not found.');
+    }
+    return { message: 'Connection removed successfully.' };
   }
 }

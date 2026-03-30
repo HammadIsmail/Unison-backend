@@ -19,6 +19,7 @@ import {
     SendOtpDto,
     VerifyOtpDto,
 } from './dto/auth.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
         private readonly config: ConfigService,
         private readonly mail: MailService,
         private readonly activity: ActivityService,
+        private readonly notification: NotificationService,
     ) { }
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────
@@ -169,6 +171,30 @@ export class AuthService {
             `MATCH (o:OTPRecord {email: $email, type: 'email_verification'}) DELETE o`,
             { email: dto.email },
         );
+
+        // 1. Log Activity
+        await this.activity.logActivity(
+            ActivityType.USER_REGISTERED,
+            `New ${dto.role} registered: ${dto.display_name}`,
+            userId
+        );
+
+        // 2. Notify Admins
+        const adminResult = await this.neo4j.run(`MATCH (a:User {role: 'admin'}) RETURN a.id AS id`);
+        const notificationPromises = adminResult.records.map(r =>
+            this.notification.createNotification(
+                r.get('id'),
+                `New ${dto.role} account pending approval: ${dto.display_name} (${dto.username})`,
+                'user_registered',
+                {
+                    sender_username: dto.username,
+                    sender_display_name: dto.display_name,
+                    sender_profile_picture: undefined,
+                    reference_link: '/admin/pending-accounts'
+                }
+            )
+        );
+        await Promise.allSettled(notificationPromises);
 
         return { message: 'Account created successfully. Pending admin approval.' };
     }

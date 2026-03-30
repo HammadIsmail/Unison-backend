@@ -4,6 +4,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateOpportunityDto, UpdateOpportunityDto, OpportunityStatus } from './dto/opportunity.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { v4 as uuidv4 } from 'uuid';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class OpportunityService {
@@ -11,11 +12,12 @@ export class OpportunityService {
     private readonly neo4j: Neo4jService,
     private readonly cloudinary: CloudinaryService,
     private readonly activity: ActivityService,
-  ) {}
+    private readonly notification: NotificationService,
+  ) { }
 
   async create(userId: string, dto: CreateOpportunityDto, files?: Express.Multer.File[]) {
     const opportunityId = uuidv4();
-    
+
     let mediaUrls: string[] = [];
     if (files && files.length > 0) {
       const uploadPromises = files.map(file => this.cloudinary.uploadFile(file));
@@ -57,6 +59,36 @@ export class OpportunityService {
       opportunityId
     );
 
+    // Fetch poster details
+    const userResult = await this.neo4j.run(`MATCH (u:User {id: $userId}) RETURN u.username AS username, u.profile_picture AS pic`, { userId });
+    const posterUsername = userResult.records[0]?.get('username') || null;
+    const posterPic = userResult.records[0]?.get('pic') || null;
+
+    // Notify the entire network (all approved students and alumni)
+    const broadcastQuery = `
+      MATCH (u:User)
+      WHERE u.account_status = 'approved' AND (u.role = 'student' OR u.role = 'alumni') AND u.id <> $userId
+      RETURN u.id AS userId
+    `;
+    const networkResult = await this.neo4j.run(broadcastQuery, { userId });
+
+    const notificationPromises = networkResult.records.map(r =>
+      this.notification.createNotification(
+        r.get('userId'),
+        `New opportunity at ${dto.company_name}: ${dto.title}`,
+        'new_opportunity',
+        {
+          sender_username: posterUsername,
+          sender_display_name: dto.company_name,
+          sender_profile_picture: posterPic,
+          reference_link: `/opportunities/${opportunityId}`
+        }
+      )
+    );
+
+    // Using allSettled to ensure failure for one user doesn't block the response
+    await Promise.allSettled(notificationPromises);
+
     return { message: 'Opportunity broadcasted to network successfully.', opportunity_id: opportunityId };
   }
 
@@ -65,17 +97,17 @@ export class OpportunityService {
 
     let matchClause = `MATCH (o:Opportunity)<-[:POSTED]-(u:User)`;
     let whereClauses: string[] = [];
-    
+
     if (type) whereClauses.push(`o.type = $type`);
     if (is_remote !== undefined) whereClauses.push(`o.is_remote = $is_remote_bool`);
-    
+
     if (skill) {
       matchClause += ` MATCH (o)-[:REQUIRES_SKILL]->(s:Skill)`;
       whereClauses.push(`toLower(s.name) CONTAINS toLower($skill)`);
     }
 
     const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-    
+
     const countQuery = `${matchClause} ${whereString} RETURN count(DISTINCT o) AS total`;
     const countResult = await this.neo4j.run(countQuery, { type, is_remote_bool: is_remote === 'true', skill });
     const total = countResult.records[0]?.get('total').toNumber() || 0;
@@ -180,7 +212,7 @@ export class OpportunityService {
     // Determine target poster
     const oppResult = await this.neo4j.run(`MATCH (u:User)-[:POSTED]->(o:Opportunity {id: $id}) RETURN u.id AS poster_id, o.media AS currentMedia`, { id });
     if (!oppResult.records.length) throw new NotFoundException('Opportunity not found.');
-    
+
     const posterId = oppResult.records[0].get('poster_id');
     const currentMedia = oppResult.records[0].get('currentMedia') || [];
 
@@ -189,7 +221,7 @@ export class OpportunityService {
     }
 
     let mediaUrls = [...currentMedia];
-    
+
     // If existing media URLs are provided in the DTO, use them (allows removing specific images)
     // Note: in multipart/form-data, if 'media' is sent as strings, they will be in dto.media
     if (dto.media && Array.isArray(dto.media)) {
@@ -210,7 +242,7 @@ export class OpportunityService {
     const setClauses = Object.keys(updateData)
       .filter((k) => updateData[k as keyof typeof updateData] !== undefined)
       .map((k) => `o.${k} = $${k}`);
-    
+
     // Always update media if files were provided or dto.media was provided
     if (files?.length || dto.media) {
       setClauses.push(`o.media = $mediaUrls`);
@@ -242,7 +274,7 @@ export class OpportunityService {
   async remove(userId: string, userRole: string, id: string) {
     const oppResult = await this.neo4j.run(`MATCH (u:User)-[:POSTED]->(o:Opportunity {id: $id}) RETURN u.id AS poster_id`, { id });
     if (!oppResult.records.length) throw new NotFoundException('Opportunity not found.');
-    
+
     const posterId = oppResult.records[0].get('poster_id');
     if (userId !== posterId && userRole !== 'admin') {
       throw new ForbiddenException('Only the poster or an admin can delete this opportunity.');

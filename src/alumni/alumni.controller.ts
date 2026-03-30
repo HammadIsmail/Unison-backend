@@ -104,6 +104,14 @@ export class AlumniController {
     return this.alumniService.getNetwork(userId);
   }
 
+  @Get('connections')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Get your accepted connections' })
+  @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
+  getConnections(@GetUser('sub') userId: string) {
+    return this.alumniService.getNetwork(userId);
+  }
+
   @Post('connect/:target_id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Send a connection request to another user' })
@@ -142,5 +150,16 @@ export class AlumniController {
   @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getBatchMates(@GetUser('sub') userId: string) {
     return this.alumniService.getBatchMates(userId);
+  }
+
+  @Delete('connections/:target_id')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Remove an existing connection or cancel a pending request' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  removeConnection(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.alumniService.removeConnection(userId, targetId);
   }
 }

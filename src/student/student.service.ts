@@ -3,12 +3,14 @@ import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UpdateStudentProfileDto, AddStudentSkillDto, ConnectToMentorDto } from './dto/student.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class StudentService {
   constructor(
     private readonly neo4j: Neo4jService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly notification: NotificationService,
   ) {}
 
   async getProfile(id: string) {
@@ -171,6 +173,60 @@ export class StudentService {
       { userId, targetId, dto }
     );
 
+    const userResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`, 
+      { userId }
+    );
+    const studentUsername = userResult.records[0]?.get('username') || null;
+    const studentName = userResult.records[0]?.get('name') || 'A student';
+    const studentPic = userResult.records[0]?.get('pic') || null;
+
+    await this.notification.createNotification(
+      targetId,
+      `${studentName} sent you a mentor connection request.`,
+      'connection_request',
+      {
+        sender_username: studentUsername,
+        sender_display_name: studentName,
+        sender_profile_picture: studentPic,
+        reference_link: '/network/requests'
+      }
+    );
+
     return { message: 'Connection request sent successfully.' };
+  }
+
+  async getConnections(userId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+       RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
+              c.profile_picture AS profile_picture, w.company_name AS company, 
+              w.role AS role, r.connection_type AS connection_type`,
+      { userId }
+    );
+
+    return result.records.map((r) => ({
+      id: r.get('id'),
+      display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture') || null,
+      company: r.get('company') || null,
+      role: r.get('role') || null,
+      connection_type: r.get('connection_type') || null,
+    }));
+  }
+
+  async removeConnection(userId: string, targetId: string) {
+    const query = `
+      MATCH (u:User {id: $userId})-[r:CONNECTED_TO]-(t:User {id: $targetId})
+      DELETE r
+      RETURN count(r) AS cnt
+    `;
+    const result = await this.neo4j.run(query, { userId, targetId });
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Connection or request not found.');
+    }
+    return { message: 'Connection removed successfully.' };
   }
 }

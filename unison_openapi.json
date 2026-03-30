@@ -52,7 +52,7 @@
     },
     {
       "name": "Notification",
-      "description": "User notifications"
+      "description": "User notifications. Notifications are persisted in Neo4j and also delivered in real-time via the Socket.io gateway for online users. See the Real-time WebSocket section in the API handbook for connection details."
     }
   ],
   "paths": {
@@ -462,6 +462,112 @@
         }
       }
     },
+    "/admin/request-email-change": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Initiate admin email change — sends OTP to new address",
+        "operationId": "requestEmailChange",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestEmailChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OTP sent to new email address",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/verify-email-change": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Verify OTP and confirm admin email change",
+        "operationId": "verifyEmailChange",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Admin email updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/recent-activity": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get recent platform activity events",
+        "operationId": "getRecentActivity",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of activity records to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recent activity events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEvent"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/alumni/me": {
       "get": {
         "tags": ["Alumni"],
@@ -701,6 +807,33 @@
         "tags": ["Alumni"],
         "summary": "Get professional network",
         "operationId": "getNetwork",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alumni/connections": {
+      "get": {
+        "tags": ["Alumni"],
+        "summary": "Get accepted connections",
+        "operationId": "getConnections",
         "security": [
           {
             "bearer": []
@@ -974,6 +1107,33 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/MentorSuggestion"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/student/connections": {
+      "get": {
+        "tags": ["Student"],
+        "summary": "Get accepted mentorship connections",
+        "operationId": "getStudentConnections",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of mentorship connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
                   }
                 }
               }
@@ -2702,20 +2862,113 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "format": "uuid",
+            "example": "uuid-notification-123"
           },
           "message": {
-            "type": "string"
+            "type": "string",
+            "example": "Ahmed Hassan accepted your connection request."
           },
           "type": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "connection_request",
+              "connection_accepted",
+              "account_approved",
+              "account_rejected",
+              "new_opportunity"
+            ],
+            "description": "The category of notification event"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2024-03-23T12:00:00Z"
+          },
+          "is_read": {
+            "type": "boolean",
+            "example": false
+          },
+          "sender_username": {
+            "type": "string",
+            "nullable": true,
+            "example": "ahmed123"
+          },
+          "sender_display_name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Ahmed Hassan"
+          },
+          "sender_profile_picture": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://example.com/ahmed.jpg"
+          },
+          "reference_link": {
+            "type": "string",
+            "nullable": true,
+            "example": "/network/requests"
+          }
+        }
+      },
+      "RequestEmailChangeDto": {
+        "type": "object",
+        "required": ["new_email"],
+        "properties": {
+          "new_email": {
+            "type": "string",
+            "format": "email",
+            "example": "new-admin@unison.pk"
+          }
+        }
+      },
+      "VerifyEmailChangeDto": {
+        "type": "object",
+        "required": ["new_email", "otp"],
+        "properties": {
+          "new_email": {
+            "type": "string",
+            "format": "email",
+            "example": "new-admin@unison.pk"
+          },
+          "otp": {
+            "type": "string",
+            "example": "483921"
+          }
+        }
+      },
+      "EmailChangeResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Admin email updated successfully."
+          },
+          "new_email": {
+            "type": "string",
+            "example": "new-admin@unison.pk"
+          }
+        }
+      },
+      "ActivityEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "type": "string",
+            "example": "ACCOUNT_APPROVED"
+          },
+          "description": {
+            "type": "string",
+            "example": "Account approved for John Smith"
           },
           "created_at": {
             "type": "string",
             "format": "date-time"
-          },
-          "is_read": {
-            "type": "boolean"
           }
         }
       }

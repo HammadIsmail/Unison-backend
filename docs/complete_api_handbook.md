@@ -484,6 +484,27 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
+### 9. Get My Connections
+`GET /api/alumni/connections`  
+**Summary**: Retrieves a list of all accepted professional connections.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-123",
+    "display_name": "Ali Khan",
+    "username": "alikhan",
+    "profile_picture": "https://cloudinary.com/profile.jpg",
+    "company": "Microsoft",
+    "role": "Product Manager",
+    "connection_type": "colleague"
+  }
+]
+```
+
+---
+
 ### 9. Connect with User
 `POST /api/alumni/connect/:target_id`  
 **Summary**: Sends a connection request to another user.
@@ -565,6 +586,17 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 ```
 
 > **Fields**: `id`, `display_name`, `username` (always present), `profile_picture` (optional), `company` / `role` / `connection_type` (optional).
+
+---
+
+### 13. Remove Connection
+`DELETE /api/alumni/connections/:target_id`  
+**Summary**: Immediately deletes an active connection or cancels a pending connection request regardless of who originally initiated it.
+
+**Response (200)**:
+```json
+{ "message": "Connection removed successfully." }
+```
 
 ---
 
@@ -652,6 +684,38 @@ Requires `Bearer JWT`. Role restriction: `student`.
 **Response (201)**:
 ```json
 { "message": "Connection request sent successfully." }
+```
+
+---
+
+### 6. Get My Connections
+`GET /api/student/connections`  
+**Summary**: Retrieves a list of all accepted mentorship connections (Alumni mentors).
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-alumni-123",
+    "display_name": "Ahmed Hassan",
+    "username": "ahmed_h",
+    "profile_picture": "https://cloudinary.com/ahmed.jpg",
+    "company": "Google",
+    "role": "Software Engineer",
+    "connection_type": "mentor"
+  }
+]
+```
+
+---
+
+### 7. Remove Connection
+`DELETE /api/student/connections/:target_id`  
+**Summary**: Immediately deletes an active mentorship connection or cancels a pending connection request sent to an alumni.
+
+**Response (200)**:
+```json
+{ "message": "Connection removed successfully." }
 ```
 
 ---
@@ -1016,19 +1080,62 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`.
 ---
 
 ## 📬 Notifications
-Requires `Bearer JWT`.
+Requires `Bearer JWT`. Notifications are both **persisted in Neo4j** and **delivered in real-time** via Socket.io for online users.
+
+### Notification Types
+| `type` | When it is sent |
+| :--- | :--- |
+| `connection_request` | An alumni or student sends a connection request |
+| `connection_accepted` | The recipient accepts a connection request |
+| `account_approved` | Admin approves a pending user account |
+| `account_rejected` | Admin rejects a pending user account |
+| `new_opportunity` | An alumni/admin posts a new opportunity (broadcast to all) |
+
+### Notification Payload Structure
+```typescript
+interface NotificationPayload {
+  id: string;          // UUID of the notification
+  message: string;     // Human-readable message
+  type: string;        // See notification types above
+  created_at: string;  // ISO 8601 timestamp
+  is_read: boolean;    // Whether it has been read
+  sender_username?: string | null;
+  sender_display_name?: string | null;
+  sender_profile_picture?: string | null;
+  reference_link?: string | null;
+}
+```
+
+---
 
 ### 1. Get My Notifications
-`GET /api/notifications`  
+`GET /api/notifications`
+**Summary**: Retrieves all notifications for the authenticated user, ordered newest first.
+
 **Response (200)**:
 ```json
 [
   {
     "id": "uuid-notification-123",
-    "message": "New connection request from Ahmed Hassan.",
+    "message": "Ahmed Hassan sent you a mentor connection request.",
     "type": "connection_request",
     "created_at": "2024-03-23T12:00:00Z",
-    "is_read": false
+    "is_read": false,
+    "sender_username": "ahmed123",
+    "sender_display_name": "Ahmed Hassan",
+    "sender_profile_picture": "https://example.com/ahmed.jpg",
+    "reference_link": "/network/requests"
+  },
+  {
+    "id": "uuid-notification-456",
+    "message": "Your account has been approved by the admin. Welcome to UNISON!",
+    "type": "account_approved",
+    "created_at": "2024-03-22T09:00:00Z",
+    "is_read": true,
+    "sender_username": null,
+    "sender_display_name": "UNISON Administration",
+    "sender_profile_picture": null,
+    "reference_link": "/"
   }
 ]
 ```
@@ -1036,8 +1143,70 @@ Requires `Bearer JWT`.
 ---
 
 ### 2. Mark as Read
-`PATCH /api/notifications/:id/read`  
+`PATCH /api/notifications/:id/read`
+**Summary**: Marks a specific notification as read.
+
 **Response (200)**:
 ```json
 { "message": "Notification marked as read." }
 ```
+
+---
+
+## 🔌 Real-time Notifications (WebSocket)
+The backend exposes a **Socket.io** gateway for real-time notification delivery. Notifications are pushed to connected clients instantly when they are created.
+
+### Connection
+- **Server URL**: `https://unison-backend-lxmu.onrender.com/` (production) / `http://localhost:5000` (development)
+- **Library**: `socket.io-client`
+
+### Authentication
+Every connection **must** provide a valid JWT. If the token is missing or invalid, the connection is immediately rejected.
+
+**Option 1 — Authorization Header (Recommended):**
+```javascript
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5000", {
+  extraHeaders: {
+    Authorization: `Bearer ${YOUR_JWT_TOKEN}`
+  }
+});
+```
+
+**Option 2 — Query Parameter (Fallback):**
+```javascript
+const socket = io("http://localhost:5000", {
+  query: { token: YOUR_JWT_TOKEN }
+});
+```
+
+### Events
+
+#### `notification` (server → client)
+Fired when a new notification is created for the authenticated user.
+```javascript
+socket.on("notification", (data) => {
+  // data: NotificationPayload (see schema above)
+  console.log("Real-time notification:", data);
+  // 1. Show a toast notification
+  // 2. Append to in-memory notification list
+});
+```
+
+#### `connect_error` (server → client)
+Fired if authentication fails or the server is unreachable.
+```javascript
+socket.on("connect_error", (error) => {
+  console.error("Socket connection failed:", error.message);
+});
+```
+
+### Best Practices
+1. **React Context**: Wrap the socket instance in a `Context.Provider` so all components share the same listener.
+2. **Reconnection**: Socket.io handles reconnection automatically. Re-verify the token if it expires since the initial connect.
+3. **Cleanup**: Disconnect the socket on component unmount or user logout:
+   ```javascript
+   socket.disconnect();
+   ```
+4. **Dual-source**: On app load, call `GET /api/notifications` to fetch historical notifications, then use the socket to append new ones in real time.

@@ -3,6 +3,7 @@ import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { RejectAccountDto } from './dto/admin.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AdminService {
@@ -10,6 +11,7 @@ export class AdminService {
     private readonly neo4j: Neo4jService,
     private readonly mail: MailService,
     private readonly activity: ActivityService,
+    private readonly notification: NotificationService,
   ) { }
 
   async getPendingAccounts() {
@@ -50,6 +52,16 @@ export class AdminService {
       id
     );
 
+    await this.notification.createNotification(
+      id,
+      'Your account has been approved by the admin. Welcome to UNISON!',
+      'account_approved',
+      {
+        sender_display_name: 'UNISON Administration',
+        reference_link: '/'
+      }
+    );
+
     return { message: 'Account approved. Email sent to user.' };
   }
 
@@ -67,6 +79,15 @@ export class AdminService {
 
     const user = result.records[0].get('u').properties;
     await this.mail.sendRejectionEmail(user.email, user.name, dto.rejection_reason);
+
+    await this.notification.createNotification(
+      id,
+      `Your account request was rejected. Reason: ${dto.rejection_reason}`,
+      'account_rejected',
+      {
+        sender_display_name: 'UNISON Administration'
+      }
+    );
 
     return { message: 'Account rejected. Email sent to user.' };
   }
