@@ -48,7 +48,7 @@ Handle user entry, verification, and security.
 `POST /api/auth/register`  
 **Summary**: Finalize account creation.
 
-**Request Body**:
+**Request**: `multipart/form-data`
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
 | `verified_token` | String | **Required** | Token received from Verify OTP endpoint |
@@ -59,6 +59,7 @@ Handle user entry, verification, and security.
 | `role` | Enum | **Required** | `alumni` or `student` |
 | `roll_number` | String | **Required** | University ID (e.g., `2021-CS-101`) |
 | `degree` | String | **Required** | e.g., `BS Computer Science` |
+| `student_card` | File | **Required** | Student card image file (binary) |
 | `graduation_year`| Number | *Optional* | **Alumni Only** (Required for graduates) |
 | `semester` | Number | *Optional* | **Student Only** (Required for students) |
 
@@ -137,7 +138,8 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
     "email": "zainab@uet.edu.pk",
     "role": "student",
     "registered_at": "2024-03-23T10:00:00Z",
-    "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+    "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+    "student_card_url": "https://cloudinary.com/student_card.jpg"
   }
 ]
 ```

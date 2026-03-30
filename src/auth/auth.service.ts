@@ -4,6 +4,8 @@ import {
     Injectable,
     NotFoundException,
     UnauthorizedException,
+    Inject,
+    forwardRef,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -20,6 +22,7 @@ import {
     VerifyOtpDto,
 } from './dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +32,9 @@ export class AuthService {
         private readonly config: ConfigService,
         private readonly mail: MailService,
         private readonly activity: ActivityService,
+        @Inject(forwardRef(() => NotificationService))
         private readonly notification: NotificationService,
+        private readonly cloudinary: CloudinaryService,
     ) { }
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────
@@ -88,7 +93,11 @@ export class AuthService {
     }
 
     // ─── Register ────────────────────────────────────────────────────────────────
-    async register(dto: RegisterDto) {
+    async register(dto: RegisterDto, file: Express.Multer.File) {
+        if (!file) {
+            throw new BadRequestException('Student card picture is required.');
+        }
+
         // Validate verified_token
         let payload: { email: string; type: string; purpose: string };
         try {
@@ -124,6 +133,10 @@ export class AuthService {
             throw new ConflictException('Username is already taken.');
         }
 
+        // Upload student card to Cloudinary
+        const uploadResult = await this.cloudinary.uploadFile(file);
+        const studentCardUrl = uploadResult.secure_url;
+
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         const userId = uuidv4();
         const now = new Date().toISOString();
@@ -144,6 +157,7 @@ export class AuthService {
           role: $role,
           roll_number: $roll_number,
           degree: $degree,
+          student_card_url: $studentCardUrl,
           account_status: 'pending',
           created_at: $now,
          ${extraProps}
@@ -160,6 +174,7 @@ export class AuthService {
                 role: dto.role,
                 roll_number: dto.roll_number,
                 degree: dto.degree,
+                studentCardUrl: studentCardUrl,
                 graduation_year: dto.graduation_year ?? null,
                 semester: dto.semester ?? null,
                 now,

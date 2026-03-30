@@ -21,6 +21,9 @@ export class PendingAccountResponseDto {
 
     @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
     profile_picture: string | null;
+
+    @ApiProperty({ example: 'https://cloudinary.com/student_card.jpg' })
+    student_card_url: string;
 }
 
 export class DashboardStatsResponseDto {

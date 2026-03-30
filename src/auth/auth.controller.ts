@@ -1,5 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import {
     LoginDto,
@@ -35,10 +36,15 @@ export class AuthController {
     }
 
     @Post('register')
+    @UseInterceptors(FileInterceptor('student_card'))
+    @ApiConsumes('multipart/form-data')
     @ApiOperation({ summary: 'Register a new alumni or student account' })
     @ApiResponse({ status: 201, type: MessageResponseDto })
-    register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto);
+    register(
+        @Body() dto: RegisterDto,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        return this.authService.register(dto, file);
     }
 
     @Post('login')

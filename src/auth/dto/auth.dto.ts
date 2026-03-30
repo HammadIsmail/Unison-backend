@@ -8,6 +8,7 @@ import {
     MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class SendOtpDto {
     @ApiProperty({ example: 'ahmed@uet.edu.pk' })
@@ -74,13 +75,19 @@ export class RegisterDto {
     @IsNotEmpty()
     degree: string;
 
+    @ApiProperty({ type: 'string', format: 'binary', description: 'Student card image file', required: true })
+    @IsOptional()
+    student_card: any;
+
     @ApiPropertyOptional({ description: 'Alumni only', example: 2025 })
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     graduation_year?: number;
 
     @ApiPropertyOptional({ description: 'Student only', example: 6 })
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     semester?: number;
 }
