@@ -637,6 +637,7 @@ Requires `Bearer JWT`. Role restriction: `student`.
 | `phone` | String | *Optional* | Contact phone number |
 | `bio` | String | *Optional* | Short personal bio |
 | `profile_picture`| File | *Optional* | Profile picture image file (binary) |
+| `semester` | Number | *Optional* | Update current semester (1-8) |
 
 ---
 

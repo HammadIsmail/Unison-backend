@@ -1,4 +1,5 @@
 import { IsString, IsOptional, IsEnum, IsNotEmpty, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateStudentProfileDto {
@@ -20,6 +21,12 @@ export class UpdateStudentProfileDto {
   @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Profile picture file' })
   @IsOptional()
   profile_picture?: any;
+
+  @ApiPropertyOptional({ description: 'Current semester of the student', example: 4 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  semester?: number;
 }
 
 export class AddStudentSkillDto {
