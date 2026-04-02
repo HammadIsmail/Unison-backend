@@ -24,6 +24,7 @@ export class ProfilesService {
       // 2. Fetch Skills
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
       WITH u, work_exp, collect(DISTINCT {
+        id: s.id,
         name: s.name,
         category: s.category,
         proficiency: s.proficiency_level
@@ -60,7 +61,7 @@ export class ProfilesService {
     // Cleanup collections: Neo4j OPTIONAL MATCH returns [{id: null}] if no match, 
     // we need to filter them out based on a required property like id or name.
     const workExperience = record.get('work_exp').filter(e => e.id !== null);
-    const skills = record.get('skills').filter(s => s.name !== null);
+    const skills = record.get('skills').filter(s => s.id !== null);
     const opportunities = record.get('opps').filter(o => o.id !== null);
 
     return {

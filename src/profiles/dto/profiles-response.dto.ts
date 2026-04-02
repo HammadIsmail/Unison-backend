@@ -24,6 +24,9 @@ export class ProfileWorkExperienceDto {
 }
 
 export class ProfileSkillDto {
+  @ApiProperty({ example: 'uuid-skill-123' })
+  id: string;
+
   @ApiProperty({ example: 'TypeScript' })
   name: string;
 

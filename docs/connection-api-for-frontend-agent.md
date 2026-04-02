@@ -20,9 +20,35 @@ Comprehensive user data for detailed profile views.
   "graduation_year": 2020, // (Alumni only)
   "semester": null, // (Student only)
   "roll_number": null, // (Student only)
-  "work_experience": [...],
-  "skills": [...],
-  "opportunities_posted": [...],
+  "work_experience": [
+    {
+      "id": "uuid-exp-123",
+      "company_name": "Google",
+      "role": "Senior Software Engineer",
+      "start_date": "2023-01-01",
+      "end_date": null,
+      "is_current": true,
+      "employment_type": "full-time"
+    }
+  ],
+  "skills": [
+    {
+      "id": "uuid-skill-123",
+      "name": "TypeScript",
+      "category": "Programming",
+      "proficiency": "expert"
+    }
+  ],
+  "opportunities_posted": [
+    {
+      "id": "uuid-opp-123",
+      "title": "Backend Developer",
+      "type": "job",
+      "company": "Startup X",
+      "posted_at": "2024-03-23",
+      "deadline": "2024-04-01"
+    }
+  ],
   "connection_status": "pending",
   "is_connection_sender": true
 }
