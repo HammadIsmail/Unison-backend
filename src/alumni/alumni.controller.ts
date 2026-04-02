@@ -109,65 +109,11 @@ export class AlumniController {
     return this.alumniService.getNetwork(userId);
   }
 
-  @Post('connect/:target_id')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Send a connection request to another user' })
-  @ApiResponse({ status: 201, type: MessageResponseDto })
-  connectWith(
-    @GetUser('sub') userId: string,
-    @Param('target_id') targetId: string,
-    @Body() dto: ConnectDto,
-  ) {
-    return this.alumniService.connectWith(userId, targetId, dto);
-  }
-
-  @Get('connections/requests')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Get pending connection requests' })
-  @ApiResponse({ status: 200, type: [ConnectionRequestResponseDto] })
-  getPendingRequests(@GetUser('sub') userId: string) {
-    return this.alumniService.getPendingRequests(userId);
-  }
-
-  @Patch('connections/requests/:sender_id/respond')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Respond to a connection request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
-  respondToRequest(
-    @GetUser('sub') userId: string,
-    @Param('sender_id') senderId: string,
-    @Body() dto: RespondToConnectionDto,
-  ) {
-    return this.alumniService.respondToRequest(userId, senderId, dto.action);
-  }
-
   @Get('batch-mates')
   @Roles('alumni')
   @ApiOperation({ summary: 'Find your batch mates' })
   @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getBatchMates(@GetUser('sub') userId: string) {
     return this.alumniService.getBatchMates(userId);
-  }
-
-  @Delete('connections/:target_id')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Remove an existing connection or cancel a pending request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
-  removeConnection(
-    @GetUser('sub') userId: string,
-    @Param('target_id') targetId: string,
-  ) {
-    return this.alumniService.removeConnection(userId, targetId);
-  }
-
-  @Get('connection-status/:target_id')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Get connection status with a student' })
-  @ApiResponse({ status: 200, type: ConnectionStatusResponseDto })
-  getConnectionStatus(
-    @GetUser('sub') userId: string,
-    @Param('target_id') targetId: string,
-  ) {
-    return this.alumniService.getConnectionStatus(userId, targetId);
   }
 }

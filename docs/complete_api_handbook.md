@@ -507,57 +507,9 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 9. Connect with User
-`POST /api/alumni/connect/:target_id`  
-**Summary**: Sends a connection request to another user.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `connection_type` | Enum | **Required** | `batchmate`, `colleague`, `mentor` |
-
-**Response (201)**:
-```json
-{ "message": "Connection request sent successfully." }
-```
-
 ---
 
-### 10. Get Pending Requests
-`GET /api/alumni/connections/requests`  
-**Summary**: Lists incoming connection requests.
-
-**Response (200)**:
-```json
-[
-  {
-    "sender_id": "uuid-sender-123",
-    "sender_display_name": "Zainab Ahmed",
-    "sender_username": "zainab",
-    "sender_profile_picture": "https://cloudinary.com/profile.jpg",
-    "connection_type": "mentor",
-    "requested_at": "2024-03-23T10:00:00Z"
-  }
-]
-```
-
----
-
-### 11. Respond to Request
-`PATCH /api/alumni/connections/requests/:sender_id/respond`  
-**Summary**: Accept or reject a request.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `action` | Enum | **Required** | `accept` or `reject` |
-
-**Response (200)**:
-```json
-{ "message": "Connection request accepted." }
-```
-
----
+### 9. Find Batch Mates
 
 ### 12. Find Batch Mates
 `GET /api/alumni/batch-mates`  
@@ -591,20 +543,72 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 13. Remove Connection
-`DELETE /api/alumni/connections/:target_id`  
-**Summary**: Immediately deletes an active connection or cancels a pending connection request regardless of who originally initiated it.
+---
 
-**Response (200)**:
+---
+
+## 🔗 Connections
+Shared relationship management for all users. Requires `Bearer JWT`.
+
+### 1. Send Connection Request
+`POST /api/connections/request/:target_id`  
+**Summary**: Sends a connection request to another user.
+
+**Constraints**:
+- **Students**: Can only send requests to **Alumni** and only with type `mentor`.
+- **Alumni**: Can send `batchmate`, `colleague`, or `mentor` requests.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `connection_type` | Enum | **Required** | `batchmate`, `colleague`, `mentor` |
+
+**Response (201)**:
 ```json
-{ "message": "Connection removed successfully." }
+{ "message": "Connection request sent successfully." }
 ```
 
 ---
 
-### 14. Get Connection Status
-`GET /api/alumni/connection-status/:target_id`  
-**Summary**: Checks the current connection status between the logged-in alumni and another user (student or another alumni).
+### 2. Get Pending Requests
+`GET /api/connections/requests`  
+**Summary**: Lists all incoming pending connection requests for the current user.
+
+**Response (200)**:
+```json
+[
+  {
+    "sender_id": "uuid-sender-123",
+    "sender_display_name": "Zainab Ahmed",
+    "sender_username": "zainab",
+    "sender_profile_picture": "https://cloudinary.com/profile.jpg",
+    "connection_type": "mentor",
+    "requested_at": "2024-03-23T10:00:00Z"
+  }
+]
+```
+
+---
+
+### 3. Respond to Request
+`PATCH /api/connections/requests/:sender_id/respond`  
+**Summary**: Accept or reject an incoming request.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `action` | Enum | **Required** | `accept` or `reject` |
+
+**Response (200)**:
+```json
+{ "message": "Connection request accepted." }
+```
+
+---
+
+### 4. Get Connection Status
+`GET /api/connections/status/:target_id`  
+**Summary**: Checks the current connection status with another user.
 
 **Response (200)**:
 ```json
@@ -613,9 +617,55 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   "is_sender": true
 }
 ```
-**Fields**:
-- `status`: `connected` (accepted), `pending`, or `none`.
-- `is_sender`: Boolean. `true` if the current user initiated the request (only relevant when status is `pending` or `connected`).
+
+---
+
+### 5. Remove Connection
+`DELETE /api/connections/:target_id`  
+**Summary**: Immediately deletes an active connection or cancels a pending request.
+
+**Response (200)**:
+```json
+{ "message": "Connection removed successfully." }
+```
+
+---
+
+---
+
+## 🎭 Profiles
+Comprehensive views for discovery and professional networking. Requires `Bearer JWT`.
+
+### 1. Get Public Profile
+`GET /api/profiles/user/:id`  
+**Summary**: Retrieves a full, high-detail view of any user (student or alumni).
+
+**Includes**:
+- **Personal**: Bio, Picture, Degree, Batch.
+- **Academic**: Roll Number, Semester (Students).
+- **Professional**: Full Work History (Alumni).
+- **Contributions**: Opportunities posted by the user.
+- **Social**: Current connection status with the user.
+
+**Response (200)**:
+```json
+{
+  "id": "uuid-123",
+  "username": "hammad_i",
+  "display_name": "Hammad Ismail",
+  "role": "alumni",
+  "profile_picture": "...",
+  "bio": "Software Engineer",
+  "degree": "BSCS",
+  "batch": "2016-2020",
+  "graduation_year": 2020,
+  "work_experience": [...],
+  "skills": [...],
+  "opportunities_posted": [...],
+  "connection_status": "pending",
+  "is_connection_sender": true
+}
+```
 
 ---
 
@@ -692,21 +742,9 @@ Requires `Bearer JWT`. Role restriction: `student`.
 
 ---
 
-### 5. Send Mentor Connection Request
-`POST /api/student/connect/:target_id`  
-**Summary**: Sends a connection request to an alumni specifically for mentorship.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `connection_type` | Enum | **Required** | Must be `mentor` |
-
-**Response (201)**:
-```json
-{ "message": "Connection request sent successfully." }
-```
-
 ---
+
+### 5. Get My Connections
 
 ### 6. Get My Connections
 `GET /api/student/connections`  
@@ -728,32 +766,6 @@ Requires `Bearer JWT`. Role restriction: `student`.
 ```
 
 ---
-
-### 7. Remove Connection
-`DELETE /api/student/connections/:target_id`  
-**Summary**: Immediately deletes an active mentorship connection or cancels a pending connection request sent to an alumni.
-
-**Response (200)**:
-```json
-{ "message": "Connection removed successfully." }
-```
-
----
-
-### 8. Get Connection Status
-`GET /api/student/connection-status/:target_id`  
-**Summary**: Checks the current connection status between the logged-in student and an alumni.
-
-**Response (200)**:
-```json
-{
-  "status": "pending",
-  "is_sender": true
-}
-```
-**Fields**:
-- `status`: `connected` (accepted), `pending`, or `none`.
-- `is_sender`: Boolean. `true` if the current user initiated the request.
 
 ---
 

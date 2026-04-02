@@ -53,9 +53,246 @@
     {
       "name": "Notification",
       "description": "User notifications. Notifications are persisted in Neo4j and also delivered in real-time via the Socket.io gateway for online users. See the Real-time WebSocket section in the API handbook for connection details."
+    },
+    {
+      "name": "Connections",
+      "description": "User-to-user connection and relationship management"
+    },
+    {
+      "name": "Profiles",
+      "description": "Comprehensive user profile views and contributions"
     }
   ],
   "paths": {
+    "/profiles/user/{id}": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Get a comprehensive public profile of any user",
+        "operationId": "getUserProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfileResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/request/{target_id}": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Send a connection request to another user",
+        "operationId": "sendRequest",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendConnectionRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Connection request sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/requests": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Get your pending incoming connection requests",
+        "operationId": "getPendingRequests",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of pending requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingRequestDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/requests/{sender_id}/respond": {
+      "patch": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Respond to an incoming connection request",
+        "operationId": "respondToRequest",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sender_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondToConnectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/status/{target_id}": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Check current connection status with another user",
+        "operationId": "getConnectionStatus",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection status response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatusResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/{target_id}": {
+      "delete": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Remove connection or cancel request",
+        "operationId": "removeConnection",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connection removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/send-otp": {
       "post": {
         "tags": ["Authentication"],
@@ -2969,6 +3206,212 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SendConnectionRequestDto": {
+        "type": "object",
+        "required": [
+          "connection_type"
+        ],
+        "properties": {
+          "connection_type": {
+            "type": "string",
+            "enum": [
+              "batchmate",
+              "colleague",
+              "mentor"
+            ],
+            "description": "Type of connection being requested",
+            "example": "mentor"
+          }
+        }
+      },
+      "RespondToConnectionDto": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "description": "Action to take on the connection request",
+            "example": "accept"
+          }
+        }
+      },
+      "PendingRequestDto": {
+        "type": "object",
+        "properties": {
+          "sender_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sender_display_name": {
+            "type": "string"
+          },
+          "sender_username": {
+            "type": "string"
+          },
+          "sender_profile_picture": {
+            "type": "string",
+            "nullable": true
+          },
+          "connection_type": {
+            "type": "string"
+          },
+          "requested_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProfileWorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "company_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string"
+          },
+          "end_date": {
+            "type": "string",
+            "nullable": true
+          },
+          "is_current": {
+            "type": "boolean"
+          },
+          "employment_type": {
+            "type": "string"
+          }
+        }
+      },
+      "ProfileSkillDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "proficiency": {
+            "type": "string"
+          }
+        }
+      },
+      "ProfileOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "company": {
+            "type": "string"
+          },
+          "posted_at": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "alumni",
+              "student"
+            ]
+          },
+          "profile_picture": {
+            "type": "string",
+            "nullable": true
+          },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "degree": {
+            "type": "string"
+          },
+          "batch": {
+            "type": "string"
+          },
+          "graduation_year": {
+            "type": "number",
+            "nullable": true
+          },
+          "linkedin_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "semester": {
+            "type": "number",
+            "nullable": true
+          },
+          "roll_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "work_experience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileWorkExperienceDto"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileSkillDto"
+            }
+          },
+          "opportunities_posted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileOpportunityDto"
+            }
+          },
+          "connection_status": {
+            "type": "string",
+            "enum": [
+              "connected",
+              "pending",
+              "none"
+            ]
+          },
+          "is_connection_sender": {
+            "type": "boolean",
+            "nullable": true
           }
         }
       }

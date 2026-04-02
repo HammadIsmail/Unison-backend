@@ -150,52 +150,6 @@ export class StudentService {
     }));
   }
 
-  async connectToMentor(userId: string, targetId: string, dto: ConnectToMentorDto) {
-    if (userId === targetId) throw new ForbiddenException('Cannot connect with yourself.');
-
-    // Check if target is an alumni
-    const check = await this.neo4j.run(
-      `MATCH (t:User {id: $targetId}) RETURN t.role AS role`,
-      { targetId }
-    );
-    if (!check.records.length) throw new NotFoundException('Target user not found.');
-    
-    const role = check.records[0].get('role');
-    if (role !== 'alumni') {
-      throw new ForbiddenException('You can only send mentor connection requests to alumni.');
-    }
-
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
-       MERGE (u)-[r:CONNECTED_TO]->(t)
-       ON CREATE SET r.status = 'pending', r.created_at = datetime(), r.connection_type = $dto.connection_type
-       ON MATCH SET r.connection_type = $dto.connection_type`,
-      { userId, targetId, dto }
-    );
-
-    const userResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`, 
-      { userId }
-    );
-    const studentUsername = userResult.records[0]?.get('username') || null;
-    const studentName = userResult.records[0]?.get('name') || 'A student';
-    const studentPic = userResult.records[0]?.get('pic') || null;
-
-    await this.notification.createNotification(
-      targetId,
-      `${studentName} sent you a mentor connection request.`,
-      'connection_request',
-      {
-        sender_username: studentUsername,
-        sender_display_name: studentName,
-        sender_profile_picture: studentPic,
-        reference_link: '/network/requests'
-      }
-    );
-
-    return { message: 'Connection request sent successfully.' };
-  }
-
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
@@ -215,46 +169,5 @@ export class StudentService {
       role: r.get('role') || null,
       connection_type: r.get('connection_type') || null,
     }));
-  }
-
-  async removeConnection(userId: string, targetId: string) {
-    const query = `
-      MATCH (u:User {id: $userId})-[r:CONNECTED_TO]-(t:User {id: $targetId})
-      DELETE r
-      RETURN count(r) AS cnt
-    `;
-    const result = await this.neo4j.run(query, { userId, targetId });
-    if (result.records[0].get('cnt').toNumber() === 0) {
-      throw new NotFoundException('Connection or request not found.');
-    }
-    return { message: 'Connection removed successfully.' };
-  }
-
-  async getConnectionStatus(userId: string, targetId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (u1:User {id: $userId}), (u2:User {id: $targetId})
-       OPTIONAL MATCH (u1)-[r:CONNECTED_TO]-(u2)
-       RETURN 
-         CASE 
-           WHEN r IS NULL THEN 'none'
-           WHEN r.status = 'accepted' THEN 'connected'
-           WHEN r.status = 'pending' THEN 'pending'
-           ELSE 'none'
-         END AS status,
-         CASE
-           WHEN r IS NOT NULL AND startNode(r) = u1 THEN true
-           ELSE false
-         END AS is_sender`,
-      { userId, targetId }
-    );
-
-    if (!result.records.length) {
-      throw new NotFoundException('Target user not found.');
-    }
-
-    return {
-      status: result.records[0].get('status'),
-      is_sender: result.records[0].get('is_sender'),
-    };
   }
 }

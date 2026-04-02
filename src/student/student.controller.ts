@@ -58,45 +58,11 @@ export class StudentController {
     return this.studentService.getMentors(userId);
   }
 
-  @Post('connect/:target_id')
-  @Roles('student')
-  @ApiOperation({ summary: 'Send a mentor connection request to an alumni' })
-  @ApiResponse({ status: 201, type: MessageResponseDto })
-  connectWith(
-    @GetUser('sub') userId: string,
-    @Param('target_id') targetId: string,
-    @Body() dto: ConnectToMentorDto,
-  ) {
-    return this.studentService.connectToMentor(userId, targetId, dto);
-  }
-
   @Get('connections')
   @Roles('student')
   @ApiOperation({ summary: 'Get your accepted mentorship connections' })
   @ApiResponse({ status: 200, type: [MentorRecommendationResponseDto] }) 
   getConnections(@GetUser('sub') userId: string) {
     return this.studentService.getConnections(userId);
-  }
-
-  @Delete('connections/:target_id')
-  @Roles('student')
-  @ApiOperation({ summary: 'Remove an existing connection or cancel a pending request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
-  removeConnection(
-    @GetUser('sub') userId: string,
-    @Param('target_id') targetId: string,
-  ) {
-    return this.studentService.removeConnection(userId, targetId);
-  }
-
-  @Get('connection-status/:target_id')
-  @Roles('student')
-  @ApiOperation({ summary: 'Get connection status with an alumni' })
-  @ApiResponse({ status: 200, type: ConnectionStatusResponseDto })
-  getConnectionStatus(
-    @GetUser('sub') userId: string,
-    @Param('target_id') targetId: string,
-  ) {
-    return this.studentService.getConnectionStatus(userId, targetId);
   }
 }

@@ -11,6 +11,7 @@ import { SearchModule } from './search/search.module';
 import { SkillModule } from './skill/skill.module';
 import { NetworkModule } from './network/network.module';
 import { NotificationModule } from './notification/notification.module';
+import { ConnectionsModule } from './connections/connections.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ActivityModule } from './common/activity/activity.module';
 import { ConstraintsSeed } from './seed/constraints.seed';
@@ -19,6 +20,7 @@ import { APP_GUARD } from '@nestjs/core';
 import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
+import { ProfilesModule } from './profiles/profiles.module';
 
 @Module({
   imports: [
@@ -61,6 +63,7 @@ import { HealthModule } from './health/health.module';
     SkillModule,
     NetworkModule,
     NotificationModule,
+    ConnectionsModule,
     CloudinaryModule,
     ActivityModule,
     HealthModule,
