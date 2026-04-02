@@ -1177,7 +1177,7 @@ interface NotificationPayload {
   sender_username?: string | null;
   sender_display_name?: string | null;
   sender_profile_picture?: string | null;
-  reference_link?: string | null; // Only for 'new_opportunity'
+  reference_link?: string | null; // Only for 'new_opportunity' and 'connection_request'
 }
 ```
 
@@ -1203,7 +1203,8 @@ interface NotificationPayload {
     "is_read": false,
     "sender_username": "ahmed123",
     "sender_display_name": "Ahmed Hassan",
-    "sender_profile_picture": "https://example.com/ahmed.jpg"
+    "sender_profile_picture": "https://example.com/ahmed.jpg",
+    "reference_link": "/network/requests"
   },
   {
     "id": "uuid-notification-789",

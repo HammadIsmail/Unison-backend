@@ -43,7 +43,7 @@ export class NotificationService {
         sender_username: r.get('sender_username') || null,
         sender_display_name: r.get('sender_display_name') || null,
         sender_profile_picture: r.get('sender_profile_picture') || null,
-        reference_link: type === 'new_opportunity' ? (r.get('reference_link') || null) : undefined,
+        reference_link: (type === 'new_opportunity' || type === 'connection_request') ? (r.get('reference_link') || null) : undefined,
       };
     });
   }
@@ -104,7 +104,7 @@ export class NotificationService {
       sender_username: metadata?.sender_username || null,
       sender_display_name: metadata?.sender_display_name || null,
       sender_profile_picture: metadata?.sender_profile_picture || null,
-      reference_link: type === 'new_opportunity' ? (metadata?.reference_link || null) : undefined
+      reference_link: (type === 'new_opportunity' || type === 'connection_request') ? (metadata?.reference_link || null) : undefined
     });
 
     return { id, message, type, created_at };
