@@ -1146,8 +1146,13 @@ interface NotificationPayload {
 ---
 
 ### 1. Get My Notifications
-`GET /api/notifications`
-**Summary**: Retrieves all notifications for the authenticated user, ordered newest first.
+`GET /api/notifications`  
+**Summary**: Retrieves notifications for the authenticated user, ordered newest first. Supports filtering by read status.
+
+**Query Parameters**:
+| Parameter | Type | Status | Description |
++| :--- | :--- | :--- | :--- |
++| `read` | String | *Optional* | Filter by read status (`true` or `false`). Returns all if omitted. |
 
 **Response (200)**:
 ```json

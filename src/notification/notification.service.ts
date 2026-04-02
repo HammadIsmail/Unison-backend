@@ -17,16 +17,21 @@ export class NotificationService {
     private readonly gateway: NotificationGateway,
   ) { }
 
-  async getUserNotifications(userId: string) {
+  async getUserNotifications(userId: string, readStatus?: string) {
+    let isRead: boolean | undefined;
+    if (readStatus === 'true') isRead = true;
+    else if (readStatus === 'false') isRead = false;
+
     const query = `
       MATCH (u:User {id: $userId})<-[:FOR]-(n:Notification)
+      ${isRead !== undefined ? 'WHERE n.is_read = $isRead' : ''}
       RETURN n.id AS id, n.message AS message, n.type AS type, 
              n.created_at AS created_at, n.is_read AS is_read,
              n.sender_username AS sender_username, n.sender_display_name AS sender_display_name,
              n.sender_profile_picture AS sender_profile_picture, n.reference_link AS reference_link
       ORDER BY n.created_at DESC
     `;
-    const result = await this.neo4j.run(query, { userId });
+    const result = await this.neo4j.run(query, { userId, isRead });
     return result.records.map(r => ({
       id: r.get('id'),
       message: r.get('message'),

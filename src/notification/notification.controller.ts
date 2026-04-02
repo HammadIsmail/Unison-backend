@@ -1,5 +1,5 @@
-import { Controller, Get, Patch, Param, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Patch, Param, UseGuards, Query } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { NotificationService } from './notification.service';
 import { NotificationResponseDto } from './dto/notification-response.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
@@ -15,9 +15,13 @@ export class NotificationController {
 
   @Get()
   @ApiOperation({ summary: 'Get all notifications for the current user' })
+  @ApiQuery({ name: 'read', required: false, type: String, description: 'Filter by read status (true/false)' })
   @ApiResponse({ status: 200, type: [NotificationResponseDto] })
-  getNotifications(@GetUser('sub') userId: string) {
-    return this.notificationService.getUserNotifications(userId);
+  getNotifications(
+    @GetUser('sub') userId: string,
+    @Query('read') read?: string,
+  ) {
+    return this.notificationService.getUserNotifications(userId, read);
   }
 
   @Patch(':id/read')
