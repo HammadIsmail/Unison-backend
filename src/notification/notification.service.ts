@@ -32,17 +32,20 @@ export class NotificationService {
       ORDER BY n.created_at DESC
     `;
     const result = await this.neo4j.run(query, { userId, isRead });
-    return result.records.map(r => ({
-      id: r.get('id'),
-      message: r.get('message'),
-      type: r.get('type'),
-      created_at: r.get('created_at'),
-      is_read: r.get('is_read'),
-      sender_username: r.get('sender_username') || null,
-      sender_display_name: r.get('sender_display_name') || null,
-      sender_profile_picture: r.get('sender_profile_picture') || null,
-      reference_link: r.get('reference_link') || null,
-    }));
+    return result.records.map(r => {
+      const type = r.get('type');
+      return {
+        id: r.get('id'),
+        message: r.get('message'),
+        type: type,
+        created_at: r.get('created_at'),
+        is_read: r.get('is_read'),
+        sender_username: r.get('sender_username') || null,
+        sender_display_name: r.get('sender_display_name') || null,
+        sender_profile_picture: r.get('sender_profile_picture') || null,
+        reference_link: type === 'new_opportunity' ? (r.get('reference_link') || null) : undefined,
+      };
+    });
   }
 
   async markAsRead(userId: string, notificationId: string) {
@@ -101,7 +104,7 @@ export class NotificationService {
       sender_username: metadata?.sender_username || null,
       sender_display_name: metadata?.sender_display_name || null,
       sender_profile_picture: metadata?.sender_profile_picture || null,
-      reference_link: metadata?.reference_link || null
+      reference_link: type === 'new_opportunity' ? (metadata?.reference_link || null) : undefined
     });
 
     return { id, message, type, created_at };

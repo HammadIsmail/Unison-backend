@@ -1177,7 +1177,7 @@ interface NotificationPayload {
   sender_username?: string | null;
   sender_display_name?: string | null;
   sender_profile_picture?: string | null;
-  reference_link?: string | null;
+  reference_link?: string | null; // Only for 'new_opportunity'
 }
 ```
 
@@ -1203,19 +1203,18 @@ interface NotificationPayload {
     "is_read": false,
     "sender_username": "ahmed123",
     "sender_display_name": "Ahmed Hassan",
-    "sender_profile_picture": "https://example.com/ahmed.jpg",
-    "reference_link": "/network/requests"
+    "sender_profile_picture": "https://example.com/ahmed.jpg"
   },
   {
-    "id": "uuid-notification-456",
-    "message": "Your account has been approved by the admin. Welcome to UNISON!",
-    "type": "account_approved",
-    "created_at": "2024-03-22T09:00:00Z",
-    "is_read": true,
-    "sender_username": null,
-    "sender_display_name": "UNISON Administration",
-    "sender_profile_picture": null,
-    "reference_link": "/"
+    "id": "uuid-notification-789",
+    "message": "New opportunity at Google: Software Engineer",
+    "type": "new_opportunity",
+    "created_at": "2024-03-24T10:00:00Z",
+    "is_read": false,
+    "sender_username": "hammad_i",
+    "sender_display_name": "Google",
+    "sender_profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+    "reference_link": "/opportunities/uuid-opp-123"
   }
 ]
 ```
