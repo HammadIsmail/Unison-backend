@@ -10,11 +10,8 @@ import {
   ConnectDto,
 } from './dto/alumni.dto';
 import { RespondToConnectionDto } from './dto/connection.dto';
-import {
-  AlumniProfileResponseDto,
-  ConnectionRequestResponseDto,
-  NetworkUserResponseDto,
-} from './dto/alumni-response.dto';
+import { AlumniProfileResponseDto, ConnectionRequestResponseDto, NetworkUserResponseDto } from './dto/alumni-response.dto';
+import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -161,5 +158,16 @@ export class AlumniController {
     @Param('target_id') targetId: string,
   ) {
     return this.alumniService.removeConnection(userId, targetId);
+  }
+
+  @Get('connection-status/:target_id')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Get connection status with a student' })
+  @ApiResponse({ status: 200, type: ConnectionStatusResponseDto })
+  getConnectionStatus(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.alumniService.getConnectionStatus(userId, targetId);
   }
 }

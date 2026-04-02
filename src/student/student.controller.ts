@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '
 import { StudentService } from './student.service';
 import { UpdateStudentProfileDto, AddStudentSkillDto, ConnectToMentorDto } from './dto/student.dto';
 import { MentorRecommendationResponseDto, StudentProfileResponseDto } from './dto/student-response.dto';
+import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -86,5 +87,16 @@ export class StudentController {
     @Param('target_id') targetId: string,
   ) {
     return this.studentService.removeConnection(userId, targetId);
+  }
+
+  @Get('connection-status/:target_id')
+  @Roles('student')
+  @ApiOperation({ summary: 'Get connection status with an alumni' })
+  @ApiResponse({ status: 200, type: ConnectionStatusResponseDto })
+  getConnectionStatus(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.studentService.getConnectionStatus(userId, targetId);
   }
 }

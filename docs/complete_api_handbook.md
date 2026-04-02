@@ -602,6 +602,23 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
+### 14. Get Connection Status
+`GET /api/alumni/connection-status/:target_id`  
+**Summary**: Checks the current connection status between the logged-in alumni and another user (student or another alumni).
+
+**Response (200)**:
+```json
+{
+  "status": "pending",
+  "is_sender": true
+}
+```
+**Fields**:
+- `status`: `connected` (accepted), `pending`, or `none`.
+- `is_sender`: Boolean. `true` if the current user initiated the request (only relevant when status is `pending` or `connected`).
+
+---
+
 ## 🎓 Student
 Requires `Bearer JWT`. Role restriction: `student`.
 
@@ -720,6 +737,23 @@ Requires `Bearer JWT`. Role restriction: `student`.
 ```json
 { "message": "Connection removed successfully." }
 ```
+
+---
+
+### 8. Get Connection Status
+`GET /api/student/connection-status/:target_id`  
+**Summary**: Checks the current connection status between the logged-in student and an alumni.
+
+**Response (200)**:
+```json
+{
+  "status": "pending",
+  "is_sender": true
+}
+```
+**Fields**:
+- `status`: `connected` (accepted), `pending`, or `none`.
+- `is_sender`: Boolean. `true` if the current user initiated the request.
 
 ---
 
