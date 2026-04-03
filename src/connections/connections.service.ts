@@ -120,6 +120,24 @@ export class ConnectionsService {
     }));
   }
 
+  async getSentPendingRequests(userId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (me:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(u:User)
+       RETURN u.id AS id, u.display_name AS display_name, u.username AS username, 
+              u.profile_picture AS profile_picture, r.connection_type AS connection_type, r.created_at AS created_at`,
+      { userId }
+    );
+
+    return result.records.map((r) => ({
+      target_id: r.get('id'),
+      target_display_name: r.get('display_name'),
+      target_username: r.get('username'),
+      target_profile_picture: r.get('profile_picture'),
+      connection_type: r.get('connection_type'),
+      requested_at: r.get('created_at'),
+    }));
+  }
+
   async respondToRequest(userId: string, senderId: string, action: 'accept' | 'reject') {
     if (action === 'accept') {
       const result = await this.neo4j.run(

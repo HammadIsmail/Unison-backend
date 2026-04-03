@@ -53,6 +53,13 @@ export class ConnectionsController {
     return this.connectionsService.getPendingRequests(userId);
   }
 
+  @Get('requests/sent')
+  @ApiOperation({ summary: 'Get pending connection requests you have sent' })
+  @ApiResponse({ status: 200 })
+  getSentPendingRequests(@GetUser('sub') userId: string) {
+    return this.connectionsService.getSentPendingRequests(userId);
+  }
+
   @Patch('requests/:sender_id/respond')
   @ApiOperation({ summary: 'Respond to an incoming connection request' })
   @ApiResponse({ status: 200, type: MessageResponseDto })

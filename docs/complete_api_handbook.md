@@ -590,7 +590,27 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
-### 3. Respond to Request
+### 3. Get Sent Pending Requests
+`GET /api/connections/requests/sent`  
+**Summary**: Lists all pending connection requests that the current user has sent.
+
+**Response (200)**:
+```json
+[
+  {
+    "target_id": "uuid-target-123",
+    "target_display_name": "Ali Khan",
+    "target_username": "ali_k",
+    "target_profile_picture": "https://cloudinary.com/ali.jpg",
+    "connection_type": "colleague",
+    "requested_at": "2024-03-23T11:00:00Z"
+  }
+]
+```
+
+---
+
+### 4. Respond to Request
 `PATCH /api/connections/requests/:sender_id/respond`  
 **Summary**: Accept or reject an incoming request.
 
@@ -606,7 +626,7 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
-### 4. Get Connection Status
+### 5. Get Connection Status
 `GET /api/connections/status/:target_id`  
 **Summary**: Checks the current connection status with another user.
 
@@ -620,7 +640,7 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
-### 5. Remove Connection
+### 6. Remove Connection
 `DELETE /api/connections/:target_id`  
 **Summary**: Immediately deletes an active connection or cancels a pending request.
 
