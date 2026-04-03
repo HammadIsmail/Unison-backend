@@ -46,6 +46,16 @@ export class ConnectionsController {
     return this.connectionsService.sendRequest(userId, targetId, dto.connection_type);
   }
 
+  @Delete('request/:target_id')
+  @ApiOperation({ summary: 'Cancel a pending connection request you have sent' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  cancelRequest(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.connectionsService.cancelRequest(userId, targetId);
+  }
+
   @Get('requests')
   @ApiOperation({ summary: 'Get your pending incoming connection requests' })
   @ApiResponse({ status: 200 })

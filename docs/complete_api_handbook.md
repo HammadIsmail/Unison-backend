@@ -610,7 +610,18 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
-### 4. Respond to Request
+### 4. Cancel Sent Connection Request
+`DELETE /api/connections/request/:target_id`  
+**Summary**: Cancel a pending connection request you have sent.
+
+**Response (200)**:
+```json
+{ "message": "Connection request cancelled successfully." }
+```
+
+---
+
+### 5. Respond to Request
 `PATCH /api/connections/requests/:sender_id/respond`  
 **Summary**: Accept or reject an incoming request.
 
@@ -626,7 +637,7 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
-### 5. Get Connection Status
+### 6. Get Connection Status
 `GET /api/connections/status/:target_id`  
 **Summary**: Checks the current connection status with another user.
 
@@ -640,7 +651,7 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
-### 6. Remove Connection
+### 7. Remove Connection
 `DELETE /api/connections/:target_id`  
 **Summary**: Immediately deletes an active connection or cancels a pending request.
 

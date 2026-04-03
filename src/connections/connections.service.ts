@@ -138,6 +138,19 @@ export class ConnectionsService {
     }));
   }
 
+  async cancelRequest(userId: string, targetId: string) {
+    const query = `
+      MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(t:User {id: $targetId})
+      DELETE r
+      RETURN count(r) AS cnt
+    `;
+    const result = await this.neo4j.run(query, { userId, targetId });
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Pending connection request not found.');
+    }
+    return { message: 'Connection request cancelled successfully.' };
+  }
+
   async respondToRequest(userId: string, senderId: string, action: 'accept' | 'reject') {
     if (action === 'accept') {
       const result = await this.neo4j.run(
