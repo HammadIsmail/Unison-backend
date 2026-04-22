@@ -1321,3 +1321,89 @@ socket.on("connect_error", (error) => {
    socket.disconnect();
    ```
 4. **Dual-source**: On app load, call `GET /api/notifications` to fetch historical notifications, then use the socket to append new ones in real time.
+
+---
+
+## 💬 Chat (Messaging)
+Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participants must be 'connected'.
+
+### 1. Send Message
+`POST /api/chat/messages`
+**Summary**: Sends a text message to a connected user.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `receiverId` | String | **Required** | UUID of the recipient user |
+| `content` | String | **Required** | Message text |
+
+**Response (201)**:
+```json
+{
+  "_id": "60d5ec...",
+  "conversationId": "60d5ec...",
+  "senderId": "uuid-sender",
+  "content": "Hello there!",
+  "isRead": false,
+  "createdAt": "2024-03-23T10:00:00Z"
+}
+```
+*(Note: A `new_message` push event and socket event will immediately be sent to the receiver)*
+
+---
+
+### 2. Get Conversations (Inbox)
+`GET /api/chat/conversations`
+**Summary**: Retrieves all chat threads for the logged-in user.
+
+**Response (200)**:
+```json
+[
+  {
+    "_id": "uuid-conversation",
+    "participants": ["uuid-1", "uuid-2"],
+    "updatedAt": "2024-03-23T10:00:00Z",
+    "lastMessage": {
+      "content": "Hello there!",
+      "isRead": false,
+      "createdAt": "2024-03-23T10:00:00Z"
+    },
+    "participantProfile": {
+      "id": "uuid-2",
+      "display_name": "Ali Khan",
+      "profile_picture": "https://img.com/pic.jpg",
+      "username": "ali_k"
+    }
+  }
+]
+```
+
+---
+
+### 3. Get Messages (Chat History)
+`GET /api/chat/conversations/:participantId/messages`
+**Summary**: Retrieves chronological message history with a specific user.
+
+**Response (200)**:
+```json
+[
+  {
+    "_id": "60d5ec...",
+    "senderId": "uuid-sender",
+    "content": "Hello there!",
+    "isRead": true,
+    "createdAt": "2024-03-23T09:55:00Z"
+  }
+]
+```
+
+---
+
+### 4. Mark Message as Read
+`PATCH /api/chat/messages/:messageId/read`
+**Summary**: Marks a message as read.
+
+**Response (200)**:
+```json
+{ "success": true }
+```

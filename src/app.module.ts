@@ -21,6 +21,8 @@ import * as Joi from 'joi';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from './health/health.module';
 import { ProfilesModule } from './profiles/profiles.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -52,6 +54,7 @@ import { ProfilesModule } from './profiles/profiles.module';
       ttl: 60000,
       limit: 100,
     }]),
+    MongooseModule.forRoot(process.env.MONGODB_URI as string),
     Neo4jModule,
     MailModule,
     AuthModule,
@@ -67,6 +70,7 @@ import { ProfilesModule } from './profiles/profiles.module';
     CloudinaryModule,
     ActivityModule,
     HealthModule,
+    ChatModule,
   ],
   providers: [
     ConstraintsSeed,

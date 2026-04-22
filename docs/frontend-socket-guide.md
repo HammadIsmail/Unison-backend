@@ -83,7 +83,8 @@ export type NotificationType =
   | "connection_accepted"
   | "account_approved"
   | "account_rejected"
-  | "new_opportunity";
+  | "new_opportunity"
+  | "new_message";
 
 export interface NotificationPayload {
   id: string;          // UUID of the specific notification

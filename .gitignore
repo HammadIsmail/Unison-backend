@@ -1,9 +1,11 @@
 # Node modules
 node_modules/
-
+graphify-out
+.graphifyignore
+.agents
 #folders
 phases/
-
+venv
 # Build output
 dist/
 build/

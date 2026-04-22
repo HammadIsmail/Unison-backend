@@ -9,6 +9,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [Neo4jModule, forwardRef(() => AuthModule)],
   controllers: [NotificationController],
   providers: [NotificationService, NotificationGateway],
-  exports: [NotificationService],
+  exports: [NotificationService, NotificationGateway],
 })
 export class NotificationModule {}
