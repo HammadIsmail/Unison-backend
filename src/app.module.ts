@@ -70,6 +70,7 @@ import { ChatModule } from './chat/chat.module';
     CloudinaryModule,
     ActivityModule,
     HealthModule,
+    ProfilesModule,
     ChatModule,
   ],
   providers: [
