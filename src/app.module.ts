@@ -23,6 +23,8 @@ import { HealthModule } from './health/health.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './chat/chat.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -73,7 +75,9 @@ import { ChatModule } from './chat/chat.module';
     ProfilesModule,
     ChatModule,
   ],
+  controllers: [AppController],
   providers: [
+    AppService,
     ConstraintsSeed,
     {
       provide: APP_GUARD,
