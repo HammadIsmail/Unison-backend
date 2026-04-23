@@ -84,12 +84,18 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   private extractToken(client: Socket): string | null {
-    // Try to get token from handshake headers or query
+    // 1. Check handshake.auth (The standard way for Socket.io v4+)
+    if (client.handshake.auth?.token) {
+      return client.handshake.auth.token;
+    }
+
+    // 2. Try to get token from handshake headers
     const authHeader = client.handshake.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       return authHeader.split(' ')[1];
     }
     
+    // 3. Try to get token from query
     const queryToken = client.handshake.query.token;
     if (typeof queryToken === 'string') {
       return queryToken;
