@@ -859,6 +859,28 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": ["Alumni"],
+        "summary": "Permanently delete your alumni account",
+        "operationId": "deleteMyAlumniAccount",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account and all associated data deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/alumni/work-experience": {
@@ -1280,6 +1302,28 @@
         "responses": {
           "200": {
             "description": "Profile updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Student"],
+        "summary": "Permanently delete your student account",
+        "operationId": "deleteMyStudentAccount",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account and all associated data deleted successfully",
             "content": {
               "application/json": {
                 "schema": {

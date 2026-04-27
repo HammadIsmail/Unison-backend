@@ -116,4 +116,12 @@ export class AlumniController {
   getBatchMates(@GetUser('sub') userId: string) {
     return this.alumniService.getBatchMates(userId);
   }
+
+  @Delete('me')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Permanently delete your alumni account' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  deleteMe(@GetUser('sub') userId: string) {
+    return this.alumniService.deleteAccount(userId);
+  }
 }

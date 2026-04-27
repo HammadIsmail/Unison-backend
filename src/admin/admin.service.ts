@@ -4,6 +4,7 @@ import { MailService } from '../common/mail/mail.service';
 import { RejectAccountDto } from './dto/admin.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class AdminService {
@@ -12,6 +13,7 @@ export class AdminService {
     private readonly mail: MailService,
     private readonly activity: ActivityService,
     private readonly notification: NotificationService,
+    private readonly cloudinary: CloudinaryService,
   ) { }
 
   async getPendingAccounts() {
@@ -226,19 +228,52 @@ export class AdminService {
   }
 
   async removeAccount(id: string) {
+    // 1. Fetch user profile picture and opportunity media
+    const mediaResult = await this.neo4j.run(
+      `MATCH (u:User {id: $id})
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       RETURN u.profile_picture AS profile_pic, collect(o.media) AS opp_media`,
+      { id }
+    );
+
+    if (mediaResult.records.length > 0) {
+      const profilePic = mediaResult.records[0].get('profile_pic');
+      const oppMediaArrays = mediaResult.records[0].get('opp_media');
+
+      // Delete profile picture
+      if (profilePic) {
+        const publicId = this.cloudinary.extractPublicIdFromUrl(profilePic);
+        if (publicId) await this.cloudinary.deleteImage(publicId);
+      }
+
+      // Delete opportunity media
+      for (const mediaArray of oppMediaArrays) {
+        if (Array.isArray(mediaArray)) {
+          for (const url of mediaArray) {
+            const publicId = this.cloudinary.extractPublicIdFromUrl(url);
+            if (publicId) await this.cloudinary.deleteImage(publicId);
+          }
+        }
+      }
+    }
+
+    // 2. Comprehensive Neo4j Delete
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id})
-       DETACH DELETE u
+       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       OPTIONAL MATCH (n:Notification)-[:FOR]->(u)
+       DETACH DELETE u, w, o, n
        RETURN count(u) as deleted`,
       { id }
     );
 
     const deleted = result.records[0]?.get('deleted').toNumber() || 0;
     if (deleted === 0) {
-      throw new NotFoundException('Account not found or role mismatch.');
+      throw new NotFoundException('Account not found.');
     }
 
-    return { message: 'Account removed successfully.' };
+    return { message: 'Account and all associated data removed successfully.' };
   }
 
   async requestEmailChange(newEmail: string) {

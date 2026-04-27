@@ -65,4 +65,12 @@ export class StudentController {
   getConnections(@GetUser('sub') userId: string) {
     return this.studentService.getConnections(userId);
   }
+
+  @Delete('me')
+  @Roles('student')
+  @ApiOperation({ summary: 'Permanently delete your student account' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  deleteMe(@GetUser('sub') userId: string) {
+    return this.studentService.deleteAccount(userId);
+  }
 }

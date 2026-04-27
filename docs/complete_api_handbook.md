@@ -543,6 +543,17 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
+### 13. Delete Account
+`DELETE /api/alumni/me`  
+**Summary**: Permanently deletes your alumni account and all associated data (profile, work history, posted opportunities, notifications, and media).
+
+**Response (200)**:
+```json
+{ "message": "Your account and all associated data have been permanently deleted." }
+```
+
+---
+
 ---
 
 ---
@@ -823,6 +834,15 @@ Requires `Bearer JWT`. Role restriction: `student`.
 ```
 
 ---
+
+### 7. Delete Account
+`DELETE /api/student/me`  
+**Summary**: Permanently deletes your student account and all associated data (profile, notifications, and media).
+
+**Response (200)**:
+```json
+{ "message": "Your account and all associated data have been permanently deleted." }
+```
 
 ---
 

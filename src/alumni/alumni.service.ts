@@ -258,4 +258,47 @@ export class AlumniService {
       role: r.get('role') || null,
     }));
   }
+
+  async deleteAccount(userId: string) {
+    // 1. Fetch user profile picture and opportunity media
+    const mediaResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       RETURN u.profile_picture AS profile_pic, collect(o.media) AS opp_media`,
+      { userId }
+    );
+
+    if (mediaResult.records.length > 0) {
+      const profilePic = mediaResult.records[0].get('profile_pic');
+      const oppMediaArrays = mediaResult.records[0].get('opp_media');
+
+      // Delete profile picture
+      if (profilePic) {
+        const publicId = this.cloudinaryService.extractPublicIdFromUrl(profilePic);
+        if (publicId) await this.cloudinaryService.deleteImage(publicId);
+      }
+
+      // Delete opportunity media
+      for (const mediaArray of oppMediaArrays) {
+        if (Array.isArray(mediaArray)) {
+          for (const url of mediaArray) {
+            const publicId = this.cloudinaryService.extractPublicIdFromUrl(url);
+            if (publicId) await this.cloudinaryService.deleteImage(publicId);
+          }
+        }
+      }
+    }
+
+    // 2. Comprehensive Neo4j Delete
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId})
+       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       OPTIONAL MATCH (n:Notification)-[:FOR]->(u)
+       DETACH DELETE u, w, o, n`,
+      { userId }
+    );
+
+    return { message: 'Your account and all associated data have been permanently deleted.' };
+  }
 }

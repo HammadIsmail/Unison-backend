@@ -170,4 +170,30 @@ export class StudentService {
       connection_type: r.get('connection_type') || null,
     }));
   }
+
+  async deleteAccount(userId: string) {
+    // 1. Fetch user profile picture
+    const mediaResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS profile_pic`,
+      { userId }
+    );
+
+    if (mediaResult.records.length > 0) {
+      const profilePic = mediaResult.records[0].get('profile_pic');
+      if (profilePic) {
+        const publicId = this.cloudinaryService.extractPublicIdFromUrl(profilePic);
+        if (publicId) await this.cloudinaryService.deleteImage(publicId);
+      }
+    }
+
+    // 2. Comprehensive Neo4j Delete
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId})
+       OPTIONAL MATCH (n:Notification)-[:FOR]->(u)
+       DETACH DELETE u, n`,
+      { userId }
+    );
+
+    return { message: 'Your account and all associated data have been permanently deleted.' };
+  }
 }
