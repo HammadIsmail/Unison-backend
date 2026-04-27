@@ -896,6 +896,7 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
       "id": "uuid-opp-123",
       "title": "Software Engineer",
       "type": "full-time",
+      "description": "Deep dive into NestJS and Neo4j.",
       "company": "Google",
       "location": "Mountain View, CA",
       "is_remote": true,

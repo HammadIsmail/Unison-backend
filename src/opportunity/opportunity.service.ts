@@ -115,7 +115,7 @@ export class OpportunityService {
     const query = `
       ${matchClause}
       ${whereString}
-      RETURN o.id AS id, o.title AS title, o.type AS type, o.company_name AS company, 
+      RETURN o.id AS id, o.title AS title, o.type AS type, o.description AS description, o.company_name AS company, 
              o.location AS location, o.is_remote AS is_remote, o.apply_link AS apply_link,
              o.deadline AS deadline, o.posted_at AS posted_at, o.media AS media,
              u.id AS poster_id, u.display_name AS poster_name, u.username AS poster_username, 
@@ -130,6 +130,7 @@ export class OpportunityService {
       id: r.get('id'),
       title: r.get('title'),
       type: r.get('type'),
+      description: r.get('description'),
       company: r.get('company'),
       location: r.get('location'),
       is_remote: r.get('is_remote'),

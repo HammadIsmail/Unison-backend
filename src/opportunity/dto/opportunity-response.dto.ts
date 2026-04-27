@@ -32,6 +32,9 @@ export class OpportunityListResponseDto {
     @ApiProperty({ example: 'full-time' })
     type: string;
 
+    @ApiProperty({ example: 'Deep dive into NestJS and Neo4j.' })
+    description: string;
+
     @ApiProperty({ example: 'Google' })
     company: string;
 
