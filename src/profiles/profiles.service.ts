@@ -62,7 +62,12 @@ export class ProfilesService {
     // we need to filter them out based on a required property like id or name.
     const workExperience = record.get('work_exp').filter(e => e.id !== null);
     const skills = record.get('skills').filter(s => s.id !== null);
-    const opportunities = record.get('opps').filter(o => o.id !== null);
+    const opportunities = record.get('opps')
+      .filter(o => o.id !== null)
+      .map(o => ({
+        ...o,
+        posted_at: o.posted_at ? new Date(o.posted_at.toString()).toISOString() : null
+      }));
 
     return {
       id: user.id,

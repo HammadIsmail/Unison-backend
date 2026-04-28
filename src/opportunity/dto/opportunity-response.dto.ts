@@ -96,6 +96,9 @@ export class OpportunityDetailResponseDto {
     @ApiProperty({ example: 'https://google.com/careers' })
     apply_link: string;
 
+    @ApiProperty({ example: '2024-03-23T10:30:00.000Z' })
+    posted_at: string;
+
     @ApiProperty({ example: '2024-04-01' })
     deadline: string;
 

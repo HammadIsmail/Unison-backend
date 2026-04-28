@@ -92,7 +92,7 @@ export class SearchService {
       location: r.get('location'),
       is_remote: r.get('is_remote'),
       apply_link: r.get('apply_link'),
-      posted_at: r.get('posted_at'),
+      posted_at: r.get('posted_at') ? new Date(r.get('posted_at').toString()).toISOString() : null,
       deadline: r.get('deadline'),
       media: r.get('media') || [],
       posted_by: {

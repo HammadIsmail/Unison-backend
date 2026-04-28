@@ -25,6 +25,8 @@ export class OpportunityService {
       mediaUrls = results.map(res => res.secure_url);
     }
 
+    const now = new Date().toISOString();
+
     // Create Opportunity node and connect to the user who posted it
     // We also link required skills
     await this.neo4j.run(
@@ -42,7 +44,7 @@ export class OpportunityService {
          apply_link: $dto.apply_link,
          status: 'open',
          media: $mediaUrls,
-         posted_at: date()
+         posted_at: $now
        })
        CREATE (u)-[:POSTED]->(o)
        WITH o
@@ -50,7 +52,7 @@ export class OpportunityService {
        MERGE (s:Skill {name: toLower(skillName)})
        ON CREATE SET s.id = randomUUID()
        MERGE (o)-[:REQUIRES_SKILL]->(s)`,
-      { userId, opportunityId, dto, mediaUrls }
+      { userId, opportunityId, dto, mediaUrls, now }
     );
 
     await this.activity.logActivity(
@@ -142,7 +144,7 @@ export class OpportunityService {
         profile_picture: r.get('poster_profile_picture'),
         role: r.get('poster_role'),
       },
-      posted_at: r.get('posted_at'),
+      posted_at: r.get('posted_at') ? new Date(r.get('posted_at').toString()).toISOString() : null,
       deadline: r.get('deadline'),
       media: r.get('media'),
     }));
@@ -174,6 +176,7 @@ export class OpportunityService {
       is_remote: opp.is_remote,
       apply_link: opp.apply_link,
       deadline: opp.deadline,
+      posted_at: opp.posted_at ? new Date(opp.posted_at.toString()).toISOString() : null,
       media: opp.media,
       company: {
         name: opp.company_name,
@@ -204,7 +207,7 @@ export class OpportunityService {
       title: r.get('title'),
       company: r.get('company'),
       status: r.get('status'),
-      posted_at: r.get('posted_at'),
+      posted_at: r.get('posted_at') ? new Date(r.get('posted_at').toString()).toISOString() : null,
       deadline: r.get('deadline'),
     }));
   }
