@@ -75,6 +75,7 @@ export class ProfilesService {
       display_name: user.display_name,
       role: user.role,
       profile_picture: user.profile_picture || null,
+      backDropImage: user.backDropImage || null,
       bio: user.bio || null,
       degree: user.degree || 'N/A',
       batch: user.batch || 'N/A',
@@ -88,5 +89,40 @@ export class ProfilesService {
       connection_status: record.get('conn_status') || 'none',
       is_connection_sender: record.get('is_sender')
     };
+  }
+
+  async getSuggestions(userId: string) {
+    const query = `
+      MATCH (u:User {id: $userId})
+      MATCH (other:User) WHERE other.id <> $userId AND other.account_status = 'approved' AND NOT (u)-[:CONNECTED_TO]-(other)
+      OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(other)
+      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
+      OPTIONAL MATCH (other)-[:HAS_EXPERIENCE]->(ow:WorkExperience) WHERE toLower(w.company_name) = toLower(ow.company_name)
+      WITH u, other, count(DISTINCT s) AS commonSkills, count(DISTINCT w) AS commonCompany
+      WITH u, other, commonSkills, commonCompany,
+           CASE WHEN u.batch = other.batch AND u.batch IS NOT NULL THEN 1 ELSE 0 END AS sameBatch,
+           CASE WHEN u.degree = other.degree AND u.degree IS NOT NULL THEN 1 ELSE 0 END AS sameDegree,
+           CASE WHEN u.department = other.department AND u.department IS NOT NULL THEN 1 ELSE 0 END AS sameDepartment
+      WITH other, commonSkills, commonCompany, sameBatch, sameDegree, sameDepartment,
+           (commonSkills + commonCompany + sameBatch + sameDegree + sameDepartment) AS score
+      WHERE score > 0
+      ORDER BY score DESC
+      LIMIT 5
+      RETURN other.id AS id, other.display_name AS display_name, other.username AS username, 
+             other.profile_picture AS profile_picture, other.role AS role, 
+             other.degree AS degree, other.batch AS batch
+    `;
+
+    const result = await this.neo4j.run(query, { userId });
+
+    return result.records.map(record => ({
+      id: record.get('id'),
+      display_name: record.get('display_name'),
+      username: record.get('username'),
+      profile_picture: record.get('profile_picture') || null,
+      role: record.get('role'),
+      degree: record.get('degree') || null,
+      batch: record.get('batch') || null,
+    }));
   }
 }

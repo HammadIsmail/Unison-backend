@@ -50,7 +50,7 @@ export class ConnectionsService {
     return { message: 'Connection removed successfully.' };
   }
 
-  async sendRequest(userId: string, targetId: string, connectionType: string) {
+  async sendRequest(userId: string, targetId: string) {
     if (userId === targetId) throw new ForbiddenException('Cannot connect with yourself.');
 
     const userResult = await this.neo4j.run(
@@ -67,24 +67,11 @@ export class ConnectionsService {
     );
     if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
     
-    const targetRole = targetResult.records[0].get('role');
-
-    // Validation: Students can only connect to Alumni (as mentors)
-    if (sender.role === 'student') {
-      if (targetRole !== 'alumni') {
-        throw new ForbiddenException('Students can only send connection requests to alumni.');
-      }
-      if (connectionType !== 'mentor') {
-        throw new ForbiddenException('Students can only send mentor connection requests.');
-      }
-    }
-
     await this.neo4j.run(
       `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
        MERGE (u)-[r:CONNECTED_TO]->(t)
-       ON CREATE SET r.status = 'pending', r.created_at = datetime(), r.connection_type = $connectionType
-       ON MATCH SET r.connection_type = $connectionType`,
-      { userId, targetId, connectionType }
+       ON CREATE SET r.status = 'pending', r.created_at = datetime()`,
+      { userId, targetId }
     );
 
     await this.notification.createNotification(
@@ -106,7 +93,7 @@ export class ConnectionsService {
     const result = await this.neo4j.run(
       `MATCH (u:User)-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username, 
-              u.profile_picture AS profile_picture, r.connection_type AS connection_type, r.created_at AS created_at`,
+              u.profile_picture AS profile_picture, r.created_at AS created_at`,
       { userId }
     );
 
@@ -115,7 +102,6 @@ export class ConnectionsService {
       sender_display_name: r.get('display_name'),
       sender_username: r.get('username'),
       sender_profile_picture: r.get('profile_picture'),
-      connection_type: r.get('connection_type'),
       requested_at: r.get('created_at'),
     }));
   }
@@ -124,7 +110,7 @@ export class ConnectionsService {
     const result = await this.neo4j.run(
       `MATCH (me:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(u:User)
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username, 
-              u.profile_picture AS profile_picture, r.connection_type AS connection_type, r.created_at AS created_at`,
+              u.profile_picture AS profile_picture, r.created_at AS created_at`,
       { userId }
     );
 
@@ -133,7 +119,6 @@ export class ConnectionsService {
       target_display_name: r.get('display_name'),
       target_username: r.get('username'),
       target_profile_picture: r.get('profile_picture'),
-      connection_type: r.get('connection_type'),
       requested_at: r.get('created_at'),
     }));
   }

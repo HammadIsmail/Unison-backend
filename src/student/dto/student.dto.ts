@@ -22,6 +22,10 @@ export class UpdateStudentProfileDto {
   @IsOptional()
   profile_picture?: any;
 
+  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Backdrop image file' })
+  @IsOptional()
+  backDropImage?: any;
+
   @ApiPropertyOptional({ description: 'Current semester of the student', example: 4 })
   @IsOptional()
   @Type(() => Number)
@@ -46,9 +50,3 @@ export class AddStudentSkillDto {
   proficiency_level: string;
 }
 
-export class ConnectToMentorDto {
-  @ApiProperty({ description: 'Type of connection', enum: ['mentor'], example: 'mentor' })
-  @IsNotEmpty()
-  @IsEnum(['mentor'])
-  connection_type: string;
-}

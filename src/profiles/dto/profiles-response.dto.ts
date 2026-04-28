@@ -73,6 +73,9 @@ export class PublicProfileResponseDto {
   @ApiPropertyOptional({ example: 'https://url.com/pic.jpg' })
   profile_picture?: string;
 
+  @ApiPropertyOptional({ example: 'https://url.com/backdrop.jpg' })
+  backDropImage?: string;
+
   @ApiPropertyOptional({ example: 'Software engineer at Google.' })
   bio?: string;
 
@@ -110,4 +113,27 @@ export class PublicProfileResponseDto {
 
   @ApiPropertyOptional({ example: true, description: 'True if the REQUESTING user initiated the pending connection' })
   is_connection_sender?: boolean;
+}
+
+export class SuggestionUserResponseDto {
+  @ApiProperty({ example: 'uuid-user-123' })
+  id: string;
+
+  @ApiProperty({ example: 'hammad_i' })
+  username: string;
+
+  @ApiProperty({ example: 'Hammad Ismail' })
+  display_name: string;
+
+  @ApiPropertyOptional({ example: 'https://url.com/pic.jpg' })
+  profile_picture?: string;
+
+  @ApiProperty({ example: 'alumni' })
+  role: 'alumni' | 'student';
+
+  @ApiPropertyOptional({ example: 'BS Computer Science' })
+  degree?: string;
+
+  @ApiPropertyOptional({ example: '2016-2020' })
+  batch?: string;
 }

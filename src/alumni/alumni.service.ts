@@ -7,7 +7,6 @@ import {
   CreateWorkExperienceDto,
   UpdateWorkExperienceDto,
   AddSkillDto,
-  ConnectDto,
 } from './dto/alumni.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
@@ -58,13 +57,15 @@ export class AlumniService {
       linkedin_url: user.linkedin_url || null,
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
+      backDropImage: user.backDropImage || null,
       work_experiences: experiences,
       detailed_skills: skills,
     };
   }
 
-  async updateProfile(userId: string, dto: UpdateAlumniProfileDto, file?: Express.Multer.File) {
-    if (file) {
+  async updateProfile(userId: string, dto: UpdateAlumniProfileDto, files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] }) {
+    if (files?.profile_picture?.length) {
+      const file = files.profile_picture[0];
       try {
         const result = await this.neo4j.run(
           `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
@@ -83,6 +84,29 @@ export class AlumniService {
         }
       } catch (err) {
         console.error('[Cloudinary] Profile picture update failed:', err);
+      }
+    }
+
+    if (files?.backDropImage?.length) {
+      const file = files.backDropImage[0];
+      try {
+        const result = await this.neo4j.run(
+          `MATCH (u:User {id: $userId}) RETURN u.backDropImage AS oldPic`,
+          { userId }
+        );
+        const oldPic = result.records[0]?.get('oldPic');
+
+        const uploadResult = await this.cloudinaryService.uploadFile(file);
+        dto.backDropImage = uploadResult.secure_url;
+
+        if (oldPic) {
+          const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
+          if (publicId) {
+            await this.cloudinaryService.deleteImage(publicId);
+          }
+        }
+      } catch (err) {
+        console.error('[Cloudinary] Backdrop image update failed:', err);
       }
     }
 
@@ -209,13 +233,13 @@ export class AlumniService {
     return { message: 'Skill removed successfully.' };
   }
 
-  async getNetwork(userId: string) {
+  async getConnections(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, w.company_name AS company, 
-              w.role AS role, r.connection_type AS connection_type`,
+              w.role AS role`,
       { userId }
     );
 
@@ -226,7 +250,6 @@ export class AlumniService {
       profile_picture: r.get('profile_picture') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
-      connection_type: r.get('connection_type') || null,
     }));
   }
 

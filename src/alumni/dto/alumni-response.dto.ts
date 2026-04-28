@@ -77,6 +77,9 @@ export class AlumniProfileResponseDto {
     @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_profile.jpg' })
     profile_picture?: string;
 
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_backdrop.jpg' })
+    backDropImage?: string;
+
     @ApiProperty({ type: [WorkExperienceResponseDto] })
     work_experiences: WorkExperienceResponseDto[];
 
@@ -102,9 +105,6 @@ export class NetworkUserResponseDto {
 
     @ApiPropertyOptional({ example: 'Product Manager' })
     role?: string;
-
-    @ApiPropertyOptional({ example: 'colleague' })
-    connection_type?: string;
 }
 
 export class ConnectionRequestResponseDto {
@@ -119,9 +119,6 @@ export class ConnectionRequestResponseDto {
 
     @ApiPropertyOptional({ example: 'https://cloudinary.com/profile.jpg' })
     sender_profile_picture?: string;
-
-    @ApiProperty({ example: 'mentor' })
-    connection_type: string;
 
     @ApiProperty({ example: '2024-03-23T10:00:00Z' })
     requested_at: string;

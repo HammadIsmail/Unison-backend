@@ -34,27 +34,8 @@ export class StudentProfileResponseDto {
 
     @ApiPropertyOptional({ example: 'https://cloudinary.com/ali_pro.jpg' })
     profile_picture?: string;
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/ali_backdrop.jpg' })
+    backDropImage?: string;
 }
 
-export class MentorRecommendationResponseDto {
-    @ApiProperty({ example: 'uuid-alumni-123' })
-    alumni_id: string;
-
-    @ApiProperty({ example: 'ahmed_h' })
-    username: string;
-
-    @ApiProperty({ example: 'Ahmed Hassan' })
-    display_name: string;
-
-    @ApiProperty({ example: 'https://cloudinary.com/ahmed.jpg', nullable: true })
-    profile_picture: string | null;
-
-    @ApiProperty({ example: 'Programming' })
-    domain: string;
-
-    @ApiPropertyOptional({ example: 'Google' })
-    company?: string;
-
-    @ApiProperty({ example: 5 })
-    common_skills?: number;
-}

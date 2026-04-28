@@ -1,5 +1,5 @@
-import { Controller, Get, Put, Post, Patch, Delete, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Put, Post, Patch, Delete, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AlumniService } from './alumni.service';
 import {
@@ -7,9 +7,7 @@ import {
   CreateWorkExperienceDto,
   UpdateWorkExperienceDto,
   AddSkillDto,
-  ConnectDto,
 } from './dto/alumni.dto';
-import { RespondToConnectionDto } from './dto/connection.dto';
 import { AlumniProfileResponseDto, ConnectionRequestResponseDto, NetworkUserResponseDto } from './dto/alumni-response.dto';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
@@ -36,16 +34,19 @@ export class AlumniController {
 
   @Put('me')
   @Roles('alumni')
-  @UseInterceptors(FileInterceptor('profile_picture'))
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'profile_picture', maxCount: 1 },
+    { name: 'backDropImage', maxCount: 1 },
+  ]))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update your own alumni profile' })
   @ApiResponse({ status: 200, type: MessageResponseDto })
   updateMe(
     @GetUser('sub') userId: string,
     @Body() dto: UpdateAlumniProfileDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] },
   ) {
-    return this.alumniService.updateProfile(userId, dto, file);
+    return this.alumniService.updateProfile(userId, dto, files);
   }
 
 
@@ -93,20 +94,12 @@ export class AlumniController {
     return this.alumniService.deleteSkill(userId, skillId);
   }
 
-  @Get('network')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Get your professional network' })
-  @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
-  getNetwork(@GetUser('sub') userId: string) {
-    return this.alumniService.getNetwork(userId);
-  }
-
   @Get('connections')
   @Roles('alumni')
   @ApiOperation({ summary: 'Get your accepted connections' })
   @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getConnections(@GetUser('sub') userId: string) {
-    return this.alumniService.getNetwork(userId);
+    return this.alumniService.getConnections(userId);
   }
 
   @Get('batch-mates')

@@ -25,6 +25,10 @@ export class UpdateAlumniProfileDto {
   @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Profile picture file' })
   @IsOptional()
   profile_picture?: any;
+
+  @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Backdrop image file' })
+  @IsOptional()
+  backDropImage?: any;
 }
 
 export class CreateWorkExperienceDto {
@@ -98,9 +102,3 @@ export class AddSkillDto {
   years_experience?: number;
 }
 
-export class ConnectDto {
-  @ApiProperty({ description: 'Type of connection', enum: ['batchmate', 'colleague', 'mentor'], example: 'mentor' })
-  @IsNotEmpty()
-  @IsEnum(['batchmate', 'colleague', 'mentor'])
-  connection_type: string;
-}

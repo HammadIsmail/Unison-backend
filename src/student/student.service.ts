@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto, ConnectToMentorDto } from './dto/student.dto';
+import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationService } from '../notification/notification.service';
 
@@ -42,11 +42,13 @@ export class StudentService {
       bio: user.bio || null,
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
+      backDropImage: user.backDropImage || null,
     };
   }
 
-  async updateProfile(userId: string, dto: UpdateStudentProfileDto, file?: Express.Multer.File) {
-    if (file) {
+  async updateProfile(userId: string, dto: UpdateStudentProfileDto, files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] }) {
+    if (files?.profile_picture?.length) {
+      const file = files.profile_picture[0];
       try {
         const result = await this.neo4j.run(
           `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
@@ -65,6 +67,29 @@ export class StudentService {
         }
       } catch (err) {
         console.error('[Cloudinary] Student profile picture update failed:', err);
+      }
+    }
+
+    if (files?.backDropImage?.length) {
+      const file = files.backDropImage[0];
+      try {
+        const result = await this.neo4j.run(
+          `MATCH (u:User {id: $userId}) RETURN u.backDropImage AS oldPic`,
+          { userId }
+        );
+        const oldPic = result.records[0]?.get('oldPic');
+
+        const uploadResult = await this.cloudinaryService.uploadFile(file);
+        dto.backDropImage = uploadResult.secure_url;
+
+        if (oldPic) {
+          const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
+          if (publicId) {
+            await this.cloudinaryService.deleteImage(publicId);
+          }
+        }
+      } catch (err) {
+        console.error('[Cloudinary] Student backdrop image update failed:', err);
       }
     }
 
@@ -97,58 +122,7 @@ export class StudentService {
     return { message: 'Skill added successfully.' };
   }
 
-  async getMentors(userId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (student:User {id: $userId, role: 'student'})
-       // 1. Find accepted mentors
-       OPTIONAL MATCH (student)-[:CONNECTED_TO {status: 'accepted', connection_type: 'mentor'}]->(am:User)
-       WITH student, collect(DISTINCT am) AS acceptedList
 
-       // 2. Find suggested alumni based on shared skills (do NOT filter yet to keep context alive)
-       OPTIONAL MATCH (student)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(sug:User {role: 'alumni', account_status: 'approved'})
-       WHERE NOT sug IN acceptedList AND sug.id <> student.id
-       WITH student, acceptedList, sug, count(s) AS commonSkills
-       ORDER BY commonSkills DESC
-       LIMIT 10
-
-       // 3. Collect suggestions - aggregation over zero rows here would kill the query if not for the student context
-       WITH student, acceptedList, collect(DISTINCT sug) AS suggestionList
-
-       // 4. Combine and finalize the list of alumni to return
-       WITH student, [x IN (acceptedList + suggestionList) WHERE x IS NOT NULL] AS allAlumni
-       UNWIND (CASE WHEN allAlumni = [] THEN [null] ELSE allAlumni END) AS alumni
-       WITH student, alumni WHERE alumni IS NOT NULL
-
-       // 5. Final detail retrieval for each alumni
-       MATCH (alumni)
-       OPTIONAL MATCH (alumni)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
-       OPTIONAL MATCH (student)-[:HAS_SKILL]->(sk:Skill)<-[:HAS_SKILL]-(alumni)
-       WITH alumni, w, collect(DISTINCT sk) AS sharedSkills
-
-       RETURN 
-           alumni.id AS alumni_id, 
-           alumni.username AS username,
-           alumni.display_name AS display_name, 
-           alumni.profile_picture AS profile_picture,
-           CASE 
-               WHEN size(sharedSkills) > 0 THEN sharedSkills[0].category 
-               ELSE 'Mentorship' 
-           END AS domain,
-           w.company_name AS company,
-           size(sharedSkills) AS common_skills`,
-      { userId }
-    );
-
-    return result.records.map((r) => ({
-      alumni_id: r.get('alumni_id'),
-      username: r.get('username'),
-      display_name: r.get('display_name'),
-      profile_picture: r.get('profile_picture') || null,
-      domain: r.get('domain'),
-      company: r.get('company') || null,
-      common_skills: typeof r.get('common_skills')?.toNumber === 'function' ? r.get('common_skills').toNumber() : r.get('common_skills'),
-    }));
-  }
 
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
@@ -156,7 +130,7 @@ export class StudentService {
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, w.company_name AS company, 
-              w.role AS role, r.connection_type AS connection_type`,
+              w.role AS role`,
       { userId }
     );
 
@@ -167,7 +141,6 @@ export class StudentService {
       profile_picture: r.get('profile_picture') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
-      connection_type: r.get('connection_type') || null,
     }));
   }
 

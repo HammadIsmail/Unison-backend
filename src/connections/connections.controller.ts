@@ -6,7 +6,7 @@ import { ConnectionsService } from './connections.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
-import { SendConnectionRequestDto, RespondToConnectionDto } from './dto/connections.dto';
+import { RespondToConnectionDto } from './dto/connections.dto';
 
 @ApiTags('Connections')
 @ApiBearerAuth()
@@ -41,9 +41,8 @@ export class ConnectionsController {
   sendRequest(
     @GetUser('sub') userId: string,
     @Param('target_id') targetId: string,
-    @Body() dto: SendConnectionRequestDto,
   ) {
-    return this.connectionsService.sendRequest(userId, targetId, dto.connection_type);
+    return this.connectionsService.sendRequest(userId, targetId);
   }
 
   @Delete('request/:target_id')

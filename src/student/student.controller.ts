@@ -1,9 +1,10 @@
-import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile, Delete } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile, UploadedFiles, Delete } from '@nestjs/common';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto, ConnectToMentorDto } from './dto/student.dto';
-import { MentorRecommendationResponseDto, StudentProfileResponseDto } from './dto/student-response.dto';
+import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
+import { StudentProfileResponseDto } from './dto/student-response.dto';
+import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -29,16 +30,19 @@ export class StudentController {
 
   @Put('me')
   @Roles('student')
-  @UseInterceptors(FileInterceptor('profile_picture'))
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'profile_picture', maxCount: 1 },
+    { name: 'backDropImage', maxCount: 1 },
+  ]))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update your own student profile' })
   @ApiResponse({ status: 200, type: MessageResponseDto })
   updateMe(
     @GetUser('sub') userId: string,
     @Body() dto: UpdateStudentProfileDto,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFiles() files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] },
   ) {
-    return this.studentService.updateProfile(userId, dto, file);
+    return this.studentService.updateProfile(userId, dto, files);
   }
 
 
@@ -50,18 +54,10 @@ export class StudentController {
     return this.studentService.addSkill(userId, dto);
   }
 
-  @Get('mentors')
-  @Roles('student')
-  @ApiOperation({ summary: 'Get list of suggested mentors' })
-  @ApiResponse({ status: 200, type: [MentorRecommendationResponseDto] })
-  getMentors(@GetUser('sub') userId: string) {
-    return this.studentService.getMentors(userId);
-  }
-
   @Get('connections')
   @Roles('student')
-  @ApiOperation({ summary: 'Get your accepted mentorship connections' })
-  @ApiResponse({ status: 200, type: [MentorRecommendationResponseDto] }) 
+  @ApiOperation({ summary: 'Get your accepted professional connections' })
+  @ApiResponse({ status: 200, type: [NetworkUserResponseDto] }) 
   getConnections(@GetUser('sub') userId: string) {
     return this.studentService.getConnections(userId);
   }

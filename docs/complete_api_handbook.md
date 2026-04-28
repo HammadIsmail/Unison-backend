@@ -360,6 +360,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   "linkedin_url": "https://linkedin.com/in/ahmed",
   "phone": "+923001234567",
   "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
+  "backDropImage": "https://cloudinary.com/ahmed_backdrop.jpg",
   "work_experiences": [...],
   "detailed_skills": [...]
 }
@@ -379,6 +380,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 | `linkedin_url` | String | *Optional*| LinkedIn profile link |
 | `phone` | String | *Optional* | Contact phone number |
 | `profile_picture`| File | *Optional* | Profile picture image file (binary) |
+| `backDropImage`| File | *Optional* | Backdrop cover image file (binary) |
 
 **Response (200)**:
 ```json
@@ -465,28 +467,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 8. Get Professional Network
-`GET /api/alumni/network`  
-**Summary**: Retrieves a list of all accepted connections.
-
-**Response (200)**:
-```json
-[
-  {
-    "id": "uuid-123",
-    "display_name": "Ali Khan",
-    "username": "alikhan",
-    "profile_picture": "https://cloudinary.com/profile.jpg",
-    "company": "Microsoft",
-    "role": "Product Manager",
-    "connection_type": "colleague"
-  }
-]
-```
-
----
-
-### 9. Get My Connections
+### 8. Get My Connections
 `GET /api/alumni/connections`  
 **Summary**: Retrieves a list of all accepted professional connections.
 
@@ -499,19 +480,14 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
     "username": "alikhan",
     "profile_picture": "https://cloudinary.com/profile.jpg",
     "company": "Microsoft",
-    "role": "Product Manager",
-    "connection_type": "colleague"
+    "role": "Product Manager"
   }
 ]
 ```
 
 ---
 
----
-
 ### 9. Find Batch Mates
-
-### 12. Find Batch Mates
 `GET /api/alumni/batch-mates`  
 **Summary**: Discovery based on graduation year.
 
@@ -524,8 +500,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
     "username": "alikhan",
     "profile_picture": "https://cloudinary.com/profile.jpg",
     "company": "Microsoft",
-    "role": "Product Manager",
-    "connection_type": "batchmate"
+    "role": "Product Manager"
   },
   {
     "id": "uuid-456",
@@ -533,17 +508,16 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
     "username": "zainab",
     "profile_picture": null,
     "company": null,
-    "role": null,
-    "connection_type": null
+    "role": null
   }
 ]
 ```
 
-> **Fields**: `id`, `display_name`, `username` (always present), `profile_picture` (optional), `company` / `role` / `connection_type` (optional).
+> **Fields**: `id`, `display_name`, `username` (always present), `profile_picture` (optional), `company` / `role` (optional).
 
 ---
 
-### 13. Delete Account
+### 10. Delete Account
 `DELETE /api/alumni/me`  
 **Summary**: Permanently deletes your alumni account and all associated data (profile, work history, posted opportunities, notifications, and media).
 
@@ -565,14 +539,9 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 `POST /api/connections/request/:target_id`  
 **Summary**: Sends a connection request to another user.
 
-**Constraints**:
-- **Students**: Can only send requests to **Alumni** and only with type `mentor`.
-- **Alumni**: Can send `batchmate`, `colleague`, or `mentor` requests.
+**Constraints**: None. Any user can send a connection request to any other user.
 
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `connection_type` | Enum | **Required** | `batchmate`, `colleague`, `mentor` |
+**Request Body**: None
 
 **Response (201)**:
 ```json
@@ -593,7 +562,6 @@ Shared relationship management for all users. Requires `Bearer JWT`.
     "sender_display_name": "Zainab Ahmed",
     "sender_username": "zainab",
     "sender_profile_picture": "https://cloudinary.com/profile.jpg",
-    "connection_type": "mentor",
     "requested_at": "2024-03-23T10:00:00Z"
   }
 ]
@@ -613,7 +581,6 @@ Shared relationship management for all users. Requires `Bearer JWT`.
     "target_display_name": "Ali Khan",
     "target_username": "ali_k",
     "target_profile_picture": "https://cloudinary.com/ali.jpg",
-    "connection_type": "colleague",
     "requested_at": "2024-03-23T11:00:00Z"
   }
 ]
@@ -697,6 +664,7 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
   "display_name": "Hammad Ismail",
   "role": "alumni",
   "profile_picture": "...",
+  "backDropImage": "...",
   "bio": "Software Engineer",
   "degree": "BSCS",
   "batch": "2016-2020",
@@ -737,6 +705,27 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
 
 ---
 
+### 2. Get User Suggestions
+`GET /api/profiles/suggestions`  
+**Summary**: Retrieves a list of 5 recommended users based on shared attributes like skills, degree, batch, department, or company.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-123",
+    "display_name": "Sarah Chen",
+    "username": "sarah_c",
+    "profile_picture": "https://cloudinary.com/sarah.jpg",
+    "role": "alumni",
+    "degree": "BSCS",
+    "batch": "2016-2020"
+  }
+]
+```
+
+---
+
 ## 🎓 Student
 Requires `Bearer JWT`. Role restriction: `student`.
 
@@ -755,7 +744,8 @@ Requires `Bearer JWT`. Role restriction: `student`.
   "batch": "2021-2025",
   "bio": "Aspiring data scientist.",
   "phone": "+923451234567",
-  "profile_picture": "https://cloudinary.com/ali_pro.jpg"
+  "profile_picture": "https://cloudinary.com/ali_pro.jpg",
+  "backDropImage": "https://cloudinary.com/ali_backdrop.jpg"
 }
 ```
 
@@ -772,6 +762,7 @@ Requires `Bearer JWT`. Role restriction: `student`.
 | `phone` | String | *Optional* | Contact phone number |
 | `bio` | String | *Optional* | Short personal bio |
 | `profile_picture`| File | *Optional* | Profile picture image file (binary) |
+| `backDropImage`| File | *Optional* | Backdrop cover image file (binary) |
 | `semester` | Number | *Optional* | Update current semester (1-8) |
 
 ---
@@ -789,34 +780,9 @@ Requires `Bearer JWT`. Role restriction: `student`.
 
 ---
 
-### 4. Mentor Discovery
-`GET /api/student/mentors`  
-**Summary**: Suggests alumni as potential mentors.
-
-**Response (200)**:
-```json
-[
-  {
-    "alumni_id": "uuid-alumni-123",
-    "username": "ahmed_h",
-    "display_name": "Ahmed Hassan",
-    "profile_picture": "https://cloudinary.com/ahmed.jpg",
-    "domain": "Programming",
-    "company": "Google",
-    "common_skills": 5
-  }
-]
-```
-
----
-
----
-
-### 5. Get My Connections
-
-### 6. Get My Connections
+### 4. Get My Connections
 `GET /api/student/connections`  
-**Summary**: Retrieves a list of all accepted mentorship connections (Alumni mentors).
+**Summary**: Retrieves a list of all accepted professional connections.
 
 **Response (200)**:
 ```json
@@ -827,15 +793,14 @@ Requires `Bearer JWT`. Role restriction: `student`.
     "username": "ahmed_h",
     "profile_picture": "https://cloudinary.com/ahmed.jpg",
     "company": "Google",
-    "role": "Software Engineer",
-    "connection_type": "mentor"
+    "role": "Software Engineer"
   }
 ]
 ```
 
 ---
 
-### 7. Delete Account
+### 5. Delete Account
 `DELETE /api/student/me`  
 **Summary**: Permanently deletes your student account and all associated data (profile, notifications, and media).
 
