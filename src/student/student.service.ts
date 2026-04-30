@@ -129,8 +129,8 @@ export class StudentService {
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
-              c.profile_picture AS profile_picture, w.company_name AS company, 
-              w.role AS role`,
+              c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
+              w.company_name AS company, w.role AS role`,
       { userId }
     );
 
@@ -139,6 +139,8 @@ export class StudentService {
       display_name: r.get('display_name'),
       username: r.get('username'),
       profile_picture: r.get('profile_picture') || null,
+      bio: r.get('bio') || null,
+      backDropImage: r.get('backDropImage') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
     }));

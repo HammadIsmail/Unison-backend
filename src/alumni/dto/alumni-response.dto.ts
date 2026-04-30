@@ -100,6 +100,12 @@ export class NetworkUserResponseDto {
     @ApiPropertyOptional({ example: 'https://cloudinary.com/profile.jpg' })
     profile_picture?: string;
 
+    @ApiPropertyOptional({ example: 'Experienced software engineer.' })
+    bio?: string;
+
+    @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_backdrop.jpg' })
+    backDropImage?: string;
+
     @ApiPropertyOptional({ example: 'Microsoft' })
     company?: string;
 

@@ -529,6 +529,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
     "display_name": "Ali Khan",
     "username": "alikhan",
     "profile_picture": "https://cloudinary.com/profile.jpg",
+    "bio": "Product manager with a passion for tech.",
+    "backDropImage": "https://cloudinary.com/ali_backdrop.jpg",
     "company": "Microsoft",
     "role": "Product Manager"
   }
@@ -549,6 +551,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
     "display_name": "Ali Khan",
     "username": "alikhan",
     "profile_picture": "https://cloudinary.com/profile.jpg",
+    "bio": "Product manager with a passion for tech.",
+    "backDropImage": "https://cloudinary.com/ali_backdrop.jpg",
     "company": "Microsoft",
     "role": "Product Manager"
   },
@@ -557,6 +561,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
     "display_name": "Zainab Ahmed",
     "username": "zainab",
     "profile_picture": null,
+    "bio": "Graduate of 2024.",
+    "backDropImage": null,
     "company": null,
     "role": null
   }
@@ -842,6 +848,8 @@ Requires `Bearer JWT`. Role restriction: `student`.
     "display_name": "Ahmed Hassan",
     "username": "ahmed_h",
     "profile_picture": "https://cloudinary.com/ahmed.jpg",
+    "bio": "Senior software engineer at Google.",
+    "backDropImage": "https://cloudinary.com/ahmed_backdrop.jpg",
     "company": "Google",
     "role": "Software Engineer"
   }
