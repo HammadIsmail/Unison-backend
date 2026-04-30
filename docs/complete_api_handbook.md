@@ -62,6 +62,7 @@ Handle user entry, verification, and security.
 | `student_card` | File | **Required** | Student card image file (binary) |
 | `graduation_year`| Number | *Optional* | **Alumni Only** (Required for graduates) |
 | `semester` | Number | *Optional* | **Student Only** (Required for students) |
+| `batch` | String | **Required** | Batch year (e.g., `2021`) |
 
 **Response (201)**:
 ```json
@@ -1135,6 +1136,7 @@ Requires `Bearer JWT`.
   "role": "alumni",
   "degree": "BSCS",
   "graduation_year": 2024,
+  "batch": "2020-2024",
   "linkedin_url": "https://linkedin.com/in/ahmed",
   "company": "Google",
   "job_role": "Software Engineer",

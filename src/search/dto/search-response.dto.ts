@@ -79,6 +79,9 @@ export class UserDetailResponseDto {
     @ApiProperty({ example: 2024 })
     graduation_year: number;
 
+    @ApiPropertyOptional({ example: '2020-2024' })
+    batch?: string;
+
     @ApiPropertyOptional({ example: 'Google' })
     company?: string;
 

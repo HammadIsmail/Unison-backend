@@ -90,6 +90,11 @@ export class RegisterDto {
     @Type(() => Number)
     @IsInt()
     semester?: number;
+
+    @ApiProperty({ description: 'Batch year (e.g., 2021)', example: '2021' })
+    @IsString()
+    @IsNotEmpty()
+    batch: string;
 }
 
 export class LoginDto {

@@ -141,11 +141,10 @@ export class AuthService {
         const userId = uuidv4();
         const now = new Date().toISOString();
 
-        // Build role-specific props
         const extraProps =
             dto.role === 'alumni'
-                ? `graduation_year: $graduation_year, batch: toString($graduation_year - 4) + '-' + toString($graduation_year),`
-                : `semester: $semester,`;
+                ? `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`
+                : `semester: $semester, batch: $batch,`;
 
         await this.neo4j.run(
             `CREATE (u:User {
@@ -177,6 +176,7 @@ export class AuthService {
                 studentCardUrl: studentCardUrl,
                 graduation_year: dto.graduation_year ?? null,
                 semester: dto.semester ?? null,
+                batch: dto.batch ?? null,
                 now,
             },
         );
