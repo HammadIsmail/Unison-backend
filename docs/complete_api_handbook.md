@@ -1074,7 +1074,9 @@ Requires `Bearer JWT`.
     "role": "Software Engineer",
     "skills": ["TypeScript", "NestJS"],
     "batch": "2021-2025",
-    "profile_picture": "https://cloudinary.com/ahmed_profile.jpg"
+    "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
+    "bio": "Software engineer with 5 years of experience.",
+    "backDropImage": "https://cloudinary.com/ahmed_backdrop.jpg"
   }
 ]
 ```

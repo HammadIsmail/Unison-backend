@@ -34,7 +34,8 @@ export class SearchService {
       ${matchClause}
       ${whereString}
       WITH u, w, collect(DISTINCT s.name) AS skills
-      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, w.company_name AS company, w.role AS role, skills
+      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, 
+             u.bio AS bio, u.backDropImage AS backDropImage, w.company_name AS company, w.role AS role, skills
       ORDER BY u.created_at DESC
       LIMIT 50
     `;
@@ -46,6 +47,8 @@ export class SearchService {
       username: r.get('username'),
       display_name: r.get('display_name'),
       profile_picture: r.get('profile_picture') || null,
+      bio: r.get('bio') || null,
+      backDropImage: r.get('backDropImage') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
       skills: r.get('skills'),
