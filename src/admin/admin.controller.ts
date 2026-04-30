@@ -1,12 +1,13 @@
 import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto } from './dto/admin.dto';
+import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto, RejectUpgradeDto } from './dto/admin.dto';
 import {
   AdminAlumniPaginationResponseDto,
   AdminStudentPaginationResponseDto,
   DashboardStatsResponseDto,
   PendingAccountResponseDto,
+  UpgradeRequestResponseDto,
 } from './dto/admin-response.dto';
 import { MessageResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -40,6 +41,27 @@ export class AdminController {
   @ApiResponse({ status: 200, type: MessageResponseDto })
   rejectAccount(@Param('id') id: string, @Body() dto: RejectAccountDto) {
     return this.adminService.rejectAccount(id, dto);
+  }
+
+  @Get('upgrade-requests')
+  @ApiOperation({ summary: 'List all profile upgrade requests from students' })
+  @ApiResponse({ status: 200, type: [UpgradeRequestResponseDto] })
+  getPendingUpgrades() {
+    return this.adminService.getPendingUpgrades();
+  }
+
+  @Patch('approve-upgrade/:id')
+  @ApiOperation({ summary: 'Approve a student to alumni profile upgrade request' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  approveUpgrade(@Param('id') id: string) {
+    return this.adminService.approveUpgrade(id);
+  }
+
+  @Patch('reject-upgrade/:id')
+  @ApiOperation({ summary: 'Reject a student to alumni profile upgrade request' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  rejectUpgrade(@Param('id') id: string, @Body() dto: RejectUpgradeDto) {
+    return this.adminService.rejectUpgrade(id, dto);
   }
 
   @Get('dashboard-stats')

@@ -2,7 +2,7 @@ import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException,
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
+import { UpdateStudentProfileDto, AddStudentSkillDto, RequestUpgradeDto } from './dto/student.dto';
 import { StudentProfileResponseDto } from './dto/student-response.dto';
 import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
@@ -68,5 +68,13 @@ export class StudentController {
   @ApiResponse({ status: 200, type: MessageResponseDto })
   deleteMe(@GetUser('sub') userId: string) {
     return this.studentService.deleteAccount(userId);
+  }
+
+  @Post('upgrade-request')
+  @Roles('student')
+  @ApiOperation({ summary: 'Request to upgrade profile from Student to Alumni' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  requestUpgrade(@GetUser('sub') userId: string, @Body() dto: RequestUpgradeDto) {
+    return this.studentService.requestUpgrade(userId, dto.graduation_year);
   }
 }

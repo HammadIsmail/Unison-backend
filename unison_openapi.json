@@ -363,6 +363,118 @@
         ]
       }
     },
+    "/admin/upgrade-requests": {
+      "get": {
+        "operationId": "AdminController_getPendingUpgrades",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UpgradeRequestResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all profile upgrade requests from students",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/approve-upgrade/{id}": {
+      "patch": {
+        "operationId": "AdminController_approveUpgrade",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a student to alumni profile upgrade request",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/reject-upgrade/{id}": {
+      "patch": {
+        "operationId": "AdminController_rejectUpgrade",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectUpgradeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a student to alumni profile upgrade request",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
     "/admin/dashboard-stats": {
       "get": {
         "operationId": "AdminController_getDashboardStats",
@@ -1131,6 +1243,43 @@
           }
         ],
         "summary": "Get your accepted professional connections",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/student/upgrade-request": {
+      "post": {
+        "operationId": "StudentController_requestUpgrade",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestUpgradeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request to upgrade profile from Student to Alumni",
         "tags": [
           "Student"
         ]
@@ -2825,6 +2974,67 @@
           "rejection_reason"
         ]
       },
+      "UpgradeRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "zain_a"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Zainab Ahmed"
+          },
+          "email": {
+            "type": "string",
+            "example": "zainab@uet.edu.pk"
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-110"
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2024
+          },
+          "upgrade_status": {
+            "type": "string",
+            "example": "pending"
+          },
+          "profile_picture": {
+            "type": "object",
+            "example": "https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "roll_number",
+          "graduation_year",
+          "upgrade_status",
+          "profile_picture"
+        ]
+      },
+      "RejectUpgradeDto": {
+        "type": "object",
+        "properties": {
+          "rejection_reason": {
+            "type": "string",
+            "description": "Reason for rejecting the profile upgrade",
+            "example": "Graduation year mismatch."
+          }
+        },
+        "required": [
+          "rejection_reason"
+        ]
+      },
       "DashboardStatsResponseDto": {
         "type": "object",
         "properties": {
@@ -3545,6 +3755,19 @@
           "skill_name",
           "category",
           "proficiency_level"
+        ]
+      },
+      "RequestUpgradeDto": {
+        "type": "object",
+        "properties": {
+          "graduation_year": {
+            "type": "number",
+            "description": "The year the student is graduating or has graduated",
+            "example": 2024
+          }
+        },
+        "required": [
+          "graduation_year"
         ]
       },
       "CreateOpportunityDto": {

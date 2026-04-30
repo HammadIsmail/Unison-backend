@@ -50,3 +50,9 @@ export class AddStudentSkillDto {
   proficiency_level: string;
 }
 
+export class RequestUpgradeDto {
+  @ApiProperty({ description: 'The year the student is graduating or has graduated', example: 2024 })
+  @IsNotEmpty()
+  @IsInt()
+  graduation_year: number;
+}

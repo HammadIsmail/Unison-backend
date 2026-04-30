@@ -66,4 +66,40 @@ this.fromEmail = 'no-reply@shareride.site';
       `,
         });
     }
+
+    async sendUpgradeApprovalEmail(to: string, name: string): Promise<void> {
+        await this.resend.emails.send({
+            from: `UNISON Alumni Network <${this.fromEmail}>`,
+            to,
+            subject: 'Your UNISON Profile Has Been Upgraded!',
+            html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #10b981;">Congratulations, ${name}!</h2>
+          <p>Your request to upgrade your profile to <strong>Alumni</strong> has been approved by the admin.</p>
+          <p>You now have full access to all alumni features on the platform.</p>
+          <div style="margin-top: 30px; text-align: center;">
+            <a href="#" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Explore Alumni Features</a>
+          </div>
+        </div>
+      `,
+        });
+    }
+
+    async sendUpgradeRejectionEmail(to: string, name: string, reason: string): Promise<void> {
+        await this.resend.emails.send({
+            from: `UNISON Alumni Network <${this.fromEmail}>`,
+            to,
+            subject: 'UNISON Profile Upgrade Update',
+            html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #ef4444;">Hello ${name},</h2>
+          <p>Unfortunately, your request to upgrade your profile to Alumni has been <strong>rejected</strong>.</p>
+          <p style="background: #fff1f2; padding: 15px; border-radius: 6px; border-left: 4px solid #ef4444;">
+            <strong>Reason:</strong> ${reason}
+          </p>
+          <p style="margin-top: 20px;">Please contact the administration if you have any questions or need further clarification.</p>
+        </div>
+      `,
+        });
+    }
 }

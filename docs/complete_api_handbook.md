@@ -336,6 +336,55 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
+### 11. Get Upgrade Requests
+`GET /api/admin/upgrade-requests`  
+**Summary**: Lists all students waiting to be upgraded to alumni.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user-123",
+    "username": "zain_a",
+    "display_name": "Zainab Ahmed",
+    "email": "zainab@uet.edu.pk",
+    "roll_number": "2021-CS-110",
+    "graduation_year": 2024,
+    "upgrade_status": "pending",
+    "profile_picture": "https://cloudinary.com/profile.jpg"
+  }
+]
+```
+
+---
+
+### 12. Approve Upgrade
+`PATCH /api/admin/approve-upgrade/:id`  
+**Summary**: Approves a student to alumni profile upgrade request and notifies the user.
+
+**Response (200)**:
+```json
+{ "message": "Profile upgraded successfully. Email sent to user." }
+```
+
+---
+
+### 13. Reject Upgrade
+`PATCH /api/admin/reject-upgrade/:id`  
+**Summary**: Rejects a student to alumni profile upgrade request with a reason and notifies the user.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `rejection_reason` | String | **Required** | Reason for rejection to be sent to user |
+
+**Response (200)**:
+```json
+{ "message": "Upgrade request rejected. Email sent to user." }
+```
+
+---
+
 ## 👤 Alumni
 Requires `Bearer JWT`. Role restriction: `alumni`.
 
@@ -807,6 +856,22 @@ Requires `Bearer JWT`. Role restriction: `student`.
 **Response (200)**:
 ```json
 { "message": "Your account and all associated data have been permanently deleted." }
+```
+
+---
+
+### 6. Request Profile Upgrade
+`POST /api/student/upgrade-request`  
+**Summary**: Requests the admin to upgrade your profile from Student to Alumni.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `graduation_year` | Number | **Required** | The year you graduate or have graduated |
+
+**Response (200)**:
+```json
+{ "message": "Profile upgrade request submitted successfully." }
 ```
 
 ---

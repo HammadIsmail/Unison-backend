@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
-import { RejectAccountDto } from './dto/admin.dto';
+import { RejectAccountDto, RejectUpgradeDto } from './dto/admin.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -93,6 +93,86 @@ export class AdminService {
     );
 
     return { message: 'Account rejected. Email sent to user.' };
+  }
+
+  async getPendingUpgrades() {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {role: 'student', upgrade_status: 'pending'})
+       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.roll_number AS roll_number, u.upgrade_status AS upgrade_status, u.profile_picture AS profile_picture, u.graduation_year AS graduation_year`
+    );
+
+    return result.records.map((record) => ({
+      id: record.get('id'),
+      username: record.get('username'),
+      display_name: record.get('display_name'),
+      email: record.get('email'),
+      roll_number: record.get('roll_number') || null,
+      graduation_year: typeof record.get('graduation_year')?.toNumber === 'function' ? record.get('graduation_year').toNumber() : record.get('graduation_year') || null,
+      upgrade_status: record.get('upgrade_status'),
+      profile_picture: record.get('profile_picture') || null,
+    }));
+  }
+
+  async approveUpgrade(id: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $id, role: 'student', upgrade_status: 'pending'})
+       SET u.role = 'alumni'
+       REMOVE u.upgrade_status, u.upgrade_rejection_reason
+       RETURN u`,
+      { id }
+    );
+
+    if (!result.records.length) {
+      throw new NotFoundException('Pending upgrade request not found for this user.');
+    }
+
+    const user = result.records[0].get('u').properties;
+    await this.mail.sendUpgradeApprovalEmail(user.email, user.display_name || user.name);
+
+    await this.activity.logActivity(
+      ActivityType.PROFILE_UPDATED,
+      `Profile upgraded to Alumni for ${user.display_name || user.username}`,
+      id
+    );
+
+    await this.notification.createNotification(
+      id,
+      'Congratulations! Your request to upgrade to an Alumni profile has been approved.',
+      'profile_upgraded',
+      {
+        sender_display_name: 'UNISON Administration',
+        reference_link: '/'
+      }
+    );
+
+    return { message: 'Profile upgraded successfully. Email sent to user.' };
+  }
+
+  async rejectUpgrade(id: string, dto: RejectUpgradeDto) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $id, role: 'student', upgrade_status: 'pending'})
+       SET u.upgrade_status = 'rejected', u.upgrade_rejection_reason = $reason
+       RETURN u`,
+      { id, reason: dto.rejection_reason }
+    );
+
+    if (!result.records.length) {
+      throw new NotFoundException('Pending upgrade request not found for this user.');
+    }
+
+    const user = result.records[0].get('u').properties;
+    await this.mail.sendUpgradeRejectionEmail(user.email, user.display_name || user.name, dto.rejection_reason);
+
+    await this.notification.createNotification(
+      id,
+      `Your request to upgrade to an Alumni profile was rejected. Reason: ${dto.rejection_reason}`,
+      'upgrade_rejected',
+      {
+        sender_display_name: 'UNISON Administration'
+      }
+    );
+
+    return { message: 'Upgrade request rejected. Email sent to user.' };
   }
 
   async getDashboardStats() {

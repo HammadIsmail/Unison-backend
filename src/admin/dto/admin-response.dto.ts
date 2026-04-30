@@ -26,6 +26,32 @@ export class PendingAccountResponseDto {
     student_card_url: string;
 }
 
+export class UpgradeRequestResponseDto {
+    @ApiProperty({ example: 'uuid-user-123' })
+    id: string;
+
+    @ApiProperty({ example: 'zain_a' })
+    username: string;
+
+    @ApiProperty({ example: 'Zainab Ahmed' })
+    display_name: string;
+
+    @ApiProperty({ example: 'zainab@uet.edu.pk' })
+    email: string;
+
+    @ApiProperty({ example: '2021-CS-110' })
+    roll_number: string;
+
+    @ApiProperty({ example: 2024 })
+    graduation_year: number;
+
+    @ApiProperty({ example: 'pending' })
+    upgrade_status: string;
+
+    @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg', nullable: true })
+    profile_picture: string | null;
+}
+
 export class DashboardStatsResponseDto {
     @ApiProperty({ example: 120 })
     total_alumni: number;

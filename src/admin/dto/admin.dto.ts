@@ -26,3 +26,10 @@ export class VerifyEmailChangeDto {
   @IsString()
   otp: string;
 }
+
+export class RejectUpgradeDto {
+  @ApiProperty({ description: 'Reason for rejecting the profile upgrade', example: 'Graduation year mismatch.' })
+  @IsString()
+  @IsNotEmpty()
+  rejection_reason: string;
+}

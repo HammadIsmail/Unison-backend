@@ -169,4 +169,28 @@ export class StudentService {
 
     return { message: 'Your account and all associated data have been permanently deleted.' };
   }
+
+  async requestUpgrade(userId: string, graduationYear: number) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId, role: 'student'}) RETURN u.upgrade_status AS status`,
+      { userId }
+    );
+
+    if (!result.records.length) {
+      throw new NotFoundException('Student profile not found or user is not a student.');
+    }
+
+    const currentStatus = result.records[0].get('status');
+    if (currentStatus === 'pending') {
+      throw new ForbiddenException('Upgrade request is already pending.');
+    }
+
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId, role: 'student'})
+       SET u.upgrade_status = 'pending', u.upgrade_rejection_reason = null, u.graduation_year = $graduationYear`,
+      { userId, graduationYear }
+    );
+
+    return { message: 'Profile upgrade request submitted successfully.' };
+  }
 }
