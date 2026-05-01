@@ -105,7 +105,7 @@ export class ChatService {
     if (otherParticipantIds.length > 0) {
       const result = await this.neo4jService.run(
         `MATCH (u:User) WHERE u.id IN $ids 
-         RETURN u.id AS id, u.display_name AS display_name, u.profile_picture AS profile_picture, u.username AS username`,
+         RETURN u.id AS id, u.display_name AS display_name, u.profile_picture AS profile_picture, u.username AS username, u.is_online AS is_online, u.last_seen AS last_seen`,
         { ids: otherParticipantIds }
       );
       
@@ -114,7 +114,9 @@ export class ChatService {
           id: r.get('id'),
           display_name: r.get('display_name'),
           profile_picture: r.get('profile_picture'),
-          username: r.get('username')
+          username: r.get('username'),
+          is_online: r.get('is_online') || false,
+          last_seen: r.get('last_seen') || null
         };
       });
     }
@@ -156,11 +158,56 @@ export class ChatService {
 
     // Ensure the message does not belong to the sender (meaning the reader is the receiver)
     if (message.senderId === userId) {
-      return { success: true }; // Already belongs to sender, can't mark their own message as read for the receiver.
+      return { success: true };
     }
 
-    message.isRead = true;
-    await message.save();
+    if (!message.isRead) {
+      message.isRead = true;
+      message.readAt = new Date();
+      await message.save();
+
+      // Notify sender
+      this.notificationGateway.sendToUser(message.senderId, 'message_read', {
+        messageId: message._id,
+        conversationId: message.conversationId,
+        readAt: message.readAt
+      });
+    }
+
+    return { success: true };
+  }
+
+  async markConversationAsRead(userId: string, participantId: string) {
+    const conversation = await this.conversationModel.findOne({
+      participants: { $all: [userId, participantId], $size: 2 },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found.');
+    }
+
+    const now = new Date();
+    
+    // Find unread messages where receiver is current user
+    const unreadMessages = await this.messageModel.find({
+      conversationId: conversation._id,
+      senderId: participantId, // Message sent by the other person
+      isRead: false
+    });
+
+    if (unreadMessages.length > 0) {
+      await this.messageModel.updateMany(
+        { _id: { $in: unreadMessages.map(m => m._id) } },
+        { $set: { isRead: true, readAt: now } }
+      );
+
+      // Notify the other participant (the sender of these messages)
+      this.notificationGateway.sendToUser(participantId, 'messages_read', {
+        conversationId: conversation._id,
+        readAt: now,
+        messageIds: unreadMessages.map(m => m._id)
+      });
+    }
 
     return { success: true };
   }

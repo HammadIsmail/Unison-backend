@@ -83,6 +83,8 @@ export class ProfilesService {
       linkedin_url: user.linkedin_url || null,
       semester: user.semester ? (typeof user.semester.toNumber === 'function' ? user.semester.toNumber() : user.semester) : null,
       roll_number: user.roll_number || null,
+      is_online: user.is_online || false,
+      last_seen: user.last_seen || null,
       work_experience: workExperience,
       skills: skills,
       opportunities_posted: opportunities,

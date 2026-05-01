@@ -8,6 +8,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { Injectable, Logger } from '@nestjs/common';
+import { Neo4jService } from '../neo4j/neo4j.service';
 
 @Injectable()
 @WebSocketGateway({
@@ -22,7 +23,10 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   private logger: Logger = new Logger('NotificationGateway');
   private userSockets: Map<string, string[]> = new Map(); // userId -> socketIds[]
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly neo4jService: Neo4jService,
+  ) {}
 
   async handleConnection(client: Socket) {
     try {
@@ -49,13 +53,18 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
 
       client.data.userId = userId;
       this.logger.log(`Client connected: ${client.id} (User: ${userId})`);
+
+      // If first socket, mark as online
+      if (sockets.length === 1) {
+        await this.updateOnlineStatus(userId, true);
+      }
     } catch (err) {
       this.logger.error(`Connection authentication failed for ${client.id}: ${err.message}`);
       client.disconnect();
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     const userId = client.data.userId;
     if (userId) {
       const sockets = this.userSockets.get(userId) || [];
@@ -63,11 +72,54 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
       
       if (updatedSockets.length === 0) {
         this.userSockets.delete(userId);
+        // Mark as offline and update last seen
+        await this.updateOnlineStatus(userId, false);
       } else {
         this.userSockets.set(userId, updatedSockets);
       }
       this.logger.log(`Client disconnected: ${client.id} (User: ${userId})`);
     }
+  }
+
+  private async updateOnlineStatus(userId: string, isOnline: boolean) {
+    const now = new Date().toISOString();
+    try {
+      await this.neo4jService.run(
+        `MATCH (u:User {id: $userId}) 
+         SET u.is_online = $isOnline, u.last_seen = $now
+         RETURN u`,
+        { userId, isOnline, now }
+      );
+
+      // Broadcast to connections
+      const connectionsResult = await this.neo4jService.run(
+        `MATCH (u:User {id: $userId})-[:CONNECTED_TO]-(friend:User)
+         RETURN friend.id AS friendId`,
+        { userId }
+      );
+
+      const event = isOnline ? 'user_online' : 'user_offline';
+      const data = { userId, last_seen: now };
+
+      connectionsResult.records.forEach(record => {
+        const friendId = record.get('friendId');
+        this.sendToUser(friendId, event, data);
+      });
+
+    } catch (err) {
+      this.logger.error(`Failed to update online status for user ${userId}: ${err.message}`);
+    }
+  }
+
+  @SubscribeMessage('typing')
+  handleTyping(client: Socket, payload: { receiverId: string, isTyping: boolean }) {
+    const userId = client.data.userId;
+    if (!userId || !payload.receiverId) return;
+
+    this.sendToUser(payload.receiverId, 'typing_status', {
+      senderId: userId,
+      isTyping: payload.isTyping
+    });
   }
 
   sendToUser(userId: string, event: string, data: any) {

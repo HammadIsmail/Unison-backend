@@ -42,4 +42,12 @@ export class ChatController {
     const userId = req.user.sub;
     return this.chatService.markAsRead(userId, params.messageId);
   }
+
+  @Patch('conversations/:participantId/read')
+  @ApiOperation({ summary: 'Mark all messages in a conversation as read' })
+  @ApiResponse({ status: 200, schema: { example: { success: true } } })
+  async markConversationAsRead(@Req() req: any, @Param('participantId') participantId: string) {
+    const userId = req.user.sub;
+    return this.chatService.markConversationAsRead(userId, participantId);
+  }
 }

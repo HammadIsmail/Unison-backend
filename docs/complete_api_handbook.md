@@ -755,7 +755,9 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
     }
   ],
   "connection_status": "pending",
-  "is_connection_sender": true
+  "is_connection_sender": true,
+  "is_online": true,
+  "last_seen": "2024-03-23T10:00:00Z"
 }
 ```
 
@@ -1361,10 +1363,61 @@ const socket = io("http://localhost:5000", {
 Fired when a new notification is created for the authenticated user.
 ```javascript
 socket.on("notification", (data) => {
-  // data: NotificationPayload (see schema above)
-  console.log("Real-time notification:", data);
-  // 1. Show a toast notification
-  // 2. Append to in-memory notification list
+  // data: NotificationPayload
+});
+```
+
+#### `new_message` (server → client)
+Fired when a new message is received.
+```javascript
+socket.on("new_message", (data) => {
+  // data: { _id, conversationId, senderId, content, createdAt, isRead: false }
+});
+```
+
+#### `typing_status` (server → client)
+Fired when a participant starts or stops typing.
+```javascript
+socket.on("typing_status", (data) => {
+  // data: { senderId, isTyping: boolean }
+});
+```
+
+#### `message_read` (server → client)
+Fired when your message is read by the recipient.
+```javascript
+socket.on("message_read", (data) => {
+  // data: { messageId, conversationId, readAt }
+});
+```
+
+#### `messages_read` (server → client)
+Fired when multiple messages in a conversation are marked as read.
+```javascript
+socket.on("messages_read", (data) => {
+  // data: { conversationId, readAt, messageIds: [] }
+});
+```
+
+#### `user_online` / `user_offline` (server → client)
+Fired when a connected friend goes online or offline.
+```javascript
+socket.on("user_online", (data) => {
+  // data: { userId, last_seen }
+});
+socket.on("user_offline", (data) => {
+  // data: { userId, last_seen }
+});
+```
+
+### Client Events (client → server)
+
+#### `typing`
+Emit this to inform a recipient that you are typing.
+```javascript
+socket.emit("typing", {
+  receiverId: "uuid-target",
+  isTyping: true // or false
 });
 ```
 
@@ -1435,7 +1488,9 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
       "id": "uuid-2",
       "display_name": "Ali Khan",
       "profile_picture": "https://img.com/pic.jpg",
-      "username": "ali_k"
+      "username": "ali_k",
+      "is_online": true,
+      "last_seen": "2024-03-23T10:00:00Z"
     }
   }
 ]
@@ -1465,6 +1520,17 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 ### 4. Mark Message as Read
 `PATCH /api/chat/messages/:messageId/read`
 **Summary**: Marks a message as read.
+
+**Response (200)**:
+```json
+{ "success": true }
+```
+
+---
+
+### 5. Mark Conversation as Read
+`PATCH /api/chat/conversations/:participantId/read`
+**Summary**: Marks all unread messages from a specific participant as read.
 
 **Response (200)**:
 ```json
