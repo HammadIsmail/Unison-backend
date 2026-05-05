@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
 import { Neo4jService } from '../neo4j/neo4j.service';
@@ -25,6 +27,8 @@ import {
 } from './dto/auth.dto';
 import { NotificationService } from '../notification/notification.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { UserAuth } from './schemas/user-auth.schema';
+import { OTPRecord } from './schemas/otp.schema';
 
 @Injectable()
 export class AuthService {
@@ -37,38 +41,34 @@ export class AuthService {
         @Inject(forwardRef(() => NotificationService))
         private readonly notification: NotificationService,
         private readonly cloudinary: CloudinaryService,
+        @InjectModel(UserAuth.name)
+        private readonly userAuthModel: Model<UserAuth>,
+        @InjectModel(OTPRecord.name)
+        private readonly otpModel: Model<OTPRecord>,
     ) { }
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────
     async sendOtp(dto: SendOtpDto) {
         // Check for existing OTP to enforce rate limit (1 min)
-        const existingResult = await this.neo4j.run(
-            `MATCH (o:OTPRecord {email: $email, type: $type}) RETURN o.last_sent_at AS last_sent_at`,
-            { email: dto.email, type: dto.type },
-        );
+        const existing = await this.otpModel.findOne({ email: dto.email, type: dto.type });
 
-        if (existingResult.records.length > 0) {
-            const lastSentAt = existingResult.records[0].get('last_sent_at');
-            if (lastSentAt) {
-                const diff = Date.now() - new Date(lastSentAt).getTime();
-                if (diff < 60000) {
-                    throw new HttpException(
-                        'Please wait 1 minute before requesting another OTP.',
-                        HttpStatus.TOO_MANY_REQUESTS,
-                    );
-                }
+        if (existing) {
+            const diff = Date.now() - existing.last_sent_at.getTime();
+            if (diff < 60000) {
+                throw new HttpException(
+                    'Please wait 1 minute before requesting another OTP.',
+                    HttpStatus.TOO_MANY_REQUESTS,
+                );
             }
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const now = new Date().toISOString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-        // Upsert OTPRecord node
-        await this.neo4j.run(
-            `MERGE (o:OTPRecord {email: $email, type: $type})
-       SET o.otp = $otp, o.expires_at = $expiresAt, o.verified = false, o.last_sent_at = $now`,
-            { email: dto.email, type: dto.type, otp, expiresAt, now },
+        await this.otpModel.findOneAndUpdate(
+            { email: dto.email, type: dto.type },
+            { otp, expires_at: expiresAt, verified: false },
+            { upsert: true, new: true }
         );
 
         await this.mail.sendOtp(dto.email, otp);
@@ -77,19 +77,13 @@ export class AuthService {
 
     // ─── Verify OTP ──────────────────────────────────────────────────────────────
     async verifyOtp(dto: VerifyOtpDto) {
-        const result = await this.neo4j.run(
-            `MATCH (o:OTPRecord {email: $email, type: $type})
-       RETURN o`,
-            { email: dto.email, type: dto.type },
-        );
+        const record = await this.otpModel.findOne({ email: dto.email, type: dto.type });
 
-        if (!result.records.length) {
+        if (!record) {
             throw new NotFoundException('No OTP was sent to this email for this purpose.');
         }
 
-        const record = result.records[0].get('o').properties;
-
-        if (new Date(record.expires_at) < new Date()) {
+        if (record.expires_at < new Date()) {
             throw new BadRequestException('OTP has expired. Please request a new one.');
         }
         if (record.otp !== dto.otp) {
@@ -97,10 +91,8 @@ export class AuthService {
         }
 
         // Mark as verified
-        await this.neo4j.run(
-            `MATCH (o:OTPRecord {email: $email, type: $type}) SET o.verified = true`,
-            { email: dto.email, type: dto.type },
-        );
+        record.verified = true;
+        await record.save();
 
         // Issue short-lived verified_token
         const verifiedToken = this.jwt.sign(
@@ -137,16 +129,13 @@ export class AuthService {
             throw new BadRequestException('Email mismatch with verified_token.');
         }
 
-        // Check duplicate email
-        const existingEmail = await this.neo4j.run(
-            'MATCH (u:User {email: $email}) RETURN u',
-            { email: dto.email },
-        );
-        if (existingEmail.records.length) {
+        // Check duplicate email in MongoDB
+        const existingEmail = await this.userAuthModel.findOne({ email: dto.email });
+        if (existingEmail) {
             throw new ConflictException('An account with this email already exists.');
         }
 
-        // Check duplicate username
+        // Check duplicate username in Neo4j
         const existingUsername = await this.neo4j.run(
             'MATCH (u:User {username: $username}) RETURN u',
             { username: dto.username },
@@ -163,6 +152,16 @@ export class AuthService {
         const userId = uuidv4();
         const now = new Date().toISOString();
 
+        // 1. Save Credentials to MongoDB
+        await this.userAuthModel.create({
+            userId,
+            email: dto.email,
+            password: hashedPassword,
+            role: dto.role,
+            account_status: 'pending'
+        });
+
+        // 2. Save Profile to Neo4j
         const extraProps =
             dto.role === 'alumni'
                 ? `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`
@@ -174,7 +173,6 @@ export class AuthService {
           username: $username,
           display_name: $display_name,
           email: $email,
-          password: $password,
           role: $role,
           roll_number: $roll_number,
           degree: $degree,
@@ -191,7 +189,6 @@ export class AuthService {
                 username: dto.username,
                 display_name: dto.display_name,
                 email: dto.email,
-                password: hashedPassword,
                 role: dto.role,
                 roll_number: dto.roll_number,
                 degree: dto.degree,
@@ -203,20 +200,17 @@ export class AuthService {
             },
         );
 
-        // Clean up OTP record
-        await this.neo4j.run(
-            `MATCH (o:OTPRecord {email: $email, type: 'email_verification'}) DELETE o`,
-            { email: dto.email },
-        );
+        // Clean up OTP record in MongoDB
+        await this.otpModel.deleteOne({ email: dto.email, type: 'email_verification' });
 
-        // 1. Log Activity
+        // 3. Log Activity
         await this.activity.logActivity(
             ActivityType.USER_REGISTERED,
             `New ${dto.role} registered: ${dto.display_name}`,
             userId
         );
 
-        // 2. Notify Admins
+        // 4. Notify Admins
         const adminResult = await this.neo4j.run(`MATCH (a:User {role: 'admin'}) RETURN a.id AS id`);
         const notificationPromises = adminResult.records.map(r =>
             this.notification.createNotification(
@@ -238,45 +232,47 @@ export class AuthService {
 
     // ─── Login ───────────────────────────────────────────────────────────────────
     async login(dto: LoginDto) {
-        const result = await this.neo4j.run(
-            'MATCH (u:User {email: $email}) RETURN u',
-            { email: dto.email },
-        );
+        const auth = await this.userAuthModel.findOne({ email: dto.email });
 
-        if (!result.records.length) {
+        if (!auth) {
             throw new UnauthorizedException('Invalid email or password.');
         }
 
-        const user = result.records[0].get('u').properties;
-
-        const passwordMatch = await bcrypt.compare(dto.password, user.password);
+        const passwordMatch = await bcrypt.compare(dto.password, auth.password);
         if (!passwordMatch) {
             throw new UnauthorizedException('Invalid email or password.');
         }
 
-        if (user.account_status === 'pending') {
+        if (auth.account_status === 'pending') {
             throw new UnauthorizedException('Your account is pending admin approval.');
         }
-        if (user.account_status === 'rejected') {
+        if (auth.account_status === 'rejected') {
             throw new UnauthorizedException('Your account registration was rejected.');
         }
 
+        // Fetch profile from Neo4j
+        const result = await this.neo4j.run(
+            'MATCH (u:User {id: $userId}) RETURN u',
+            { userId: auth.userId },
+        );
+        const user = result.records[0]?.get('u').properties;
+
         const token = this.jwt.sign(
-            { sub: user.id, email: user.email, role: user.role },
+            { sub: auth.userId, email: auth.email, role: auth.role },
             {
                 secret: this.config.get<string>('JWT_SECRET')!,
                 expiresIn: (this.config.get<string>('JWT_EXPIRES_IN') || '7d') as any,
             },
         );
 
-        // Build profile (omit password)
+        // Build response profile
         const profile: any = {
-            id: user.id,
-            email: user.email,
-            role: user.role,
+            id: auth.userId,
+            email: auth.email,
+            role: auth.role,
         };
 
-        if (user.role !== 'admin') {
+        if (auth.role !== 'admin' && user) {
             profile.username = user.username;
             profile.display_name = user.display_name;
             profile.degree = user.degree;
@@ -289,7 +285,7 @@ export class AuthService {
             profile.batch = user.batch ?? undefined;
         }
 
-        return { token, role: user.role, account_status: user.account_status, profile };
+        return { token, role: auth.role, account_status: auth.account_status, profile };
     }
 
     // ─── Reset Password ──────────────────────────────────────────────────────────
@@ -307,25 +303,17 @@ export class AuthService {
             throw new UnauthorizedException('verified_token is not for password reset.');
         }
 
-        const result = await this.neo4j.run(
-            'MATCH (u:User {email: $email}) RETURN u',
-            { email: payload.email },
-        );
-        if (!result.records.length) {
+        const auth = await this.userAuthModel.findOne({ email: payload.email });
+        if (!auth) {
             throw new NotFoundException('No account found for this email.');
         }
 
         const hashed = await bcrypt.hash(dto.new_password, 10);
-        await this.neo4j.run(
-            'MATCH (u:User {email: $email}) SET u.password = $password',
-            { email: payload.email, password: hashed },
-        );
+        auth.password = hashed;
+        await auth.save();
 
-        // Clean up OTP record
-        await this.neo4j.run(
-            `MATCH (o:OTPRecord {email: $email, type: 'forgot_password'}) DELETE o`,
-            { email: payload.email },
-        );
+        // Clean up OTP record in MongoDB
+        await this.otpModel.deleteOne({ email: payload.email, type: 'forgot_password' });
 
         return { message: 'Password reset successfully.' };
     }

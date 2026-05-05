@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { NotificationGateway } from './notification.gateway';
-import { v4 as uuidv4 } from 'uuid';
+import { Notification } from './schemas/notification.schema';
 
 export interface NotificationMetadata {
   sender_username?: string;
@@ -13,93 +14,64 @@ export interface NotificationMetadata {
 @Injectable()
 export class NotificationService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<Notification>,
     private readonly gateway: NotificationGateway,
   ) { }
 
   async getUserNotifications(userId: string, readStatus?: string) {
-    let isRead: boolean | undefined;
-    if (readStatus === 'true') isRead = true;
-    else if (readStatus === 'false') isRead = false;
+    let filter: any = { recipientId: userId };
+    if (readStatus === 'true') filter.is_read = true;
+    else if (readStatus === 'false') filter.is_read = false;
 
-    const query = `
-      MATCH (u:User {id: $userId})<-[:FOR]-(n:Notification)
-      ${isRead !== undefined ? 'WHERE n.is_read = $isRead' : ''}
-      RETURN n.id AS id, n.message AS message, n.type AS type, 
-             n.created_at AS created_at, n.is_read AS is_read,
-             n.sender_username AS sender_username, n.sender_display_name AS sender_display_name,
-             n.sender_profile_picture AS sender_profile_picture, n.reference_link AS reference_link
-      ORDER BY n.created_at DESC
-    `;
-    const result = await this.neo4j.run(query, { userId, isRead });
-    return result.records.map(r => {
-      const type = r.get('type');
-      return {
-        id: r.get('id'),
-        message: r.get('message'),
-        type: type,
-        created_at: r.get('created_at'),
-        is_read: r.get('is_read'),
-        sender_username: r.get('sender_username') || null,
-        sender_display_name: r.get('sender_display_name') || null,
-        sender_profile_picture: r.get('sender_profile_picture') || null,
-        reference_link: (['new_opportunity', 'connection_request', 'new_message'].includes(type)) ? (r.get('reference_link') || null) : undefined,
-      };
-    });
+    const notifications = await this.notificationModel
+      .find(filter)
+      .sort({ created_at: -1 })
+      .exec();
+
+    return notifications.map(n => ({
+      id: n._id,
+      message: n.message,
+      type: n.type,
+      created_at: n.created_at,
+      is_read: n.is_read,
+      sender_username: n.sender_username || null,
+      sender_display_name: n.sender_display_name || null,
+      sender_profile_picture: n.sender_profile_picture || null,
+      reference_link: (['new_opportunity', 'connection_request', 'new_message'].includes(n.type)) ? (n.reference_link || null) : undefined,
+    }));
   }
 
   async markAsRead(userId: string, notificationId: string) {
-    const query = `
-      MATCH (u:User {id: $userId})<-[:FOR]-(n:Notification {id: $notificationId})
-      SET n.is_read = true
-      RETURN n
-    `;
-    const result = await this.neo4j.run(query, { userId, notificationId });
-    if (!result.records.length) {
+    const result = await this.notificationModel.findOneAndUpdate(
+      { _id: notificationId, recipientId: userId },
+      { is_read: true },
+      { new: true }
+    );
+
+    if (!result) {
       throw new NotFoundException('Notification not found.');
     }
     return { message: 'Notification marked as read.' };
   }
 
   async createNotification(userId: string, message: string, type: string, metadata?: NotificationMetadata) {
-    const id = uuidv4();
-    const created_at = new Date().toISOString();
-
-    // 1. Create notification in Neo4j
-    const query = `
-      MATCH (u:User {id: $userId})
-      CREATE (n:Notification {
-        id: $id,
-        message: $message,
-        type: $type,
-        created_at: $created_at,
-        is_read: false,
-        sender_username: $sender_username,
-        sender_display_name: $sender_display_name,
-        sender_profile_picture: $sender_profile_picture,
-        reference_link: $reference_link
-      })
-      CREATE (n)-[:FOR]->(u)
-      RETURN n
-    `;
-    await this.neo4j.run(query, { 
-      userId, 
-      id, 
-      message, 
-      type, 
-      created_at,
-      sender_username: metadata?.sender_username || null,
-      sender_display_name: metadata?.sender_display_name || null,
-      sender_profile_picture: metadata?.sender_profile_picture || null,
-      reference_link: metadata?.reference_link || null
-    });
-
-    // 2. Push real-time via gateway
-    this.gateway.sendToUser(userId, 'notification', {
-      id,
+    const notification = await this.notificationModel.create({
+      recipientId: userId,
       message,
       type,
-      created_at,
+      sender_username: metadata?.sender_username,
+      sender_display_name: metadata?.sender_display_name,
+      sender_profile_picture: metadata?.sender_profile_picture,
+      reference_link: metadata?.reference_link,
+    }) as Notification;
+
+    // Push real-time via gateway
+    this.gateway.sendToUser(userId, 'notification', {
+      id: notification._id,
+      message,
+      type,
+      created_at: notification.created_at,
       is_read: false,
       sender_username: metadata?.sender_username || null,
       sender_display_name: metadata?.sender_display_name || null,
@@ -107,6 +79,6 @@ export class NotificationService {
       reference_link: (['new_opportunity', 'connection_request', 'new_message'].includes(type)) ? (metadata?.reference_link || null) : undefined
     });
 
-    return { id, message, type, created_at };
+    return { id: notification._id, message, type, created_at: notification.created_at };
   }
 }

@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { RejectAccountDto, RejectUpgradeDto } from './dto/admin.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { UserAuth } from '../auth/schemas/user-auth.schema';
+import { OTPRecord } from '../auth/schemas/otp.schema';
+import { Activity } from '../common/activity/schemas/activity.schema';
 
 @Injectable()
 export class AdminService {
@@ -14,6 +19,12 @@ export class AdminService {
     private readonly activity: ActivityService,
     private readonly notification: NotificationService,
     private readonly cloudinary: CloudinaryService,
+    @InjectModel(UserAuth.name)
+    private readonly userAuthModel: Model<UserAuth>,
+    @InjectModel(OTPRecord.name)
+    private readonly otpModel: Model<OTPRecord>,
+    @InjectModel(Activity.name)
+    private readonly activityModel: Model<Activity>,
   ) { }
 
   async getPendingAccounts() {
@@ -35,6 +46,7 @@ export class AdminService {
   }
 
   async approveAccount(id: string) {
+    // 1. Update Neo4j
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id})
        SET u.account_status = 'approved'
@@ -43,11 +55,14 @@ export class AdminService {
     );
 
     if (!result.records.length) {
-      throw new NotFoundException('Account not found or role mismatch.');
+      throw new NotFoundException('Account not found in Neo4j.');
     }
 
+    // 2. Update MongoDB
+    await this.userAuthModel.findOneAndUpdate({ userId: id }, { account_status: 'approved' });
+
     const user = result.records[0].get('u').properties;
-    await this.mail.sendApprovalEmail(user.email, user.display_name || user.name);
+    await this.mail.sendApprovalEmail(user.email, user.display_name || user.username);
 
     await this.activity.logActivity(
       ActivityType.ACCOUNT_APPROVED,
@@ -69,6 +84,7 @@ export class AdminService {
   }
 
   async rejectAccount(id: string, dto: RejectAccountDto) {
+    // 1. Update Neo4j
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id})
        SET u.account_status = 'rejected'
@@ -77,11 +93,17 @@ export class AdminService {
     );
 
     if (!result.records.length) {
-      throw new NotFoundException('Account not found or role mismatch.');
+      throw new NotFoundException('Account not found in Neo4j.');
     }
 
+    // 2. Update MongoDB
+    await this.userAuthModel.findOneAndUpdate(
+      { userId: id }, 
+      { account_status: 'rejected', rejection_reason: dto.rejection_reason }
+    );
+
     const user = result.records[0].get('u').properties;
-    await this.mail.sendRejectionEmail(user.email, user.name, dto.rejection_reason);
+    await this.mail.sendRejectionEmail(user.email, user.display_name || user.username, dto.rejection_reason);
 
     await this.notification.createNotification(
       id,
@@ -114,6 +136,7 @@ export class AdminService {
   }
 
   async approveUpgrade(id: string) {
+    // 1. Update Neo4j
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id, role: 'student', upgrade_status: 'pending'})
        SET u.role = 'alumni'
@@ -126,8 +149,11 @@ export class AdminService {
       throw new NotFoundException('Pending upgrade request not found for this user.');
     }
 
+    // 2. Update MongoDB Role
+    await this.userAuthModel.findOneAndUpdate({ userId: id }, { role: 'alumni' });
+
     const user = result.records[0].get('u').properties;
-    await this.mail.sendUpgradeApprovalEmail(user.email, user.display_name || user.name);
+    await this.mail.sendUpgradeApprovalEmail(user.email, user.display_name || user.username);
 
     await this.activity.logActivity(
       ActivityType.PROFILE_UPDATED,
@@ -161,7 +187,7 @@ export class AdminService {
     }
 
     const user = result.records[0].get('u').properties;
-    await this.mail.sendUpgradeRejectionEmail(user.email, user.display_name || user.name, dto.rejection_reason);
+    await this.mail.sendUpgradeRejectionEmail(user.email, user.display_name || user.username, dto.rejection_reason);
 
     await this.notification.createNotification(
       id,
@@ -179,7 +205,6 @@ export class AdminService {
     const totalAlumniResult = await this.neo4j.run(`MATCH (u:User {role: 'alumni', account_status: 'approved'}) RETURN count(u) AS count`);
     const totalStudentsResult = await this.neo4j.run(`MATCH (u:User {role: 'student', account_status: 'approved'}) RETURN count(u) AS count`);
     const pendingAccountsResult = await this.neo4j.run(`MATCH (u:User {account_status: 'pending'}) RETURN count(u) AS count`);
-    // Placeholder counts for Opportunities and Companies
     const totalOpportunitiesResult = await this.neo4j.run(`MATCH (o:Opportunity) RETURN count(o) AS count`);
 
     // Most common skills
@@ -189,7 +214,6 @@ export class AdminService {
       ORDER BY frequency DESC LIMIT 3
     `);
 
-    // Just returning random unique companies for now or 0 if none exist
     const totalCompaniesResult = await this.neo4j.run(`MATCH (w:WorkExperience) RETURN count(DISTINCT w.company_name) AS count`);
 
     return {
@@ -206,7 +230,7 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const searchCondition = search
-      ? `AND toLower(u.name) CONTAINS toLower($search)`
+      ? `AND toLower(u.display_name) CONTAINS toLower($search)`
       : '';
 
     const countResult = await this.neo4j.run(
@@ -260,7 +284,7 @@ export class AdminService {
     const skip = (page - 1) * limit;
 
     const searchCondition = search
-      ? `AND toLower(u.name) CONTAINS toLower($search)`
+      ? `AND toLower(u.display_name) CONTAINS toLower($search)`
       : '';
 
     const countResult = await this.neo4j.run(
@@ -342,11 +366,13 @@ export class AdminService {
       `MATCH (u:User {id: $id})
        OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
        OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
-       OPTIONAL MATCH (n:Notification)-[:FOR]->(u)
-       DETACH DELETE u, w, o, n
+       DETACH DELETE u, w, o
        RETURN count(u) as deleted`,
       { id }
     );
+
+    // 3. Delete from MongoDB
+    await this.userAuthModel.deleteOne({ userId: id });
 
     const deleted = result.records[0]?.get('deleted').toNumber() || 0;
     if (deleted === 0) {
@@ -358,12 +384,12 @@ export class AdminService {
 
   async requestEmailChange(newEmail: string) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
-    await this.neo4j.run(
-      `MERGE (o:OTPRecord {email: $email, type: 'admin_email_change'})
-       SET o.otp = $otp, o.expires_at = $expiresAt, o.verified = false`,
-      { email: newEmail, otp, expiresAt },
+    await this.otpModel.findOneAndUpdate(
+      { email: newEmail, type: 'admin_email_change' },
+      { otp, expires_at: expiresAt, verified: false },
+      { upsert: true, new: true }
     );
 
     await this.mail.sendOtp(newEmail, otp);
@@ -371,54 +397,45 @@ export class AdminService {
   }
 
   async verifyEmailChange(adminId: string, newEmail: string, otp: string) {
-    const result = await this.neo4j.run(
-      `MATCH (o:OTPRecord {email: $email, type: 'admin_email_change'})
-       RETURN o`,
-      { email: newEmail },
-    );
+    const record = await this.otpModel.findOne({ email: newEmail, type: 'admin_email_change' });
 
-    if (!result.records.length) {
+    if (!record) {
       throw new NotFoundException('No OTP request found for this email.');
     }
 
-    const record = result.records[0].get('o').properties;
-    if (new Date(record.expires_at) < new Date()) {
+    if (record.expires_at < new Date()) {
       throw new BadRequestException('OTP has expired.');
     }
     if (record.otp !== otp) {
       throw new BadRequestException('Invalid OTP.');
     }
 
-    // Update admin email
+    // Update admin email in both DBs
     await this.neo4j.run(
       `MATCH (u:User {id: $adminId, role: 'admin'})
        SET u.email = $newEmail`,
       { adminId, newEmail },
     );
+    await this.userAuthModel.findOneAndUpdate({ userId: adminId }, { email: newEmail });
 
-    // Clean up OTP record
-    await this.neo4j.run(
-      `MATCH (o:OTPRecord {email: $email, type: 'admin_email_change'}) DELETE o`,
-      { email: newEmail },
-    );
+    // Clean up OTP record in MongoDB
+    await this.otpModel.deleteOne({ email: newEmail, type: 'admin_email_change' });
 
     return { message: 'Admin email updated successfully.', new_email: newEmail };
   }
 
   async getRecentActivity(limit: number = 10) {
-    const result = await this.neo4j.run(
-      `MATCH (a:Activity)
-       RETURN a.id AS id, a.type AS type, a.description AS description, a.created_at AS created_at
-       ORDER BY a.created_at DESC
-       LIMIT toInteger($limit)`,
-      { limit }
-    );
+    const activities = await this.activityModel
+      .find()
+      .sort({ created_at: -1 })
+      .limit(limit)
+      .exec();
 
-    return result.records.map((record) => ({
-      id: record.get('id'),
-      type: record.get('type'),
-      description: record.get('description'),
-      created_at: record.get('created_at'),
+    return activities.map((a) => ({
+      id: a._id,
+      type: a.type,
+      description: a.description,
+      created_at: a.created_at,
     }));
   }
 }

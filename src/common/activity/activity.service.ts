@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from '../../neo4j/neo4j.service';
-import { v4 as uuidv4 } from 'uuid';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Activity } from './schemas/activity.schema';
 
 export enum ActivityType {
   USER_REGISTERED = 'USER_REGISTERED',
@@ -12,21 +13,16 @@ export enum ActivityType {
 
 @Injectable()
 export class ActivityService {
-  constructor(private readonly neo4j: Neo4jService) { }
+  constructor(
+    @InjectModel(Activity.name)
+    private readonly activityModel: Model<Activity>,
+  ) { }
 
   async logActivity(type: ActivityType, description: string, relatedId?: string) {
-    const activityId = uuidv4();
-    const now = new Date().toISOString();
-
-    await this.neo4j.run(
-      `CREATE (a:Activity {
-        id: $activityId,
-        type: $type,
-        description: $description,
-        related_id: $relatedId,
-        created_at: $now
-      })`,
-      { activityId, type, description, relatedId: relatedId || null, now }
-    );
+    await this.activityModel.create({
+      type,
+      description,
+      related_id: relatedId,
+    });
   }
 }
