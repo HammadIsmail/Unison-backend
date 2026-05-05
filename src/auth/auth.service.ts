@@ -232,14 +232,19 @@ export class AuthService {
 
     // ─── Login ───────────────────────────────────────────────────────────────────
     async login(dto: LoginDto) {
-        const auth = await this.userAuthModel.findOne({ email: dto.email });
+        const email = dto.email.trim().toLowerCase();
+        console.log(`Attempting login for: ${email}`);
+        
+        const auth = await this.userAuthModel.findOne({ email });
 
         if (!auth) {
+            console.log(`Login failed: Email not found in MongoDB - ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
         }
 
         const passwordMatch = await bcrypt.compare(dto.password, auth.password);
         if (!passwordMatch) {
+            console.log(`Login failed: Password mismatch for ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
         }
 
@@ -255,7 +260,32 @@ export class AuthService {
             'MATCH (u:User {id: $userId}) RETURN u',
             { userId: auth.userId },
         );
-        const user = result.records[0]?.get('u').properties;
+        
+        const user = result.records[0]?.get('u')?.properties;
+        
+        // Build response profile
+        const profile: any = {
+            id: auth.userId,
+            email: auth.email,
+            role: auth.role,
+        };
+
+        if (user) {
+            profile.username = user.username;
+            profile.display_name = user.display_name || user.name;
+            profile.profile_picture = user.profile_picture || null;
+            profile.bio = user.bio || null;
+            profile.account_status = user.account_status;
+            
+            if (auth.role !== 'admin') {
+                profile.degree = user.degree;
+                profile.roll_number = user.roll_number;
+                profile.graduation_year = user.graduation_year ?? undefined;
+                profile.semester = user.semester ?? undefined;
+                profile.phone = user.phone;
+                profile.batch = user.batch ?? undefined;
+            }
+        }
 
         const token = this.jwt.sign(
             { sub: auth.userId, email: auth.email, role: auth.role },
@@ -264,26 +294,6 @@ export class AuthService {
                 expiresIn: (this.config.get<string>('JWT_EXPIRES_IN') || '7d') as any,
             },
         );
-
-        // Build response profile
-        const profile: any = {
-            id: auth.userId,
-            email: auth.email,
-            role: auth.role,
-        };
-
-        if (auth.role !== 'admin' && user) {
-            profile.username = user.username;
-            profile.display_name = user.display_name;
-            profile.degree = user.degree;
-            profile.roll_number = user.roll_number;
-            profile.graduation_year = user.graduation_year ?? undefined;
-            profile.semester = user.semester ?? undefined;
-            profile.bio = user.bio;
-            profile.phone = user.phone;
-            profile.profile_picture = user.profile_picture;
-            profile.batch = user.batch ?? undefined;
-        }
 
         return { token, role: auth.role, account_status: auth.account_status, profile };
     }
