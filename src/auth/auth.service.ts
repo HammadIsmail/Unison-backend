@@ -8,13 +8,14 @@ import {
     forwardRef,
     HttpException,
     HttpStatus,
+    Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
@@ -32,6 +33,8 @@ import { OTPRecord } from './schemas/otp.schema';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private readonly neo4j: Neo4jService,
         private readonly jwt: JwtService,
@@ -233,25 +236,27 @@ export class AuthService {
     // ─── Login ───────────────────────────────────────────────────────────────────
     async login(dto: LoginDto) {
         const email = dto.email.trim().toLowerCase();
-        console.log(`Attempting login for: ${email}`);
+        this.logger.log(`Attempting login for: ${email}`);
         
         const auth = await this.userAuthModel.findOne({ email });
 
         if (!auth) {
-            console.log(`Login failed: Email not found in MongoDB - ${email}`);
+            this.logger.warn(`Login failed: Email not found in MongoDB - ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
         }
 
         const passwordMatch = await bcrypt.compare(dto.password, auth.password);
         if (!passwordMatch) {
-            console.log(`Login failed: Password mismatch for ${email}`);
+            this.logger.warn(`Login failed: Password mismatch for ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
         }
 
         if (auth.account_status === 'pending') {
+            this.logger.warn(`Login failed: Account pending for ${email}`);
             throw new UnauthorizedException('Your account is pending admin approval.');
         }
         if (auth.account_status === 'rejected') {
+            this.logger.warn(`Login failed: Account rejected for ${email}`);
             throw new UnauthorizedException('Your account registration was rejected.');
         }
 

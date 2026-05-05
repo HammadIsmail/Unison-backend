@@ -1,6 +1,6 @@
 import * as neo4j from 'neo4j-driver';
 import { MongoClient } from 'mongodb';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
