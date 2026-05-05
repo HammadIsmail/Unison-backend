@@ -7,10 +7,16 @@ import { MailModule } from '../common/mail/mail.module';
 import { NotificationModule } from '../notification/notification.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { UserAuth, UserAuthSchema } from '../auth/schemas/user-auth.schema';
+import { OTPRecord, OTPSchema } from '../auth/schemas/otp.schema';
+import { Activity, ActivitySchema } from '../common/activity/schemas/activity.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: UserAuth.name, schema: UserAuthSchema }]),
+    MongooseModule.forFeature([
+      { name: UserAuth.name, schema: UserAuthSchema },
+      { name: OTPRecord.name, schema: OTPSchema },
+      { name: Activity.name, schema: ActivitySchema },
+    ]),
     Neo4jModule,
     MailModule,
     NotificationModule,
