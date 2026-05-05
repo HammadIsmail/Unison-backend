@@ -3,7 +3,7 @@
  * Run once: npx ts-node src/seed/admin.seed.ts
  */
 import neo4j from 'neo4j-driver';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 
