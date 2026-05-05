@@ -6,6 +6,8 @@ import {
     UnauthorizedException,
     Inject,
     forwardRef,
+    HttpException,
+    HttpStatus,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -39,14 +41,34 @@ export class AuthService {
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────
     async sendOtp(dto: SendOtpDto) {
+        // Check for existing OTP to enforce rate limit (1 min)
+        const existingResult = await this.neo4j.run(
+            `MATCH (o:OTPRecord {email: $email, type: $type}) RETURN o.last_sent_at AS last_sent_at`,
+            { email: dto.email, type: dto.type },
+        );
+
+        if (existingResult.records.length > 0) {
+            const lastSentAt = existingResult.records[0].get('last_sent_at');
+            if (lastSentAt) {
+                const diff = Date.now() - new Date(lastSentAt).getTime();
+                if (diff < 60000) {
+                    throw new HttpException(
+                        'Please wait 1 minute before requesting another OTP.',
+                        HttpStatus.TOO_MANY_REQUESTS,
+                    );
+                }
+            }
+        }
+
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const now = new Date().toISOString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
 
         // Upsert OTPRecord node
         await this.neo4j.run(
             `MERGE (o:OTPRecord {email: $email, type: $type})
-       SET o.otp = $otp, o.expires_at = $expiresAt, o.verified = false`,
-            { email: dto.email, type: dto.type, otp, expiresAt },
+       SET o.otp = $otp, o.expires_at = $expiresAt, o.verified = false, o.last_sent_at = $now`,
+            { email: dto.email, type: dto.type, otp, expiresAt, now },
         );
 
         await this.mail.sendOtp(dto.email, otp);

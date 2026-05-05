@@ -11,7 +11,7 @@ import {
 } from './dto/auth.dto';
 import {
     LoginResponseDto,
-    MessageResponseDto,
+    SuccessResponseDto,
     OtpResponseDto,
     VerifyOtpResponseDto,
 } from './dto/auth-response.dto';
@@ -39,7 +39,7 @@ export class AuthController {
     @UseInterceptors(FileInterceptor('student_card'))
     @ApiConsumes('multipart/form-data')
     @ApiOperation({ summary: 'Register a new alumni or student account' })
-    @ApiResponse({ status: 201, type: MessageResponseDto })
+    @ApiResponse({ status: 201, type: SuccessResponseDto })
     register(
         @Body() dto: RegisterDto,
         @UploadedFile() file: Express.Multer.File
@@ -56,7 +56,7 @@ export class AuthController {
 
     @Post('reset-password')
     @ApiOperation({ summary: 'Reset password using verified_token from OTP step' })
-    @ApiResponse({ status: 201, type: MessageResponseDto })
+    @ApiResponse({ status: 201, type: SuccessResponseDto })
     resetPassword(@Body() dto: ResetPasswordDto) {
         return this.authService.resetPassword(dto);
     }

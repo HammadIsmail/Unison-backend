@@ -21,6 +21,10 @@ Handle user entry, verification, and security.
 }
 ```
 
+> [!IMPORTANT]
+> **Rate Limiting**: Users can only request one OTP every 1 minute per email and type. Subsequent requests within this window will return a `429 Too Many Requests` error.
+
+
 ---
 
 ### 2. Verify OTP

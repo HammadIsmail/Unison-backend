@@ -9,7 +9,7 @@ import {
   PendingAccountResponseDto,
   UpgradeRequestResponseDto,
 } from './dto/admin-response.dto';
-import { MessageResponseDto } from '../common/dto/response.dto';
+import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -31,14 +31,14 @@ export class AdminController {
 
   @Patch('approve-account/:id')
   @ApiOperation({ summary: 'Approve a pending account' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   approveAccount(@Param('id') id: string) {
     return this.adminService.approveAccount(id);
   }
 
   @Patch('reject-account/:id')
   @ApiOperation({ summary: 'Reject a pending account request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   rejectAccount(@Param('id') id: string, @Body() dto: RejectAccountDto) {
     return this.adminService.rejectAccount(id, dto);
   }
@@ -52,14 +52,14 @@ export class AdminController {
 
   @Patch('approve-upgrade/:id')
   @ApiOperation({ summary: 'Approve a student to alumni profile upgrade request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   approveUpgrade(@Param('id') id: string) {
     return this.adminService.approveUpgrade(id);
   }
 
   @Patch('reject-upgrade/:id')
   @ApiOperation({ summary: 'Reject a student to alumni profile upgrade request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   rejectUpgrade(@Param('id') id: string, @Body() dto: RejectUpgradeDto) {
     return this.adminService.rejectUpgrade(id, dto);
   }
@@ -115,21 +115,21 @@ export class AdminController {
 
   @Delete('remove-account/:id')
   @ApiOperation({ summary: 'Completely remove an account' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   removeAccount(@Param('id') id: string) {
     return this.adminService.removeAccount(id);
   }
 
   @Patch('request-email-change')
   @ApiOperation({ summary: 'Request an email change for the admin account (sends OTP to new email)' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   requestEmailChange(@Body() dto: RequestEmailChangeDto) {
     return this.adminService.requestEmailChange(dto.new_email);
   }
 
   @Patch('verify-email-change')
   @ApiOperation({ summary: 'Verify OTP and update admin email address' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   verifyEmailChange(@Req() req: any, @Body() dto: VerifyEmailChangeDto) {
     const adminId = req.user.sub;
     return this.adminService.verifyEmailChange(adminId, dto.new_email, dto.otp);

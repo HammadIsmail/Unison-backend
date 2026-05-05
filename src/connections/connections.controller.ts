@@ -5,7 +5,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { ConnectionsService } from './connections.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
-import { MessageResponseDto } from '../common/dto/response.dto';
+import { SuccessResponseDto } from '../common/dto/response.dto';
 import { RespondToConnectionDto } from './dto/connections.dto';
 
 @ApiTags('Connections')
@@ -27,7 +27,7 @@ export class ConnectionsController {
 
   @Delete(':target_id')
   @ApiOperation({ summary: 'Remove an existing connection or cancel a pending request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   removeConnection(
     @GetUser('sub') userId: string,
     @Param('target_id') targetId: string,
@@ -37,7 +37,7 @@ export class ConnectionsController {
 
   @Post('request/:target_id')
   @ApiOperation({ summary: 'Send a connection request to another user' })
-  @ApiResponse({ status: 201, type: MessageResponseDto })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
   sendRequest(
     @GetUser('sub') userId: string,
     @Param('target_id') targetId: string,
@@ -47,7 +47,7 @@ export class ConnectionsController {
 
   @Delete('request/:target_id')
   @ApiOperation({ summary: 'Cancel a pending connection request you have sent' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   cancelRequest(
     @GetUser('sub') userId: string,
     @Param('target_id') targetId: string,
@@ -71,7 +71,7 @@ export class ConnectionsController {
 
   @Patch('requests/:sender_id/respond')
   @ApiOperation({ summary: 'Respond to an incoming connection request' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   respondToRequest(
     @GetUser('sub') userId: string,
     @Param('sender_id') senderId: string,

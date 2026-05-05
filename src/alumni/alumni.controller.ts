@@ -10,7 +10,7 @@ import {
 } from './dto/alumni.dto';
 import { AlumniProfileResponseDto, ConnectionRequestResponseDto, NetworkUserResponseDto } from './dto/alumni-response.dto';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
-import { MessageResponseDto } from '../common/dto/response.dto';
+import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -40,7 +40,7 @@ export class AlumniController {
   ]))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update your own alumni profile' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   updateMe(
     @GetUser('sub') userId: string,
     @Body() dto: UpdateAlumniProfileDto,
@@ -53,7 +53,7 @@ export class AlumniController {
   @Post('work-experience')
   @Roles('alumni')
   @ApiOperation({ summary: 'Add a new work experience record' })
-  @ApiResponse({ status: 201, type: MessageResponseDto })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
   addWorkExperience(@GetUser('sub') userId: string, @Body() dto: CreateWorkExperienceDto) {
     return this.alumniService.addWorkExperience(userId, dto);
   }
@@ -61,7 +61,7 @@ export class AlumniController {
   @Put('work-experience/:id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Update an existing work experience record' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   updateWorkExperience(
     @GetUser('sub') userId: string,
     @Param('id') expId: string,
@@ -73,7 +73,7 @@ export class AlumniController {
   @Delete('work-experience/:id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Delete a work experience record' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteWorkExperience(@GetUser('sub') userId: string, @Param('id') expId: string) {
     return this.alumniService.deleteWorkExperience(userId, expId);
   }
@@ -81,7 +81,7 @@ export class AlumniController {
   @Post('skills')
   @Roles('alumni')
   @ApiOperation({ summary: 'Add a new skill to your profile' })
-  @ApiResponse({ status: 201, type: MessageResponseDto })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
   addSkill(@GetUser('sub') userId: string, @Body() dto: AddSkillDto) {
     return this.alumniService.addSkill(userId, dto);
   }
@@ -89,7 +89,7 @@ export class AlumniController {
   @Delete('skills/:skill_id')
   @Roles('alumni')
   @ApiOperation({ summary: 'Remove a skill from your profile' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteSkill(@GetUser('sub') userId: string, @Param('skill_id') skillId: string) {
     return this.alumniService.deleteSkill(userId, skillId);
   }
@@ -113,7 +113,7 @@ export class AlumniController {
   @Delete('me')
   @Roles('alumni')
   @ApiOperation({ summary: 'Permanently delete your alumni account' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteMe(@GetUser('sub') userId: string) {
     return this.alumniService.deleteAccount(userId);
   }

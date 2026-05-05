@@ -6,7 +6,7 @@ import { UpdateStudentProfileDto, AddStudentSkillDto, RequestUpgradeDto } from '
 import { StudentProfileResponseDto } from './dto/student-response.dto';
 import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
-import { MessageResponseDto } from '../common/dto/response.dto';
+import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -36,7 +36,7 @@ export class StudentController {
   ]))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update your own student profile' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   updateMe(
     @GetUser('sub') userId: string,
     @Body() dto: UpdateStudentProfileDto,
@@ -49,7 +49,7 @@ export class StudentController {
   @Post('skills')
   @Roles('student')
   @ApiOperation({ summary: 'Add a new skill to your profile' })
-  @ApiResponse({ status: 201, type: MessageResponseDto })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
   addSkill(@GetUser('sub') userId: string, @Body() dto: AddStudentSkillDto) {
     return this.studentService.addSkill(userId, dto);
   }
@@ -65,7 +65,7 @@ export class StudentController {
   @Delete('me')
   @Roles('student')
   @ApiOperation({ summary: 'Permanently delete your student account' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteMe(@GetUser('sub') userId: string) {
     return this.studentService.deleteAccount(userId);
   }
@@ -73,7 +73,7 @@ export class StudentController {
   @Post('upgrade-request')
   @Roles('student')
   @ApiOperation({ summary: 'Request to upgrade profile from Student to Alumni' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   requestUpgrade(@GetUser('sub') userId: string, @Body() dto: RequestUpgradeDto) {
     return this.studentService.requestUpgrade(userId, dto.graduation_year);
   }

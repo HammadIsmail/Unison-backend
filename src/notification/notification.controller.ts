@@ -2,7 +2,7 @@ import { Controller, Get, Patch, Param, UseGuards, Query } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { NotificationService } from './notification.service';
 import { NotificationResponseDto } from './dto/notification-response.dto';
-import { MessageResponseDto } from '../common/dto/response.dto';
+import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 
@@ -26,7 +26,7 @@ export class NotificationController {
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark a notification as read' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   markAsRead(@GetUser('sub') userId: string, @Param('id') id: string) {
     return this.notificationService.markAsRead(userId, id);
   }

@@ -20,7 +20,7 @@ export class MessageIdDto {
   messageId: string;
 }
 
-export class MessageResponseDto {
+export class ChatMessageResponseDto {
   @ApiProperty() _id: string;
   @ApiProperty() conversationId: string;
   @ApiProperty() senderId: string;
@@ -34,7 +34,7 @@ export class ConversationResponseDto {
   @ApiProperty() _id: string;
   @ApiProperty() participants: string[];
   @ApiProperty() updatedAt: string;
-  @ApiProperty({ type: () => MessageResponseDto, required: false }) lastMessage: MessageResponseDto;
+  @ApiProperty({ type: () => ChatMessageResponseDto, required: false }) lastMessage: ChatMessageResponseDto;
   @ApiProperty({ example: { id: 'uuid', display_name: 'Name', profile_picture: 'url', username: 'user' } }) participantProfile: any;
 }
 

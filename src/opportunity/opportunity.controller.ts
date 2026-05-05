@@ -9,7 +9,7 @@ import {
   OpportunityDetailResponseDto,
   OpportunityPaginationResponseDto,
 } from './dto/opportunity-response.dto';
-import { MessageResponseDto } from '../common/dto/response.dto';
+import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -77,7 +77,7 @@ export class OpportunityController {
   @UseInterceptors(FilesInterceptor('media', 10))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update an opportunity with optional images/videos' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   update(
     @GetUser('sub') userId: string,
     @GetUser('role') role: string,
@@ -94,7 +94,7 @@ export class OpportunityController {
   @Delete(':id')
   @Roles('alumni', 'admin')
   @ApiOperation({ summary: 'Delete an opportunity' })
-  @ApiResponse({ status: 200, type: MessageResponseDto })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
   remove(
     @GetUser('sub') userId: string,
     @GetUser('role') role: string,

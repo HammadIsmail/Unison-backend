@@ -1,9 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { SuccessResponseDto } from '../../common/dto/response.dto';
 
-export class MessageResponseDto {
-    @ApiProperty({ example: 'Operation successful.' })
-    message: string;
-}
+export { SuccessResponseDto };
+
 
 export class OtpResponseDto {
     @ApiProperty({ example: 'Operation successful.' })
