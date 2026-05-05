@@ -511,17 +511,9 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 7. Remove Skill
-`DELETE /api/alumni/skills/:skill_id`
-
-**Response (200)**:
-```json
-{ "message": "Skill removed successfully." }
-```
-
 ---
 
-### 8. Get My Connections
+### 7. Get My Connections
 `GET /api/alumni/connections`  
 **Summary**: Retrieves a list of all accepted professional connections.
 
@@ -543,7 +535,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 9. Find Batch Mates
+### 8. Find Batch Mates
 `GET /api/alumni/batch-mates`  
 **Summary**: Discovery based on graduation year.
 
@@ -577,7 +569,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 10. Delete Account
+### 9. Delete Account
 `DELETE /api/alumni/me`  
 **Summary**: Permanently deletes your alumni account and all associated data (profile, work history, posted opportunities, notifications, and media).
 
@@ -1162,11 +1154,25 @@ Requires `Bearer JWT`.
 
 ---
 
-### 4. All System Skills
+## 🛠 Skills
+Shared skill management. Requires `Bearer JWT`.
+
+### 1. All System Skills
 `GET /api/skills/all`  
-**Summary**: Retrieves a static list of all skills.
+**Summary**: Retrieves a list of all skills available in the platform.
 
 **Response (200)**: `["Node.js", "React", "Python", "TypeScript", "Neo4j", ...]`
+
+---
+
+### 2. Remove Skill
+`DELETE /api/skills/:skill_id`  
+**Summary**: Removes a skill from the authenticated user's profile. Accessible by both students and alumni.
+
+**Response (200)**:
+```json
+{ "message": "Skill removed successfully." }
+```
 
 ---
 

@@ -216,22 +216,6 @@ export class AlumniService {
     return { message: 'Skill added successfully.' };
   }
 
-  async deleteSkill(userId: string, skillId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
-       DELETE r RETURN count(r) AS cnt`,
-      { userId, skillId }
-    );
-
-    if (result.records[0].get('cnt').toNumber() === 0) {
-      throw new NotFoundException('Skill not found in local profile.');
-    }
-
-    // Optionally delete skill node if it's no longer connected to anything
-    await this.neo4j.run(`MATCH (s:Skill) WHERE NOT ()-[:HAS_SKILL]->(s) DELETE s`);
-
-    return { message: 'Skill removed successfully.' };
-  }
 
   async getConnections(userId: string) {
     const result = await this.neo4j.run(

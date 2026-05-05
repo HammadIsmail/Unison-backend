@@ -86,13 +86,6 @@ export class AlumniController {
     return this.alumniService.addSkill(userId, dto);
   }
 
-  @Delete('skills/:skill_id')
-  @Roles('alumni')
-  @ApiOperation({ summary: 'Remove a skill from your profile' })
-  @ApiResponse({ status: 200, type: SuccessResponseDto })
-  deleteSkill(@GetUser('sub') userId: string, @Param('skill_id') skillId: string) {
-    return this.alumniService.deleteSkill(userId, skillId);
-  }
 
   @Get('connections')
   @Roles('alumni')
