@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsInt, ValidateIf } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateAlumniProfileDto {
@@ -48,7 +48,7 @@ export class CreateWorkExperienceDto {
   start_date: string;
 
   @ApiPropertyOptional({ description: 'End date of the work experience', example: '2023-12-31' })
-  @IsOptional()
+  @ValidateIf(o => !o.is_current || (o.end_date && o.end_date !== ''))
   @IsDateString()
   end_date?: string;
 
@@ -71,6 +71,7 @@ export class UpdateWorkExperienceDto {
 
   @ApiPropertyOptional({ description: 'Updated end date', example: '2024-01-01' })
   @IsOptional()
+  @ValidateIf(o => (o.end_date !== undefined && o.end_date !== null && o.end_date !== ''))
   @IsDateString()
   end_date?: string;
 
