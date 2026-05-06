@@ -17,12 +17,22 @@ export class SkillService {
       { userId, skillId }
     );
 
-    if (result.records[0].get('cnt').toNumber() === 0) {
+    const count = result.records[0].get('cnt');
+    const countValue = typeof count?.toNumber === 'function' ? count.toNumber() : count;
+
+    if (countValue === 0) {
       throw new NotFoundException('Skill not found in your profile.');
     }
 
-    // Optionally delete skill node if it's no longer connected to anything
-    await this.neo4j.run(`MATCH (s:Skill) WHERE NOT ()-[:HAS_SKILL]->(s) DELETE s`);
+    // Cleanup: Only delete the skill node if it has NO relationships left at all 
+    // (e.g., no one else has it and it's not required by any opportunity)
+    // We target only the skillId being deleted to avoid full label scans.
+    await this.neo4j.run(
+      `MATCH (s:Skill {id: $skillId}) 
+       WHERE NOT (s)-[]-() 
+       DELETE s`,
+      { skillId }
+    );
 
     return { message: 'Skill removed successfully.' };
   }
