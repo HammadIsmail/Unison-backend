@@ -201,6 +201,19 @@
 					}
 				},
 				{
+					"name": "Search Suggestions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/search/suggestions?q=ahmed",
+							"host": ["{{base_url}}"],
+							"path": ["search", "suggestions"],
+							"query": [{ "key": "q", "value": "ahmed" }]
+						}
+					}
+				},
+				{
 					"name": "Get All Skills",
 					"request": {
 						"method": "GET",
@@ -240,6 +253,22 @@
 						"method": "GET",
 						"header": [],
 						"url": "{{base_url}}/notifications"
+					}
+				},
+				{
+					"name": "Clear All Notifications",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{base_url}}/notifications/all"
+					}
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": "{{base_url}}/notifications/:id"
 					}
 				}
 			]

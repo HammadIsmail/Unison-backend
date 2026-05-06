@@ -55,6 +55,23 @@ export class NotificationService {
     return { message: 'Notification marked as read.' };
   }
 
+  async deleteNotification(userId: string, notificationId: string) {
+    const result = await this.notificationModel.findOneAndDelete({
+      _id: notificationId,
+      recipientId: userId,
+    });
+
+    if (!result) {
+      throw new NotFoundException('Notification not found.');
+    }
+    return { message: 'Notification deleted successfully.' };
+  }
+
+  async deleteAllNotifications(userId: string) {
+    await this.notificationModel.deleteMany({ recipientId: userId });
+    return { message: 'All notifications cleared.' };
+  }
+
   async createNotification(userId: string, message: string, type: string, metadata?: NotificationMetadata) {
     const notification = await this.notificationModel.create({
       recipientId: userId,

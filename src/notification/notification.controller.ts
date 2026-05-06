@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { NotificationService } from './notification.service';
 import { NotificationResponseDto } from './dto/notification-response.dto';
@@ -29,5 +29,19 @@ export class NotificationController {
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   markAsRead(@GetUser('sub') userId: string, @Param('id') id: string) {
     return this.notificationService.markAsRead(userId, id);
+  }
+
+  @Delete('all')
+  @ApiOperation({ summary: 'Clear all notifications' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  clearAll(@GetUser('sub') userId: string) {
+    return this.notificationService.deleteAllNotifications(userId);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a specific notification' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  deleteNotification(@GetUser('sub') userId: string, @Param('id') id: string) {
+    return this.notificationService.deleteNotification(userId, id);
   }
 }

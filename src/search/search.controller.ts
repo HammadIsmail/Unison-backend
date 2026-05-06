@@ -56,4 +56,13 @@ export class SearchController {
     if (!user) throw new NotFoundException('User not found.');
     return user;
   }
+
+  @Get('suggestions')
+  @ApiOperation({ summary: 'Get user suggestions for search-as-you-type (dropdown)' })
+  @ApiQuery({ name: 'q', required: true, type: String, example: 'ahmed' })
+  @ApiResponse({ status: 200, description: 'List of matching users' })
+  getSuggestions(@Query('q') q: string) {
+    if (!q || q.length < 2) return [];
+    return this.searchService.getSuggestions(q);
+  }
 }

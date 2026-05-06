@@ -1154,6 +1154,30 @@ Requires `Bearer JWT`.
 
 ---
 
+### 4. User Search Suggestions
+`GET /api/search/suggestions`  
+**Summary**: Retrieves real-time user suggestions for "search-as-you-type" dropdowns. Matches both `username` and `display_name`.
+
+**Query Parameters**:
+| Parameter | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `q` | String | **Required** | Search query (min 2 characters) |
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user-123",
+    "username": "hammad_i",
+    "display_name": "Hammad Ismail",
+    "profile_picture": "https://cloudinary.com/pic.jpg",
+    "role": "alumni"
+  }
+]
+```
+
+---
+
 ## 🛠 Skills
 Shared skill management. Requires `Bearer JWT`.
 
@@ -1335,6 +1359,28 @@ interface NotificationPayload {
 **Response (200)**:
 ```json
 { "message": "Notification marked as read." }
+```
+
+---
+
+### 3. Clear All Notifications
+`DELETE /api/notifications/all`
+**Summary**: Removes all notifications for the authenticated user.
+
+**Response (200)**:
+```json
+{ "message": "All notifications cleared." }
+```
+
+---
+
+### 4. Delete Specific Notification
+`DELETE /api/notifications/:id`
+**Summary**: Permanently removes a single notification.
+
+**Response (200)**:
+```json
+{ "message": "Notification deleted successfully." }
 ```
 
 ---

@@ -139,4 +139,21 @@ export class SearchService {
       skills: r.get('skills'),
     };
   }
+
+  async getSuggestions(q: string) {
+    const query = `
+      MATCH (u:User)
+      WHERE u.account_status = 'approved' AND (toLower(u.username) CONTAINS toLower($q) OR toLower(u.display_name) CONTAINS toLower($q))
+      RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, u.role AS role
+      LIMIT 10
+    `;
+    const result = await this.neo4j.run(query, { q });
+    return result.records.map(record => ({
+      id: record.get('id'),
+      username: record.get('username'),
+      display_name: record.get('display_name'),
+      profile_picture: record.get('profile_picture') || null,
+      role: record.get('role'),
+    }));
+  }
 }
