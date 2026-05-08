@@ -135,7 +135,7 @@ The administrative dashboard leverages the hybrid database architecture to provi
 ## 7. Community Safety & Integrity (Blocking & Constraints)
 *   **Challenge**: Ensuring a safe environment and preventing spam.
 *   **Status: Implemented**: Added a **Blocking System** in Neo4j. Blocking prevents message delivery, connection requests, and profile visibility between users.
-*   **Chat Constraints**: Implemented a **3-minute window** for editing and deleting messages to balance flexibility with communication accountability.
+*   **Chat Constraints**: Implemented a **3-minute window** for editing and deleting messages to balance flexibility with communication accountability..
 
 ---
 
