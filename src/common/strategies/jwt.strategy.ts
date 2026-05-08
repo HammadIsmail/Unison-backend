@@ -17,7 +17,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         private neo4j: Neo4jService,
     ) {
         super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: ExtractJwt.fromExtractors([
+                ExtractJwt.fromAuthHeaderAsBearerToken(),
+                ExtractJwt.fromUrlQueryParameter('token'),
+            ]),
             ignoreExpiration: false,
             secretOrKey: config.get<string>('JWT_SECRET')!,
         });
