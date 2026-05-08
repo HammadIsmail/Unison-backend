@@ -104,12 +104,41 @@ Based on the current architecture, the following areas are identified for evolut
 *   **Challenge**: University admins need actionable insights, not just raw counts.
 *   **Status: Implemented**: Added **Skill Gap Analysis**, **Departmental Skill Mapping**, and **Curriculum Alignment Scores**. This provides the university with data-driven feedback on market demand vs. student skillsets.
 
-### 6. Community Safety & Integrity (Blocking & Constraints)
+---
+
+## 6. Administrative Analytics Deep-Dive
+
+The administrative dashboard leverages the hybrid database architecture to provide "Institutional Intelligence" rather than just simple metrics.
+
+### 1. Skill Gap Analysis (Market Demand vs. Community Supply)
+*   **Utility**: Identifies high-demand skills in the job market (from `Opportunities`) that are under-represented in the student/alumni population.
+*   **Reasoning**: Enables the university to proactively introduce workshops, bootcamps, or curriculum updates for specific technologies that are trending in industry.
+
+### 2. Departmental Success Mapping
+*   **Utility**: Aggregates skillsets and employment counts by specific degree programs (e.g., BSCS vs. BSEE).
+*   **Reasoning**: Allows Deans to evaluate the professional outcomes and "Skill Profiles" of their departments compared to global market trends.
+
+### 3. Curriculum Alignment Score (Global KPI)
+*   **Utility**: A unified percentage score representing the "Product-Market Fit" of the university's collective skills against the platform's job postings.
+*   **Reasoning**: Provides a high-level performance indicator for the entire institution's professional relevance.
+
+### 4. Mentorship Impact & Interaction Density
+*   **Utility**: Measures the volume and quality of connections between senior Alumni and junior Students.
+*   **Reasoning**: Quantifies the "Social Capital" of the university. High interaction density indicates a vibrant, helpful community that reduces student job-search friction.
+
+### 5. Growth & Engagement Trends
+*   **Utility**: Tracks active conversations, message volume, and month-over-month signups.
+*   **Reasoning**: Helps the administrative team measure platform "vibrancy" and identify seasonal peaks in engagement (e.g., during graduation or hiring cycles).
+
+---
+
+## 7. Community Safety & Integrity (Blocking & Constraints)
 *   **Challenge**: Ensuring a safe environment and preventing spam.
 *   **Status: Implemented**: Added a **Blocking System** in Neo4j. Blocking prevents message delivery, connection requests, and profile visibility between users.
 *   **Chat Constraints**: Implemented a **3-minute window** for editing and deleting messages to balance flexibility with communication accountability.
 
 ---
+
 
 
 
