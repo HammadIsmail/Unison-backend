@@ -179,13 +179,15 @@ export class ChatService {
 
     // Notify other participant
     const conversation = await this.conversationModel.findById(message.conversationId);
-    const receiverId = conversation.participants.find(p => p !== userId);
-    if (receiverId) {
-      this.notificationGateway.sendToUser(receiverId, 'message_edited', {
-        messageId: message._id,
-        conversationId: message.conversationId,
-        content: newContent
-      });
+    if (conversation) {
+      const receiverId = conversation.participants.find(p => p !== userId);
+      if (receiverId) {
+        this.notificationGateway.sendToUser(receiverId, 'message_edited', {
+          messageId: message._id,
+          conversationId: message.conversationId,
+          content: newContent
+        });
+      }
     }
 
     return message;
@@ -206,12 +208,14 @@ export class ChatService {
 
     // Notify other participant
     const conversation = await this.conversationModel.findById(message.conversationId);
-    const receiverId = conversation.participants.find(p => p !== userId);
-    if (receiverId) {
-      this.notificationGateway.sendToUser(receiverId, 'message_deleted', {
-        messageId: message._id,
-        conversationId: message.conversationId
-      });
+    if (conversation) {
+      const receiverId = conversation.participants.find(p => p !== userId);
+      if (receiverId) {
+        this.notificationGateway.sendToUser(receiverId, 'message_deleted', {
+          messageId: message._id,
+          conversationId: message.conversationId
+        });
+      }
     }
 
     return { success: true };
