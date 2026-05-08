@@ -390,6 +390,53 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
+### 14. Get Advanced Analytics
+`GET /api/admin/advanced-analytics`  
+**Summary**: Retrieves professional-grade analytics for university administration, including skill gap analysis and growth trends.
+
+**Response (200)**:
+```json
+{
+  "skill_gap": [
+    {
+      "skill": "TypeScript",
+      "demand": 15,
+      "supply": 5,
+      "gap": 10,
+      "priority": "High"
+    }
+  ],
+  "growth_trends": [
+    {
+      "month": "2024-03",
+      "signups": 50
+    }
+  ],
+  "engagement_metrics": {
+    "messages_last_30_days": 1200,
+    "active_conversations": 45,
+    "connections_activity": 85
+  },
+  "departmental_analysis": [
+    {
+      "degree": "BS Computer Science",
+      "student_count": 150,
+      "top_skills": ["React", "Node.js"]
+    }
+  ],
+  "curriculum_alignment": {
+    "overall_alignment_score": 75
+  },
+  "mentorship_impact": {
+    "active_mentors": 25,
+    "mentored_students": 80,
+    "interaction_density": 200
+  }
+}
+```
+
+---
+
 ## 👤 Alumni
 Requires `Bearer JWT`. Role restriction: `alumni`.
 
@@ -688,6 +735,28 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 **Response (200)**:
 ```json
 { "message": "Connection removed successfully." }
+```
+
+---
+
+### 8. Block User
+`POST /api/connections/block/:target_id`  
+**Summary**: Immediately blocks another user. Severs any existing connections and prevents future communication/visibility.
+
+**Response (201)**:
+```json
+{ "message": "User blocked successfully." }
+```
+
+---
+
+### 9. Unblock User
+`DELETE /api/connections/unblock/:target_id`  
+**Summary**: Removes a block record. Does **not** restore the previous connection status.
+
+**Response (200)**:
+```json
+{ "message": "User unblocked successfully." }
 ```
 
 ---
@@ -1587,6 +1656,51 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 ### 5. Mark Conversation as Read
 `PATCH /api/chat/conversations/:participantId/read`
 **Summary**: Marks all unread messages from a specific participant as read.
+
+**Response (200)**:
+```json
+{ "success": true }
+```
+
+---
+
+### 6. Edit Message
+`PATCH /api/chat/messages/:messageId`  
+**Summary**: Modifies the content of a message.  
+**Constraint**: Can only be done within **3 minutes** of sending.
+
+**Request Body**:
+```json
+{ "content": "Updated message text" }
+```
+
+**Response (200)**:
+```json
+{
+  "_id": "60d5ec...",
+  "content": "Updated message text",
+  "isEdited": true,
+  "createdAt": "2024-03-23T10:00:00Z"
+}
+```
+
+---
+
+### 7. Delete Message
+`DELETE /api/chat/messages/:messageId`  
+**Summary**: Soft-deletes a message for both participants.  
+**Constraint**: Can only be done within **3 minutes** of sending.
+
+**Response (200)**:
+```json
+{ "success": true }
+```
+
+---
+
+### 8. Clear Chat
+`DELETE /api/chat/conversations/:conversationId/clear`  
+**Summary**: Clears the chat history for the **current user** only. The other participant still sees the history.
 
 **Response (200)**:
 ```json

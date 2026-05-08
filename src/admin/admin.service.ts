@@ -10,6 +10,8 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserAuth } from '../auth/schemas/user-auth.schema';
 import { OTPRecord } from '../auth/schemas/otp.schema';
 import { Activity } from '../common/activity/schemas/activity.schema';
+import { Message } from '../chat/schemas/message.schema';
+import { Conversation } from '../chat/schemas/conversation.schema';
 
 @Injectable()
 export class AdminService {
@@ -25,6 +27,10 @@ export class AdminService {
     private readonly otpModel: Model<OTPRecord>,
     @InjectModel(Activity.name)
     private readonly activityModel: Model<Activity>,
+    @InjectModel(Message.name)
+    private readonly messageModel: Model<Message>,
+    @InjectModel(Conversation.name)
+    private readonly conversationModel: Model<Conversation>,
   ) { }
 
   async getPendingAccounts() {
@@ -463,5 +469,153 @@ export class AdminService {
       description: a.description,
       created_at: a.created_at,
     }));
+  }
+
+  async getAdvancedAnalytics() {
+    const [
+      skillGap,
+      growth,
+      engagement,
+      departmental,
+      alignment,
+      mentorship
+    ] = await Promise.all([
+      this.getSkillGapAnalysis(),
+      this.getGrowthMetrics(),
+      this.getEngagementMetrics(),
+      this.getDepartmentalAnalysis(),
+      this.getCurriculumAlignmentScore(),
+      this.getAlumniMentorshipIndex(),
+    ]);
+
+    return {
+      skill_gap: skillGap,
+      growth_trends: growth,
+      engagement_metrics: engagement,
+      departmental_analysis: departmental,
+      curriculum_alignment: alignment,
+      mentorship_impact: mentorship,
+    };
+  }
+
+  async getSkillGapAnalysis() {
+    // 1. Skills in Demand (Opportunities)
+    const demandResult = await this.neo4j.run(`
+      MATCH (o:Opportunity)-[:REQUIRES_SKILL]->(s:Skill)
+      WHERE o.is_deleted IS NULL OR o.is_deleted = false
+      RETURN s.name AS skill, count(o) AS demand
+      ORDER BY demand DESC LIMIT 10
+    `);
+
+    // 2. Skills in Supply (Users)
+    const supplyResult = await this.neo4j.run(`
+      MATCH (u:User)-[:HAS_SKILL]->(s:Skill)
+      WHERE u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+      RETURN s.name AS skill, count(u) AS supply
+    `);
+
+    const supplyMap = new Map();
+    supplyResult.records.forEach(r => supplyMap.set(r.get('skill'), r.get('supply').toNumber()));
+
+    return demandResult.records.map(r => {
+      const skill = r.get('skill');
+      const demand = r.get('demand').toNumber();
+      const supply = supplyMap.get(skill) || 0;
+      return {
+        skill,
+        demand,
+        supply,
+        gap: Math.max(0, demand - supply),
+        priority: demand > supply * 2 ? 'High' : 'Medium'
+      };
+    });
+  }
+
+  async getGrowthMetrics() {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const growth = await this.userAuthModel.aggregate([
+      { $match: { createdAt: { $gte: sixMonthsAgo } } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+
+    return growth.map(g => ({
+      month: `${g._id.year}-${String(g._id.month).padStart(2, '0')}`,
+      signups: g.count
+    }));
+  }
+
+  async getEngagementMetrics() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const messageCount = await this.messageModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
+    const activeConversations = await this.conversationModel.countDocuments({ updatedAt: { $gte: thirtyDaysAgo } });
+
+    const connectionResult = await this.neo4j.run(`
+      MATCH ()-[r:CONNECTED_TO]->()
+      WHERE r.created_at >= $thirtyDaysAgo OR (r.status = 'pending' AND r.updated_at >= $thirtyDaysAgo)
+      RETURN count(r) AS count
+    `, { thirtyDaysAgo: thirtyDaysAgo.toISOString() });
+
+    return {
+      messages_last_30_days: messageCount,
+      active_conversations: activeConversations,
+      connections_activity: connectionResult.records[0].get('count').toNumber()
+    };
+  }
+
+  async getDepartmentalAnalysis() {
+    const result = await this.neo4j.run(`
+      MATCH (u:User)
+      WHERE u.degree IS NOT NULL AND u.account_status = 'approved'
+      OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
+      RETURN u.degree AS degree, count(u) AS student_count, collect(DISTINCT s.name)[0..3] AS top_skills
+      ORDER BY student_count DESC
+    `);
+
+    return result.records.map(r => ({
+      degree: r.get('degree'),
+      student_count: r.get('student_count').toNumber(),
+      top_skills: r.get('top_skills')
+    }));
+  }
+
+  async getCurriculumAlignmentScore() {
+    const result = await this.neo4j.run(`
+      MATCH (o:Opportunity)-[:REQUIRES_SKILL]->(s:Skill)
+      WITH s, count(o) AS demand
+      MATCH (u:User)-[:HAS_SKILL]->(s)
+      WITH demand, count(u) AS supply
+      RETURN sum(demand * supply) / (sum(demand) * sum(supply) + 1) * 100 AS score
+    `);
+
+    return {
+      overall_alignment_score: Math.min(100, Math.round(result.records[0].get('score') || 0))
+    };
+  }
+
+  async getAlumniMentorshipIndex() {
+    const result = await this.neo4j.run(`
+      MATCH (a:User {role: 'alumni'})-[:CONNECTED_TO {status: 'accepted'}]-(s:User {role: 'student'})
+      RETURN count(DISTINCT a) AS active_mentors, count(DISTINCT s) AS mentored_students, count(*) AS total_interactions
+    `);
+
+    const records = result.records[0];
+    return {
+      active_mentors: records.get('active_mentors').toNumber(),
+      mentored_students: records.get('mentored_students').toNumber(),
+      interaction_density: records.get('total_interactions').toNumber()
+    };
   }
 }

@@ -79,4 +79,24 @@ export class ConnectionsController {
   ) {
     return this.connectionsService.respondToRequest(userId, senderId, dto.action);
   }
+
+  @Post('block/:target_id')
+  @ApiOperation({ summary: 'Block another user' })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
+  blockUser(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.connectionsService.blockUser(userId, targetId);
+  }
+
+  @Delete('unblock/:target_id')
+  @ApiOperation({ summary: 'Unblock a previously blocked user' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  unblockUser(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.connectionsService.unblockUser(userId, targetId);
+  }
 }

@@ -175,4 +175,45 @@ export class ConnectionsService {
       return { message: 'Connection request rejected.' };
     }
   }
+
+  async blockUser(userId: string, targetId: string) {
+    if (userId === targetId) throw new ForbiddenException('Cannot block yourself.');
+
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
+       MERGE (u)-[r:BLOCKED]->(t)
+       ON CREATE SET r.created_at = datetime()
+       WITH u, t, r
+       MATCH (u)-[c:CONNECTED_TO]-(t)
+       DELETE c`,
+      { userId, targetId }
+    );
+
+    return { message: 'User blocked successfully.' };
+  }
+
+  async unblockUser(userId: string, targetId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[r:BLOCKED]->(t:User {id: $targetId})
+       DELETE r
+       RETURN count(r) AS cnt`,
+      { userId, targetId }
+    );
+
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Block record not found.');
+    }
+
+    return { message: 'User unblocked successfully.' };
+  }
+
+  async isBlocked(userId: string, targetId: string): Promise<boolean> {
+    const result = await this.neo4j.run(
+      `MATCH (u1:User {id: $userId})
+       MATCH (u2:User {id: $targetId})
+       RETURN EXISTS((u1)-[:BLOCKED]-(u2)) AS blocked`,
+      { userId, targetId }
+    );
+    return result.records[0]?.get('blocked') || false;
+  }
 }

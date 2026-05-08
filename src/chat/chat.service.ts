@@ -30,6 +30,12 @@ export class ChatService {
       throw new ForbiddenException('You can only message your connected network.');
     }
 
+    // Check if blocked
+    const isBlocked = await this.connectionsService.isBlocked(senderId, receiverId);
+    if (isBlocked) {
+      throw new ForbiddenException('Communication blocked between these users.');
+    }
+
     // Find or create conversation
     let conversation = await this.conversationModel.findOne({
       participants: { $all: [senderId, receiverId], $size: 2 },
@@ -142,12 +148,87 @@ export class ChatService {
       return [];
     }
 
+    const clearedAt = conversation.clearedAt?.get(userId) || new Date(0);
+
     const messages = await this.messageModel
-      .find({ conversationId: conversation._id })
+      .find({ 
+        conversationId: conversation._id,
+        createdAt: { $gt: clearedAt },
+        isDeleted: { $ne: true }
+      })
       .sort({ createdAt: 1 }) // Chronological order
       .exec();
 
     return messages;
+  }
+
+  async editMessage(userId: string, messageId: string, newContent: string) {
+    const message = await this.messageModel.findById(messageId);
+    if (!message) throw new NotFoundException('Message not found.');
+    if (message.senderId !== userId) throw new ForbiddenException('You can only edit your own messages.');
+    if (message.isDeleted) throw new ForbiddenException('Cannot edit a deleted message.');
+
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    if ((message as any).createdAt < threeMinutesAgo) {
+      throw new ForbiddenException('Edit time limit (3 min) has expired.');
+    }
+
+    message.content = newContent;
+    message.isEdited = true;
+    await message.save();
+
+    // Notify other participant
+    const conversation = await this.conversationModel.findById(message.conversationId);
+    const receiverId = conversation.participants.find(p => p !== userId);
+    if (receiverId) {
+      this.notificationGateway.sendToUser(receiverId, 'message_edited', {
+        messageId: message._id,
+        conversationId: message.conversationId,
+        content: newContent
+      });
+    }
+
+    return message;
+  }
+
+  async deleteMessage(userId: string, messageId: string) {
+    const message = await this.messageModel.findById(messageId);
+    if (!message) throw new NotFoundException('Message not found.');
+    if (message.senderId !== userId) throw new ForbiddenException('You can only delete your own messages.');
+
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+    if ((message as any).createdAt < threeMinutesAgo) {
+      throw new ForbiddenException('Delete time limit (3 min) has expired.');
+    }
+
+    message.isDeleted = true;
+    await message.save();
+
+    // Notify other participant
+    const conversation = await this.conversationModel.findById(message.conversationId);
+    const receiverId = conversation.participants.find(p => p !== userId);
+    if (receiverId) {
+      this.notificationGateway.sendToUser(receiverId, 'message_deleted', {
+        messageId: message._id,
+        conversationId: message.conversationId
+      });
+    }
+
+    return { success: true };
+  }
+
+  async clearChat(userId: string, conversationId: string) {
+    const conversation = await this.conversationModel.findById(conversationId);
+    if (!conversation) throw new NotFoundException('Conversation not found.');
+    if (!conversation.participants.includes(userId)) throw new ForbiddenException('Access denied.');
+
+    if (!conversation.clearedAt) {
+      conversation.clearedAt = new Map();
+    }
+    conversation.clearedAt.set(userId, new Date());
+    await conversation.save();
+
+    return { success: true };
   }
 
   async markAsRead(userId: string, messageId: string) {

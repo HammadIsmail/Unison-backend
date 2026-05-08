@@ -100,7 +100,16 @@ Based on the current architecture, the following areas are identified for evolut
 *   **Challenge**: `CONTAINS` queries are slow and lack fuzzy matching.
 *   **Status: Implemented**: Integrated **Neo4j Full-Text Search Indices** (`user_search_index`, `opportunity_search_index`). Search queries now utilize Lucene-based fuzzy matching (`~`) for high-performance, typo-tolerant results.
 
+### 5. Professional Administrative Analytics
+*   **Challenge**: University admins need actionable insights, not just raw counts.
+*   **Status: Implemented**: Added **Skill Gap Analysis**, **Departmental Skill Mapping**, and **Curriculum Alignment Scores**. This provides the university with data-driven feedback on market demand vs. student skillsets.
+
+### 6. Community Safety & Integrity (Blocking & Constraints)
+*   **Challenge**: Ensuring a safe environment and preventing spam.
+*   **Status: Implemented**: Added a **Blocking System** in Neo4j. Blocking prevents message delivery, connection requests, and profile visibility between users.
+*   **Chat Constraints**: Implemented a **3-minute window** for editing and deleting messages to balance flexibility with communication accountability.
+
 ---
 
-**Prepared by**: Antigravity (AI Architect)
-**Project**: UNISON Backend
+
+

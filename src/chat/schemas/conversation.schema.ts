@@ -9,6 +9,9 @@ export class Conversation extends Document {
 
   @Prop({ type: Types.ObjectId, ref: 'Message' })
   lastMessage: Message;
+
+  @Prop({ type: Map, of: Date, default: {} })
+  clearedAt: Map<string, Date>;
 }
 
 export const ConversationSchema = SchemaFactory.createForClass(Conversation);

@@ -175,3 +175,71 @@ export class AdminStudentPaginationResponseDto {
     @ApiProperty({ type: [AdminStudentListResponseDto] })
     data: AdminStudentListResponseDto[];
 }
+
+export class SkillGapDto {
+    @ApiProperty({ example: 'TypeScript' })
+    skill: string;
+    @ApiProperty({ example: 15 })
+    demand: number;
+    @ApiProperty({ example: 5 })
+    supply: number;
+    @ApiProperty({ example: 10 })
+    gap: number;
+    @ApiProperty({ example: 'High' })
+    priority: string;
+}
+
+export class GrowthTrendDto {
+    @ApiProperty({ example: '2024-03' })
+    month: string;
+    @ApiProperty({ example: 50 })
+    signups: number;
+}
+
+export class EngagementMetricsDto {
+    @ApiProperty({ example: 1200 })
+    messages_last_30_days: number;
+    @ApiProperty({ example: 45 })
+    active_conversations: number;
+    @ApiProperty({ example: 85 })
+    connections_activity: number;
+}
+
+export class DepartmentalAnalysisDto {
+    @ApiProperty({ example: 'BS Computer Science' })
+    degree: string;
+    @ApiProperty({ example: 150 })
+    student_count: number;
+    @ApiProperty({ type: [String], example: ['React', 'Node.js', 'Python'] })
+    top_skills: string[];
+}
+
+export class AdvancedAnalyticsResponseDto {
+    @ApiProperty({ type: [SkillGapDto] })
+    skill_gap: SkillGapDto[];
+
+    @ApiProperty({ type: [GrowthTrendDto] })
+    growth_trends: GrowthTrendDto[];
+
+    @ApiProperty({ type: EngagementMetricsDto })
+    engagement_metrics: EngagementMetricsDto;
+
+    @ApiProperty({ type: [DepartmentalAnalysisDto] })
+    departmental_analysis: DepartmentalAnalysisDto[];
+
+    @ApiProperty({ example: { overall_alignment_score: 75 } })
+    curriculum_alignment: { overall_alignment_score: number };
+
+    @ApiProperty({
+        example: {
+            active_mentors: 25,
+            mentored_students: 80,
+            interaction_density: 200
+        }
+    })
+    mentorship_impact: {
+        active_mentors: number;
+        mentored_students: number;
+        interaction_density: number;
+    };
+}

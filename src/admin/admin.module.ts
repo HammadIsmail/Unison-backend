@@ -9,6 +9,8 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { UserAuth, UserAuthSchema } from '../auth/schemas/user-auth.schema';
 import { OTPRecord, OTPSchema } from '../auth/schemas/otp.schema';
 import { Activity, ActivitySchema } from '../common/activity/schemas/activity.schema';
+import { Message, MessageSchema } from '../chat/schemas/message.schema';
+import { Conversation, ConversationSchema } from '../chat/schemas/conversation.schema';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { Activity, ActivitySchema } from '../common/activity/schemas/activity.sc
       { name: UserAuth.name, schema: UserAuthSchema },
       { name: OTPRecord.name, schema: OTPSchema },
       { name: Activity.name, schema: ActivitySchema },
+      { name: Message.name, schema: MessageSchema },
+      { name: Conversation.name, schema: ConversationSchema },
     ]),
     Neo4jModule,
     MailModule,

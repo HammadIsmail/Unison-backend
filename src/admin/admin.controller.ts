@@ -8,6 +8,7 @@ import {
   DashboardStatsResponseDto,
   PendingAccountResponseDto,
   UpgradeRequestResponseDto,
+  AdvancedAnalyticsResponseDto,
 } from './dto/admin-response.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -141,5 +142,12 @@ export class AdminController {
   @ApiResponse({ status: 200 })
   getRecentActivity(@Query('limit') limit: number = 10) {
     return this.adminService.getRecentActivity(limit);
+  }
+
+  @Get('advanced-analytics')
+  @ApiOperation({ summary: 'Get professional-grade analytics for university administration' })
+  @ApiResponse({ status: 200, type: AdvancedAnalyticsResponseDto })
+  getAdvancedAnalytics() {
+    return this.adminService.getAdvancedAnalytics();
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Req, UseGuards, Delete } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { SendMessageDto, MessageIdDto, ChatMessageResponseDto, ConversationResponseDto } from './dto/chat.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -49,5 +49,29 @@ export class ChatController {
   async markConversationAsRead(@Req() req: any, @Param('participantId') participantId: string) {
     const userId = req.user.sub;
     return this.chatService.markConversationAsRead(userId, participantId);
+  }
+
+  @Patch('messages/:messageId')
+  @ApiOperation({ summary: 'Edit a message within 3 minutes' })
+  @ApiResponse({ status: 200, type: ChatMessageResponseDto })
+  async editMessage(@Req() req: any, @Param('messageId') messageId: string, @Body('content') content: string) {
+    const userId = req.user.sub;
+    return this.chatService.editMessage(userId, messageId, content);
+  }
+
+  @Delete('messages/:messageId')
+  @ApiOperation({ summary: 'Delete a message within 3 minutes' })
+  @ApiResponse({ status: 200, schema: { example: { success: true } } })
+  async deleteMessage(@Req() req: any, @Param('messageId') messageId: string) {
+    const userId = req.user.sub;
+    return this.chatService.deleteMessage(userId, messageId);
+  }
+
+  @Delete('conversations/:conversationId/clear')
+  @ApiOperation({ summary: 'Clear chat history for the current user' })
+  @ApiResponse({ status: 200, schema: { example: { success: true } } })
+  async clearChat(@Req() req: any, @Param('conversationId') conversationId: string) {
+    const userId = req.user.sub;
+    return this.chatService.clearChat(userId, conversationId);
   }
 }
