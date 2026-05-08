@@ -40,16 +40,19 @@ export class AdminService {
        RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, u.created_at AS registered_at, u.profile_picture AS profile_picture, u.student_card_url AS student_card_url`
     );
 
-    return result.records.map((record) => ({
-      id: record.get('id'),
-      username: record.get('username'),
-      display_name: record.get('display_name'),
-      email: record.get('email'),
-      role: record.get('role'),
-      registered_at: record.get('registered_at'),
-      profile_picture: record.get('profile_picture') || null,
-      student_card_url: record.get('student_card_url') || null,
-    }));
+    return result.records.map((record) => {
+      const registeredAt = record.get('registered_at');
+      return {
+        id: record.get('id'),
+        username: record.get('username'),
+        display_name: record.get('display_name'),
+        email: record.get('email'),
+        role: record.get('role'),
+        registered_at: registeredAt ? (typeof registeredAt === 'string' ? registeredAt : (registeredAt.toString ? registeredAt.toString() : registeredAt)) : null,
+        profile_picture: record.get('profile_picture') || null,
+        student_card_url: record.get('student_card_url') || null,
+      };
+    });
   }
 
   async approveAccount(id: string) {
@@ -332,6 +335,8 @@ export class AdminService {
         batch = batch.replace(/\.0/g, '');
       }
 
+      const createdAt = record.get('created_at');
+
       return {
         id: record.get('id'),
         username: record.get('username'),
@@ -346,7 +351,7 @@ export class AdminService {
         batch: batch,
         linkedin_url: record.get('linkedin_url') || null,
         profile_picture: record.get('profile_picture') || null,
-        created_at: record.get('created_at'),
+        created_at: createdAt ? (typeof createdAt === 'string' ? createdAt : (createdAt.toString ? createdAt.toString() : createdAt)) : null,
       };
     });
 
@@ -393,6 +398,8 @@ export class AdminService {
         batch = batch.replace(/\.0/g, '');
       }
 
+      const createdAt = record.get('created_at');
+
       return {
         id: record.get('id'),
         username: record.get('username'),
@@ -405,7 +412,7 @@ export class AdminService {
         degree: record.get('degree') || null,
         batch: batch,
         profile_picture: record.get('profile_picture') || null,
-        created_at: record.get('created_at'),
+        created_at: createdAt ? (typeof createdAt === 'string' ? createdAt : (createdAt.toString ? createdAt.toString() : createdAt)) : null,
       };
     });
 
@@ -511,11 +518,18 @@ export class AdminService {
       params
     );
 
-    const data = result.records.map(r => ({
-      ...r.get('o').properties,
-      posted_by: r.get('posted_by'),
-      poster_username: r.get('poster_username')
-    }));
+    const data = result.records.map(r => {
+      const opp = r.get('o').properties;
+      return {
+        ...opp,
+        posted_by: r.get('posted_by'),
+        poster_username: r.get('poster_username'),
+        // Ensure posted_at is an ISO string even if it's a Neo4j date object
+        posted_at: opp.posted_at ? (typeof opp.posted_at === 'string' ? opp.posted_at : (opp.posted_at.toString ? opp.posted_at.toString() : opp.posted_at)) : null,
+        // Ensure deadline is handled similarly if needed
+        deadline: opp.deadline ? (typeof opp.deadline === 'string' ? opp.deadline : (opp.deadline.toString ? opp.deadline.toString() : opp.deadline)) : null,
+      };
+    });
 
     return { total, page, data };
   }
