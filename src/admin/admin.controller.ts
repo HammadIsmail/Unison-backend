@@ -1,5 +1,5 @@
 import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, Req, Res } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto, RejectUpgradeDto } from './dto/admin.dto';
