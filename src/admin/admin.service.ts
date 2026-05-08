@@ -30,6 +30,7 @@ export class AdminService {
   async getPendingAccounts() {
     const result = await this.neo4j.run(
       `MATCH (u:User {account_status: 'pending'})
+       WHERE u.is_deleted IS NULL OR u.is_deleted = false
        RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, u.created_at AS registered_at, u.profile_picture AS profile_picture, u.student_card_url AS student_card_url`
     );
 
@@ -58,8 +59,17 @@ export class AdminService {
       throw new NotFoundException('Account not found in Neo4j.');
     }
 
-    // 2. Update MongoDB
-    await this.userAuthModel.findOneAndUpdate({ userId: id }, { account_status: 'approved' });
+    try {
+      // 2. Update MongoDB
+      await this.userAuthModel.findOneAndUpdate({ userId: id }, { account_status: 'approved' });
+    } catch (error) {
+      // Rollback Neo4j
+      await this.neo4j.run(
+        `MATCH (u:User {id: $id}) SET u.account_status = 'pending'`,
+        { id }
+      );
+      throw error;
+    }
 
     const user = result.records[0].get('u').properties;
     await this.mail.sendApprovalEmail(user.email, user.display_name || user.username);
@@ -96,11 +106,20 @@ export class AdminService {
       throw new NotFoundException('Account not found in Neo4j.');
     }
 
-    // 2. Update MongoDB
-    await this.userAuthModel.findOneAndUpdate(
-      { userId: id }, 
-      { account_status: 'rejected', rejection_reason: dto.rejection_reason }
-    );
+    try {
+      // 2. Update MongoDB
+      await this.userAuthModel.findOneAndUpdate(
+        { userId: id }, 
+        { account_status: 'rejected', rejection_reason: dto.rejection_reason }
+      );
+    } catch (error) {
+      // Rollback Neo4j
+      await this.neo4j.run(
+        `MATCH (u:User {id: $id}) SET u.account_status = 'pending'`,
+        { id }
+      );
+      throw error;
+    }
 
     const user = result.records[0].get('u').properties;
     await this.mail.sendRejectionEmail(user.email, user.display_name || user.username, dto.rejection_reason);
@@ -120,6 +139,7 @@ export class AdminService {
   async getPendingUpgrades() {
     const result = await this.neo4j.run(
       `MATCH (u:User {role: 'student', upgrade_status: 'pending'})
+       WHERE u.is_deleted IS NULL OR u.is_deleted = false
        RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.roll_number AS roll_number, u.upgrade_status AS upgrade_status, u.profile_picture AS profile_picture, u.graduation_year AS graduation_year`
     );
 
@@ -149,8 +169,18 @@ export class AdminService {
       throw new NotFoundException('Pending upgrade request not found for this user.');
     }
 
-    // 2. Update MongoDB Role
-    await this.userAuthModel.findOneAndUpdate({ userId: id }, { role: 'alumni' });
+    try {
+      // 2. Update MongoDB Role
+      await this.userAuthModel.findOneAndUpdate({ userId: id }, { role: 'alumni' });
+    } catch (error) {
+      // Rollback Neo4j
+      await this.neo4j.run(
+        `MATCH (u:User {id: $id}) 
+         SET u.role = 'student', u.upgrade_status = 'pending'`,
+        { id }
+      );
+      throw error;
+    }
 
     const user = result.records[0].get('u').properties;
     await this.mail.sendUpgradeApprovalEmail(user.email, user.display_name || user.username);
@@ -202,10 +232,10 @@ export class AdminService {
   }
 
   async getDashboardStats() {
-    const totalAlumniResult = await this.neo4j.run(`MATCH (u:User {role: 'alumni', account_status: 'approved'}) RETURN count(u) AS count`);
-    const totalStudentsResult = await this.neo4j.run(`MATCH (u:User {role: 'student', account_status: 'approved'}) RETURN count(u) AS count`);
-    const pendingAccountsResult = await this.neo4j.run(`MATCH (u:User {account_status: 'pending'}) RETURN count(u) AS count`);
-    const totalOpportunitiesResult = await this.neo4j.run(`MATCH (o:Opportunity) RETURN count(o) AS count`);
+    const totalAlumniResult = await this.neo4j.run(`MATCH (u:User {role: 'alumni', account_status: 'approved'}) WHERE u.is_deleted IS NULL OR u.is_deleted = false RETURN count(u) AS count`);
+    const totalStudentsResult = await this.neo4j.run(`MATCH (u:User {role: 'student', account_status: 'approved'}) WHERE u.is_deleted IS NULL OR u.is_deleted = false RETURN count(u) AS count`);
+    const pendingAccountsResult = await this.neo4j.run(`MATCH (u:User {account_status: 'pending'}) WHERE u.is_deleted IS NULL OR u.is_deleted = false RETURN count(u) AS count`);
+    const totalOpportunitiesResult = await this.neo4j.run(`MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false RETURN count(o) AS count`);
 
     // Most common skills
     const skillsResult = await this.neo4j.run(`
@@ -226,31 +256,44 @@ export class AdminService {
     };
   }
 
+  private prepareLuceneQuery(q: string): string {
+    if (!q) return '';
+    return q.trim().split(/\s+/).map(word => `${word}~`).join(' AND ');
+  }
+
   async getAllAlumni(page: number, limit: number, search: string) {
     const skip = (page - 1) * limit;
+    let queryBase = '';
+    const params: any = { skip, limit };
 
-    const searchCondition = search
-      ? `AND toLower(u.display_name) CONTAINS toLower($search)`
-      : '';
+    if (search) {
+      const luceneQ = this.prepareLuceneQuery(search);
+      queryBase = `
+        CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
+        WHERE u.role = 'alumni' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    } else {
+      queryBase = `
+        MATCH (u:User {role: 'alumni', account_status: 'approved'})
+        WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    }
 
     const countResult = await this.neo4j.run(
-      `MATCH (u:User {role: 'alumni', account_status: 'approved'})
-       WHERE 1=1 ${searchCondition}
-       RETURN count(u) AS total`,
-      { search }
+      `${queryBase} RETURN count(u) AS total`,
+      params
     );
     const total = countResult.records[0]?.get('total').toNumber() || 0;
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {role: 'alumni', account_status: 'approved'})
-       WHERE 1=1 ${searchCondition}
+      `${queryBase}
        OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.phone AS phone, u.bio AS bio,
               w.company_name AS company, w.role AS role, u.graduation_year AS graduation_year, u.degree AS degree,
               u.batch AS batch, u.linkedin_url AS linkedin_url, u.profile_picture AS profile_picture, u.created_at AS created_at
        ORDER BY u.created_at DESC
        SKIP toInteger($skip) LIMIT toInteger($limit)`,
-      { search, skip, limit }
+      params
     );
 
     const data = result.records.map((record) => {
@@ -282,28 +325,36 @@ export class AdminService {
 
   async getAllStudents(page: number, limit: number, search: string) {
     const skip = (page - 1) * limit;
+    let queryBase = '';
+    const params: any = { skip, limit };
 
-    const searchCondition = search
-      ? `AND toLower(u.display_name) CONTAINS toLower($search)`
-      : '';
+    if (search) {
+      const luceneQ = this.prepareLuceneQuery(search);
+      queryBase = `
+        CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
+        WHERE u.role = 'student' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    } else {
+      queryBase = `
+        MATCH (u:User {role: 'student', account_status: 'approved'})
+        WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    }
 
     const countResult = await this.neo4j.run(
-      `MATCH (u:User {role: 'student', account_status: 'approved'})
-       WHERE 1=1 ${searchCondition}
-       RETURN count(u) AS total`,
-      { search }
+      `${queryBase} RETURN count(u) AS total`,
+      params
     );
     const total = countResult.records[0]?.get('total').toNumber() || 0;
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {role: 'student', account_status: 'approved'})
-       WHERE 1=1 ${searchCondition}
+      `${queryBase}
        RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.phone AS phone, u.bio AS bio,
               u.roll_number AS roll_number, u.semester AS semester, u.degree AS degree, u.batch AS batch,
               u.profile_picture AS profile_picture, u.created_at AS created_at
        ORDER BY u.created_at DESC
        SKIP toInteger($skip) LIMIT toInteger($limit)`,
-      { search, skip, limit }
+      params
     );
 
     const data = result.records.map((record) => {
@@ -332,54 +383,29 @@ export class AdminService {
   }
 
   async removeAccount(id: string) {
-    // 1. Fetch user profile picture and opportunity media
-    const mediaResult = await this.neo4j.run(
-      `MATCH (u:User {id: $id})
-       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
-       RETURN u.profile_picture AS profile_pic, collect(o.media) AS opp_media`,
-      { id }
-    );
+    const now = new Date().toISOString();
 
-    if (mediaResult.records.length > 0) {
-      const profilePic = mediaResult.records[0].get('profile_pic');
-      const oppMediaArrays = mediaResult.records[0].get('opp_media');
-
-      // Delete profile picture
-      if (profilePic) {
-        const publicId = this.cloudinary.extractPublicIdFromUrl(profilePic);
-        if (publicId) await this.cloudinary.deleteImage(publicId);
-      }
-
-      // Delete opportunity media
-      for (const mediaArray of oppMediaArrays) {
-        if (Array.isArray(mediaArray)) {
-          for (const url of mediaArray) {
-            const publicId = this.cloudinary.extractPublicIdFromUrl(url);
-            if (publicId) await this.cloudinary.deleteImage(publicId);
-          }
-        }
-      }
-    }
-
-    // 2. Comprehensive Neo4j Delete
+    // 1. Soft Delete in Neo4j
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id})
-       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
        OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
-       DETACH DELETE u, w, o
-       RETURN count(u) as deleted`,
-      { id }
+       SET u.is_deleted = true, u.deleted_at = $now, o.is_deleted = true
+       RETURN count(u) as updated`,
+      { id, now }
     );
 
-    // 3. Delete from MongoDB
-    await this.userAuthModel.deleteOne({ userId: id });
+    // 2. Soft Delete in MongoDB
+    await this.userAuthModel.updateOne(
+      { userId: id },
+      { is_deleted: true, deleted_at: new Date() }
+    );
 
-    const deleted = result.records[0]?.get('deleted').toNumber() || 0;
-    if (deleted === 0) {
+    const updated = result.records[0]?.get('updated').toNumber() || 0;
+    if (updated === 0) {
       throw new NotFoundException('Account not found.');
     }
 
-    return { message: 'Account and all associated data removed successfully.' };
+    return { message: 'Account has been soft-deleted. Historical data is preserved.' };
   }
 
   async requestEmailChange(newEmail: string) {

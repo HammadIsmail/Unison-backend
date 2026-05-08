@@ -10,6 +10,9 @@ import {
 } from './dto/alumni.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { UserAuth } from '../auth/schemas/user-auth.schema';
 
 @Injectable()
 export class AlumniService {
@@ -18,14 +21,18 @@ export class AlumniService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly activity: ActivityService,
     private readonly notification: NotificationService,
+    @InjectModel(UserAuth.name)
+    private readonly userAuthModel: Model<UserAuth>,
   ) { }
 
   async getProfile(id: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id, role: 'alumni'})
+       WHERE u.is_deleted IS NULL OR u.is_deleted = false
        OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
        OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       WHERE c.is_deleted IS NULL OR c.is_deleted = false
        RETURN u, collect(DISTINCT w) AS experiences, 
               collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, 
               count(DISTINCT c) AS connections_count`,
@@ -220,6 +227,7 @@ export class AlumniService {
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       WHERE c.is_deleted IS NULL OR c.is_deleted = false
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
@@ -251,7 +259,7 @@ export class AlumniService {
 
     const result = await this.neo4j.run(
       `MATCH (c:User {batch: $batch, role: 'alumni'})
-       WHERE c.id <> $userId AND c.account_status = 'approved'
+       WHERE c.id <> $userId AND c.account_status = 'approved' AND (c.is_deleted IS NULL OR c.is_deleted = false)
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
@@ -272,45 +280,22 @@ export class AlumniService {
   }
 
   async deleteAccount(userId: string) {
-    // 1. Fetch user profile picture and opportunity media
-    const mediaResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
-       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
-       RETURN u.profile_picture AS profile_pic, collect(o.media) AS opp_media`,
-      { userId }
-    );
+    const now = new Date().toISOString();
 
-    if (mediaResult.records.length > 0) {
-      const profilePic = mediaResult.records[0].get('profile_pic');
-      const oppMediaArrays = mediaResult.records[0].get('opp_media');
-
-      // Delete profile picture
-      if (profilePic) {
-        const publicId = this.cloudinaryService.extractPublicIdFromUrl(profilePic);
-        if (publicId) await this.cloudinaryService.deleteImage(publicId);
-      }
-
-      // Delete opportunity media
-      for (const mediaArray of oppMediaArrays) {
-        if (Array.isArray(mediaArray)) {
-          for (const url of mediaArray) {
-            const publicId = this.cloudinaryService.extractPublicIdFromUrl(url);
-            if (publicId) await this.cloudinaryService.deleteImage(publicId);
-          }
-        }
-      }
-    }
-
-    // 2. Comprehensive Neo4j Delete
+    // 1. Soft Delete in Neo4j
     await this.neo4j.run(
       `MATCH (u:User {id: $userId})
-       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
        OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
-       OPTIONAL MATCH (n:Notification)-[:FOR]->(u)
-       DETACH DELETE u, w, o, n`,
-      { userId }
+       SET u.is_deleted = true, u.deleted_at = $now, o.is_deleted = true`,
+      { userId, now }
     );
 
-    return { message: 'Your account and all associated data have been permanently deleted.' };
+    // 2. Soft Delete in MongoDB
+    await this.userAuthModel.updateOne(
+      { userId: userId },
+      { is_deleted: true, deleted_at: new Date() }
+    );
+
+    return { message: 'Your account has been soft-deleted. Historical data is preserved.' };
   }
 }

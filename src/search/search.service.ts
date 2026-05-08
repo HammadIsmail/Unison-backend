@@ -5,34 +5,45 @@ import { Neo4jService } from '../neo4j/neo4j.service';
 export class SearchService {
   constructor(private readonly neo4j: Neo4jService) { }
 
+  private prepareLuceneQuery(q: string): string {
+    if (!q) return '';
+    // Basic fuzzy search by adding ~ to each word
+    return q.trim().split(/\s+/).map(word => `${word}~`).join(' AND ');
+  }
+
   async searchAlumni(display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
-    let matchClause = `MATCH (u:User {role: 'alumni', account_status: 'approved'})`;
-    const whereClauses: string[] = [];
+    let query = '';
+    const params: any = { company, skill, batch_year, degree };
 
-    if (display_name) whereClauses.push(`toLower(u.display_name) CONTAINS toLower($display_name)`);
-    if (batch_year) whereClauses.push(`u.graduation_year = toInteger($batch_year) OR u.batch CONTAINS $batch_year`);
-    if (degree) whereClauses.push(`toLower(u.degree) CONTAINS toLower($degree)`);
-
-    // Match skills and experiences if requested ----
-    if (skill) {
-      matchClause += ` MATCH (u)-[:HAS_SKILL]->(s:Skill)`;
-      whereClauses.push(`toLower(s.name) CONTAINS toLower($skill)`);
+    if (display_name) {
+      const luceneQ = this.prepareLuceneQuery(display_name);
+      query = `
+        CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
+        WHERE u.role = 'alumni' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
     } else {
-      matchClause += ` OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)`;
+      query = `
+        MATCH (u:User {role: 'alumni', account_status: 'approved'})
+        WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    }
+
+    if (batch_year) query += ` AND (u.graduation_year = toInteger($batch_year) OR u.batch CONTAINS $batch_year)`;
+    if (degree) query += ` AND toLower(u.degree) CONTAINS toLower($degree)`;
+
+    if (skill) {
+      query += ` MATCH (u)-[:HAS_SKILL]->(s:Skill) WHERE toLower(s.name) CONTAINS toLower($skill)`;
+    } else {
+      query += ` OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)`;
     }
 
     if (company) {
-      matchClause += ` MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})`;
-      whereClauses.push(`toLower(w.company_name) CONTAINS toLower($company)`);
+      query += ` MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true}) WHERE toLower(w.company_name) CONTAINS toLower($company)`;
     } else {
-      matchClause += ` OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})`;
+      query += ` OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})`;
     }
 
-    const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
-    const query = `
-      ${matchClause}
-      ${whereString}
+    query += `
       WITH u, w, collect(DISTINCT s.name) AS skills
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, 
              u.bio AS bio, u.backDropImage AS backDropImage, w.company_name AS company, w.role AS role, skills
@@ -40,7 +51,7 @@ export class SearchService {
       LIMIT 50
     `;
 
-    const result = await this.neo4j.run(query, { display_name, company, skill, batch_year, degree });
+    const result = await this.neo4j.run(query, params);
 
     return result.records.map((r) => ({
       id: r.get('id'),
@@ -56,24 +67,32 @@ export class SearchService {
   }
 
   async searchOpportunities(title?: string, type?: string, skill?: string, location?: string, is_remote?: string) {
-    let matchClause = `MATCH (o:Opportunity)<-[:POSTED]-(u:User)`;
-    const whereClauses: string[] = [];
+    let query = '';
+    const params: any = { type, location, skill, is_remote_bool: is_remote === 'true' };
 
-    if (title) whereClauses.push(`toLower(o.title) CONTAINS toLower($title)`);
-    if (type) whereClauses.push(`o.type = $type`);
-    if (location) whereClauses.push(`toLower(o.location) CONTAINS toLower($location)`);
-    if (is_remote !== undefined) whereClauses.push(`o.is_remote = $is_remote_bool`);
-
-    if (skill) {
-      matchClause += ` MATCH (o)-[:REQUIRES_SKILL]->(s:Skill)`;
-      whereClauses.push(`toLower(s.name) CONTAINS toLower($skill)`);
+    if (title) {
+      const luceneQ = this.prepareLuceneQuery(title);
+      query = `
+        CALL db.index.fulltext.queryNodes("opportunity_search_index", "${luceneQ}") YIELD node AS o, score
+        MATCH (o)<-[:POSTED]-(u:User)
+        WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
+      `;
+    } else {
+      query = `
+        MATCH (o:Opportunity)<-[:POSTED]-(u:User)
+        WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
+      `;
     }
 
-    const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    if (type) query += ` AND o.type = $type`;
+    if (location) query += ` AND toLower(o.location) CONTAINS toLower($location)`;
+    if (is_remote !== undefined) query += ` AND o.is_remote = $is_remote_bool`;
 
-    const query = `
-      ${matchClause}
-      ${whereString}
+    if (skill) {
+      query += ` MATCH (o)-[:REQUIRES_SKILL]->(s:Skill) WHERE toLower(s.name) CONTAINS toLower($skill)`;
+    }
+
+    query += `
       RETURN o.id AS id, o.title AS title, o.type AS type, o.company_name AS company,
              o.location AS location, o.is_remote AS is_remote, o.apply_link AS apply_link,
              o.posted_at AS posted_at, o.deadline AS deadline, o.media AS media,
@@ -83,9 +102,7 @@ export class SearchService {
       LIMIT 50
     `;
 
-    const result = await this.neo4j.run(query, {
-      title, type, skill, location, is_remote_bool: is_remote === 'true'
-    });
+    const result = await this.neo4j.run(query, params);
 
     return result.records.map((r) => ({
       id: r.get('id'),
@@ -111,6 +128,7 @@ export class SearchService {
   async findByUsername(username: string) {
     const query = `
       MATCH (u:User {username: $username, account_status: 'approved'})
+      WHERE u.is_deleted IS NULL OR u.is_deleted = false
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture,
@@ -141,13 +159,15 @@ export class SearchService {
   }
 
   async getSuggestions(q: string) {
+    const luceneQ = this.prepareLuceneQuery(q);
     const query = `
-      MATCH (u:User)
-      WHERE u.account_status = 'approved' AND (toLower(u.username) CONTAINS toLower($q) OR toLower(u.display_name) CONTAINS toLower($q))
+      CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
+      WHERE u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, u.role AS role
+      ORDER BY score DESC
       LIMIT 10
     `;
-    const result = await this.neo4j.run(query, { q });
+    const result = await this.neo4j.run(query);
     return result.records.map(record => ({
       id: record.get('id'),
       username: record.get('username'),

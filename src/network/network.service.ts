@@ -8,7 +8,9 @@ export class NetworkService {
   async getCentrality() {
     const query = `
       MATCH (u:User {role: 'alumni', account_status: 'approved'})
+      WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+      WHERE (c.is_deleted IS NULL OR c.is_deleted = false)
       WITH u, count(c) AS connections_count
       RETURN u.id AS alumni_id, u.display_name AS display_name, connections_count,
              toFloat(connections_count) / 100.0 AS centrality_score
@@ -27,8 +29,10 @@ export class NetworkService {
   async getShortestPath(fromId: string, toId: string) {
     const query = `
       MATCH (u1:User {id: $fromId}), (u2:User {id: $toId})
+      WHERE (u1.is_deleted IS NULL OR u1.is_deleted = false) AND (u2.is_deleted IS NULL OR u2.is_deleted = false)
       MATCH p = shortestPath((u1)-[:CONNECTED_TO*]-(u2))
       WHERE all(r IN relationships(p) WHERE r.status = 'accepted')
+        AND all(n IN nodes(p) WHERE n.is_deleted IS NULL OR n.is_deleted = false)
       RETURN [n in nodes(p) | n.name] AS path, length(p) AS hops
     `;
     const result = await this.neo4j.run(query, { fromId, toId });
@@ -57,11 +61,13 @@ export class NetworkService {
   async getSkillTrends() {
     const query = `
       MATCH (o:Opportunity)-[:REQUIRES_SKILL]->(s:Skill)
+      WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
       WITH s.name AS skill, count(o) AS demand
       ORDER BY demand DESC
       WITH collect({skill: skill, demand: demand}) AS demanded
       
       MATCH (u:User)-[:HAS_SKILL]->(s2:Skill)
+      WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
       WITH demanded, s2.name AS user_skill, count(u) AS supply
       ORDER BY supply DESC
       WITH demanded, collect({skill: user_skill, supply: supply}) AS supplied
@@ -83,8 +89,10 @@ export class NetworkService {
   async getBatchAnalysis() {
     const query = `
       MATCH (u:User {role: 'alumni'})
+      WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+      WHERE (c.is_deleted IS NULL OR c.is_deleted = false)
       WITH u.batch AS batch, u, collect(DISTINCT w.company_name) AS companies,
            collect(DISTINCT w.role) AS roles, count(DISTINCT c) AS conn_count
       WITH batch, count(u) AS total_alumni, 

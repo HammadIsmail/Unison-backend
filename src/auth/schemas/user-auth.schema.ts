@@ -20,6 +20,12 @@ export class UserAuth extends Document {
 
   @Prop({ type: String })
   rejection_reason: string;
+
+  @Prop({ type: Boolean, default: false, index: true })
+  is_deleted: boolean;
+
+  @Prop({ type: Date })
+  deleted_at: Date;
 }
 
 export const UserAuthSchema = SchemaFactory.createForClass(UserAuth);

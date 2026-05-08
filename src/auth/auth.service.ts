@@ -239,9 +239,9 @@ export class AuthService {
         this.logger.log(`Attempting login for: ${email}`);
         
         const auth = await this.userAuthModel.findOne({ email });
-
-        if (!auth) {
-            this.logger.warn(`Login failed: Email not found in MongoDB - ${email}`);
+        
+        if (!auth || auth.is_deleted) {
+            this.logger.warn(`Login failed: ${!auth ? 'Email not found' : 'Account soft-deleted'} - ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
         }
 

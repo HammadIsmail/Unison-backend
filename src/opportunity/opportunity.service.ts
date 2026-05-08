@@ -108,6 +108,8 @@ export class OpportunityService {
       whereClauses.push(`toLower(s.name) CONTAINS toLower($skill)`);
     }
 
+    whereClauses.push(`(o.is_deleted IS NULL OR o.is_deleted = false)`);
+
     const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
     const countQuery = `${matchClause} ${whereString} RETURN count(DISTINCT o) AS total`;
@@ -155,6 +157,7 @@ export class OpportunityService {
   async findOne(id: string) {
     const result = await this.neo4j.run(
       `MATCH (o:Opportunity {id: $id})<-[:POSTED]-(u:User)
+       WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
        OPTIONAL MATCH (o)-[:REQUIRES_SKILL]->(s:Skill)
        RETURN o, u.id AS poster_id, u.display_name AS poster_name, u.username AS poster_username, 
               u.profile_picture AS poster_profile_picture, u.role AS poster_role, collect(s.name) AS required_skills`,
@@ -196,6 +199,7 @@ export class OpportunityService {
   async findMyPosts(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[:POSTED]->(o:Opportunity)
+       WHERE o.is_deleted IS NULL OR o.is_deleted = false
        RETURN o.id AS id, o.title AS title, o.company_name AS company, 
               o.status AS status, o.posted_at AS posted_at, o.deadline AS deadline
        ORDER BY o.posted_at DESC`,
@@ -284,7 +288,11 @@ export class OpportunityService {
       throw new ForbiddenException('Only the poster or an admin can delete this opportunity.');
     }
 
-    await this.neo4j.run(`MATCH (o:Opportunity {id: $id}) DETACH DELETE o`, { id });
+    await this.neo4j.run(
+      `MATCH (o:Opportunity {id: $id}) 
+       SET o.is_deleted = true, o.deleted_at = datetime()`, 
+      { id }
+    );
     return { message: 'Opportunity removed successfully.' };
   }
 }
