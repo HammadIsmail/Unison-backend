@@ -142,6 +142,30 @@ export class AdminService {
     return { message: 'Account rejected. Email sent to user.' };
   }
 
+  async bulkApproveAccounts(ids: string[]) {
+    const results = await Promise.allSettled(ids.map(id => this.approveAccount(id)));
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+
+    return { 
+      message: `Bulk approval complete. ${succeeded} succeeded, ${failed} failed.`,
+      succeeded,
+      failed
+    };
+  }
+
+  async bulkRejectAccounts(ids: string[], reason: string) {
+    const results = await Promise.allSettled(ids.map(id => this.rejectAccount(id, { rejection_reason: reason })));
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+
+    return { 
+      message: `Bulk rejection complete. ${succeeded} succeeded, ${failed} failed.`,
+      succeeded,
+      failed
+    };
+  }
+
   async getPendingUpgrades() {
     const result = await this.neo4j.run(
       `MATCH (u:User {role: 'student', upgrade_status: 'pending'})
@@ -456,9 +480,84 @@ export class AdminService {
     return { message: 'Admin email updated successfully.', new_email: newEmail };
   }
 
-  async getRecentActivity(limit: number = 10) {
+  async getAllOpportunities(page: number, limit: number, search: string) {
+    const skip = (page - 1) * limit;
+    let queryBase = '';
+    const params: any = { skip, limit };
+
+    if (search) {
+      queryBase = `
+        MATCH (o:Opportunity)
+        WHERE (o.title CONTAINS $search OR o.description CONTAINS $search OR o.company_name CONTAINS $search)
+          AND (o.is_deleted IS NULL OR o.is_deleted = false)
+      `;
+      params.search = search;
+    } else {
+      queryBase = `
+        MATCH (o:Opportunity)
+        WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
+      `;
+    }
+
+    const countResult = await this.neo4j.run(`${queryBase} RETURN count(o) AS total`, params);
+    const total = countResult.records[0].get('total').toNumber();
+
+    const result = await this.neo4j.run(
+      `${queryBase}
+       MATCH (u:User)-[:POSTED]->(o)
+       RETURN o, u.display_name AS posted_by, u.username AS poster_username
+       ORDER BY o.created_at DESC
+       SKIP toInteger($skip) LIMIT toInteger($limit)`,
+      params
+    );
+
+    const data = result.records.map(r => ({
+      ...r.get('o').properties,
+      posted_by: r.get('posted_by'),
+      poster_username: r.get('poster_username')
+    }));
+
+    return { total, page, data };
+  }
+
+  async adminDeleteOpportunity(id: string) {
+    const result = await this.neo4j.run(
+      `MATCH (o:Opportunity {id: $id})
+       SET o.is_deleted = true, o.deleted_at = datetime(), o.deleted_by = 'admin'
+       RETURN count(o) AS cnt`,
+      { id }
+    );
+
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Opportunity not found.');
+    }
+
+    return { message: 'Opportunity removed by administrator.' };
+  }
+
+  async exportUsersToCsv(role: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {role: $role, account_status: 'approved'})
+       WHERE u.is_deleted IS NULL OR u.is_deleted = false
+       RETURN u.display_name AS name, u.email AS email, u.batch AS batch, u.degree AS degree, u.created_at AS joined`,
+      { role }
+    );
+
+    let csv = 'Name,Email,Batch,Degree,JoinedAt\n';
+    result.records.forEach(r => {
+      csv += `"${r.get('name')}","${r.get('email')}","${r.get('batch')}","${r.get('degree')}","${r.get('joined')}"\n`;
+    });
+
+    return csv;
+  }
+
+  async getRecentActivity(limit: number = 10, type?: string, userId?: string) {
+    const query: any = {};
+    if (type) query.type = type;
+    if (userId) query.related_id = userId;
+
     const activities = await this.activityModel
-      .find()
+      .find(query)
       .sort({ created_at: -1 })
       .limit(limit)
       .exec();
@@ -468,10 +567,14 @@ export class AdminService {
       type: a.type,
       description: a.description,
       created_at: a.created_at,
+      related_id: a.related_id
     }));
   }
 
-  async getAdvancedAnalytics() {
+  async getAdvancedAnalytics(from?: string, to?: string) {
+    const fromDate = from ? new Date(from) : undefined;
+    const toDate = to ? new Date(to) : undefined;
+
     const [
       skillGap,
       growth,
@@ -481,8 +584,8 @@ export class AdminService {
       mentorship
     ] = await Promise.all([
       this.getSkillGapAnalysis(),
-      this.getGrowthMetrics(),
-      this.getEngagementMetrics(),
+      this.getGrowthMetrics(fromDate, toDate),
+      this.getEngagementMetrics(fromDate, toDate),
       this.getDepartmentalAnalysis(),
       this.getCurriculumAlignmentScore(),
       this.getAlumniMentorshipIndex(),
@@ -531,12 +634,20 @@ export class AdminService {
     });
   }
 
-  async getGrowthMetrics() {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  async getGrowthMetrics(from?: Date, to?: Date) {
+    const matchQuery: any = {};
+    if (from || to) {
+      matchQuery.createdAt = {};
+      if (from) matchQuery.createdAt.$gte = from;
+      if (to) matchQuery.createdAt.$lte = to;
+    } else {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      matchQuery.createdAt = { $gte: sixMonthsAgo };
+    }
 
     const growth = await this.userAuthModel.aggregate([
-      { $match: { createdAt: { $gte: sixMonthsAgo } } },
+      { $match: matchQuery },
       {
         $group: {
           _id: {
@@ -555,18 +666,24 @@ export class AdminService {
     }));
   }
 
-  async getEngagementMetrics() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  async getEngagementMetrics(from?: Date, to?: Date) {
+    const fromDate = from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const matchQuery: any = { createdAt: { $gte: fromDate } };
+    if (to) matchQuery.createdAt.$lte = to;
 
-    const messageCount = await this.messageModel.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
-    const activeConversations = await this.conversationModel.countDocuments({ updatedAt: { $gte: thirtyDaysAgo } });
+    const messageCount = await this.messageModel.countDocuments(matchQuery);
+    
+    // For conversations, we use updatedAt
+    const convMatch: any = { updatedAt: { $gte: fromDate } };
+    if (to) convMatch.updatedAt.$lte = to;
+    const activeConversations = await this.conversationModel.countDocuments(convMatch);
 
     const connectionResult = await this.neo4j.run(`
       MATCH ()-[r:CONNECTED_TO]->()
-      WHERE r.created_at >= $thirtyDaysAgo OR (r.status = 'pending' AND r.updated_at >= $thirtyDaysAgo)
+      WHERE r.created_at >= $from OR (r.status = 'pending' AND r.updated_at >= $from)
+      ${to ? 'AND r.created_at <= $to' : ''}
       RETURN count(r) AS count
-    `, { thirtyDaysAgo: thirtyDaysAgo.toISOString() });
+    `, { from: fromDate.toISOString(), to: to ? to.toISOString() : undefined });
 
     return {
       messages_last_30_days: messageCount,

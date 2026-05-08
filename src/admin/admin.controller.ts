@@ -1,4 +1,5 @@
-import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, Req, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto, RejectUpgradeDto } from './dto/admin.dto';
@@ -14,6 +15,7 @@ import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { BulkActionDto, BulkRejectDto, AdminActivityFilterDto, AnalyticsFilterDto } from './dto/admin-request.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -42,6 +44,20 @@ export class AdminController {
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   rejectAccount(@Param('id') id: string, @Body() dto: RejectAccountDto) {
     return this.adminService.rejectAccount(id, dto);
+  }
+
+  @Patch('bulk/approve')
+  @ApiOperation({ summary: 'Approve multiple pending accounts at once' })
+  @ApiResponse({ status: 200 })
+  bulkApprove(@Body() dto: BulkActionDto) {
+    return this.adminService.bulkApproveAccounts(dto.ids);
+  }
+
+  @Patch('bulk/reject')
+  @ApiOperation({ summary: 'Reject multiple pending accounts at once' })
+  @ApiResponse({ status: 200 })
+  bulkReject(@Body() dto: BulkRejectDto) {
+    return this.adminService.bulkRejectAccounts(dto.ids, dto.reason);
   }
 
   @Get('upgrade-requests')
@@ -137,17 +153,45 @@ export class AdminController {
   }
 
   @Get('recent-activity')
-  @ApiOperation({ summary: 'Get recent platform activities' })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiOperation({ summary: 'Get recent platform activities with filtering' })
   @ApiResponse({ status: 200 })
-  getRecentActivity(@Query('limit') limit: number = 10) {
-    return this.adminService.getRecentActivity(limit);
+  getRecentActivity(@Query() filter: AdminActivityFilterDto) {
+    return this.adminService.getRecentActivity(filter.limit || 10, filter.type, filter.userId);
   }
 
   @Get('advanced-analytics')
-  @ApiOperation({ summary: 'Get professional-grade analytics for university administration' })
+  @ApiOperation({ summary: 'Get professional-grade analytics with date filtering' })
   @ApiResponse({ status: 200, type: AdvancedAnalyticsResponseDto })
-  getAdvancedAnalytics() {
-    return this.adminService.getAdvancedAnalytics();
+  getAdvancedAnalytics(@Query() filter: AnalyticsFilterDto) {
+    return this.adminService.getAdvancedAnalytics(filter.from, filter.to);
+  }
+
+  @Get('opportunities')
+  @ApiOperation({ summary: 'Moderation: List all system opportunities' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  getAllOpportunities(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
+  ) {
+    return this.adminService.getAllOpportunities(parseInt(page), parseInt(limit), search);
+  }
+
+  @Delete('opportunities/:id')
+  @ApiOperation({ summary: 'Moderation: Delete any opportunity by ID' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  adminDeleteOpportunity(@Param('id') id: string) {
+    return this.adminService.adminDeleteOpportunity(id);
+  }
+
+  @Get('export/:role')
+  @ApiOperation({ summary: 'Export user list to CSV' })
+  async exportToCsv(@Param('role') role: string, @Res() res: Response) {
+    const csv = await this.adminService.exportUsersToCsv(role);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=unison_${role}_export.csv`);
+    return res.status(200).send(csv);
   }
 }

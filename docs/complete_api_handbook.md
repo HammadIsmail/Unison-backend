@@ -178,7 +178,50 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
-### 4. Dashboard Statistics
+### 4. Bulk Approve Accounts
+`PATCH /api/admin/bulk/approve`  
+**Summary**: Approves multiple pending accounts in a single request.
+
+**Request Body**:
+```json
+{ "ids": ["uuid-1", "uuid-2", "uuid-3"] }
+```
+
+**Response (200)**:
+```json
+{ 
+  "message": "Bulk approval complete. 3 succeeded, 0 failed.",
+  "succeeded": 3,
+  "failed": 0
+}
+```
+
+---
+
+### 5. Bulk Reject Accounts
+`PATCH /api/admin/bulk/reject`  
+**Summary**: Rejects multiple pending accounts with a single reason.
+
+**Request Body**:
+```json
+{ 
+  "ids": ["uuid-1", "uuid-2"],
+  "reason": "Incomplete documentation."
+}
+```
+
+**Response (200)**:
+```json
+{ 
+  "message": "Bulk rejection complete. 2 succeeded, 0 failed.",
+  "succeeded": 2,
+  "failed": 0
+}
+```
+
+---
+
+### 6. Dashboard Statistics
 `GET /api/admin/dashboard-stats`  
 **Summary**: Fetch high-level metrics for the administration dashboard.
 
@@ -312,14 +355,16 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
-### 10. Get Recent Activity
+### 12. Get Recent Activity
 `GET /api/admin/recent-activity`  
-**Summary**: Retrieves a list of recent platform activities (registrations, approvals, posts, etc.).
+**Summary**: Retrieves filtered platform activities.
 
 **Query Parameters**:
 | Parameter | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
-| `limit` | Number | Optional | Number of activities to return (default: 10) |
+| `limit` | Number | Optional | Default: 10 |
+| `type` | String | Optional | Filter by event type (e.g., `ACCOUNT_APPROVED`) |
+| `userId`| String | Optional | Filter by a specific user ID |
 
 **Response (200)**:
 ```json
@@ -328,20 +373,15 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
     "id": "uuid-activity-1",
     "type": "USER_REGISTERED",
     "description": "New alumni registered: Sarah Chen",
-    "created_at": "2024-03-23T10:00:00Z"
-  },
-  {
-    "id": "uuid-activity-2",
-    "type": "ACCOUNT_APPROVED",
-    "description": "Account approved for John Smith",
-    "created_at": "2024-03-23T10:15:00Z"
+    "created_at": "2024-03-23T10:00:00Z",
+    "related_id": "uuid-sarah"
   }
 ]
 ```
 
 ---
 
-### 11. Get Upgrade Requests
+### 13. Get Upgrade Requests
 `GET /api/admin/upgrade-requests`  
 **Summary**: Lists all students waiting to be upgraded to alumni.
 
@@ -390,50 +430,51 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
-### 14. Get Advanced Analytics
+### 16. Get Advanced Analytics
 `GET /api/admin/advanced-analytics`  
-**Summary**: Retrieves professional-grade analytics for university administration, including skill gap analysis and growth trends.
+**Summary**: Retrieves professional-grade analytics with optional date filtering.
+
+**Query Parameters**:
+| Parameter | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `from` | Date | Optional | Start date (YYYY-MM-DD) |
+| `to` | Date | Optional | End date (YYYY-MM-DD) |
 
 **Response (200)**:
 ```json
 {
-  "skill_gap": [
-    {
-      "skill": "TypeScript",
-      "demand": 15,
-      "supply": 5,
-      "gap": 10,
-      "priority": "High"
-    }
-  ],
-  "growth_trends": [
-    {
-      "month": "2024-03",
-      "signups": 50
-    }
-  ],
-  "engagement_metrics": {
-    "messages_last_30_days": 1200,
-    "active_conversations": 45,
-    "connections_activity": 85
-  },
-  "departmental_analysis": [
-    {
-      "degree": "BS Computer Science",
-      "student_count": 150,
-      "top_skills": ["React", "Node.js"]
-    }
-  ],
-  "curriculum_alignment": {
-    "overall_alignment_score": 75
-  },
-  "mentorship_impact": {
-    "active_mentors": 25,
-    "mentored_students": 80,
-    "interaction_density": 200
-  }
+  "skill_gap": [...],
+  "growth_trends": [...],
+  "engagement_metrics": [...]
 }
 ```
+
+---
+
+### 17. Moderation: List All Opportunities
+`GET /api/admin/opportunities`  
+**Summary**: Lists all opportunities in the system for administrative review.
+
+**Query Parameters**: `page`, `limit`, `search`
+
+**Response (200)**: Paginated list including poster details.
+
+---
+
+### 18. Moderation: Admin Delete Opportunity
+`DELETE /api/admin/opportunities/:id`  
+**Summary**: Allows an admin to remove any opportunity from the platform.
+
+**Response (200)**: `{ "message": "Opportunity removed by administrator." }`
+
+---
+
+### 19. Export Data (CSV)
+`GET /api/admin/export/:role`  
+**Summary**: Downloads a CSV file containing all approved users of a specific role.  
+**Roles**: `alumni` or `student`.
+
+**Response (200)**: Binary file stream (CSV).
 
 ---
 
