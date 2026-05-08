@@ -19,7 +19,7 @@ export class ChatService {
     private readonly neo4jService: Neo4jService,
   ) {}
 
-  async sendMessage(senderId: string, receiverId: string, content: string) {
+  async sendMessage(senderId: string, receiverId: string, content: string, messageType: string = 'text', imageUrl?: string) {
     if (senderId === receiverId) {
       throw new ForbiddenException('Cannot send a message to yourself.');
     }
@@ -53,6 +53,8 @@ export class ChatService {
       conversationId: conversation._id,
       senderId,
       content,
+      messageType,
+      imageUrl,
     });
     
     await newMessage.save();
@@ -67,6 +69,8 @@ export class ChatService {
       conversationId: conversation._id,
       senderId,
       content,
+      messageType,
+      imageUrl,
       createdAt: (newMessage as any).createdAt,
       isRead: false,
     });
@@ -78,9 +82,10 @@ export class ChatService {
 
     if (userResult.records.length > 0) {
       const sender = userResult.records[0].toObject();
+      const notificationContent = messageType === 'image' ? `Sent an image` : content;
       await this.notificationService.createNotification(
         receiverId,
-        `New message from ${sender.name}`,
+        `New message from ${sender.name}: ${notificationContent}`,
         'new_message',
         {
           sender_username: sender.username,

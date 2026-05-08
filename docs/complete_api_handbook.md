@@ -1609,15 +1609,40 @@ socket.on("connect_error", (error) => {
 ## 💬 Chat (Messaging)
 Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participants must be 'connected'.
 
-### 1. Send Message
+### 1. Upload Chat Image
+`POST /api/chat/upload`
+**Summary**: Uploads an image to be sent in a message.
+**Constraints**: 
+- Max File Size: **5 MB**.
+- Form Field Name: `file`.
+- Allowed Extensions: `.png`, `.jpg`, `.jpeg`, `.webp`.
+
+**Request**: `multipart/form-data`
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `file` | Binary | **Required** | The image file |
+
+**Response (201)**:
+```json
+{
+  "url": "https://cloudinary.com/...",
+  "publicId": "chat_images/abc123"
+}
+```
+
+---
+
+### 2. Send Message
 `POST /api/chat/messages`
-**Summary**: Sends a text message to a connected user.
+**Summary**: Sends a text or image message to a connected user.
 
 **Request Body**:
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
 | `receiverId` | String | **Required** | UUID of the recipient user |
-| `content` | String | **Required** | Message text |
+| `content` | String | **Required** | Message text (or caption/filename for images) |
+| `messageType` | Enum | **Required** | `text` or `image` (Default: `text`) |
+| `imageUrl` | String | *Optional* | URL received from the Upload endpoint (Required if type is `image`) |
 
 **Response (201)**:
 ```json
@@ -1625,7 +1650,9 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
   "_id": "60d5ec...",
   "conversationId": "60d5ec...",
   "senderId": "uuid-sender",
-  "content": "Hello there!",
+  "content": "Check out this photo!",
+  "messageType": "image",
+  "imageUrl": "https://cloudinary.com/...",
   "isRead": false,
   "createdAt": "2024-03-23T10:00:00Z"
 }
@@ -1634,7 +1661,9 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 2. Get Conversations (Inbox)
+---
+
+### 3. Get Conversations (Inbox)
 `GET /api/chat/conversations`
 **Summary**: Retrieves all chat threads for the logged-in user.
 
@@ -1664,7 +1693,7 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 3. Get Messages (Chat History)
+### 4. Get Messages (Chat History)
 `GET /api/chat/conversations/:participantId/messages`
 **Summary**: Retrieves chronological message history with a specific user.
 
@@ -1683,7 +1712,7 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 4. Mark Message as Read
+### 5. Mark Message as Read
 `PATCH /api/chat/messages/:messageId/read`
 **Summary**: Marks a message as read.
 
@@ -1694,7 +1723,7 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 5. Mark Conversation as Read
+### 6. Mark Conversation as Read
 `PATCH /api/chat/conversations/:participantId/read`
 **Summary**: Marks all unread messages from a specific participant as read.
 
@@ -1705,7 +1734,7 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 6. Edit Message
+### 7. Edit Message
 `PATCH /api/chat/messages/:messageId`  
 **Summary**: Modifies the content of a message.  
 **Constraint**: Can only be done within **3 minutes** of sending.
@@ -1727,7 +1756,7 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 7. Delete Message
+### 8. Delete Message
 `DELETE /api/chat/messages/:messageId`  
 **Summary**: Soft-deletes a message for both participants.  
 **Constraint**: Can only be done within **3 minutes** of sending.
@@ -1739,7 +1768,7 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 
 ---
 
-### 8. Clear Chat
+### 9. Clear Chat
 `DELETE /api/chat/conversations/:conversationId/clear`  
 **Summary**: Clears the chat history for the **current user** only. The other participant still sees the history.
 

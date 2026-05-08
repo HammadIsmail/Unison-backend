@@ -11,7 +11,26 @@ export class SendMessageDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @ApiProperty({ description: 'Type of the message', enum: ['text', 'image'], default: 'text' })
+  @IsString()
+  @IsNotEmpty()
+  messageType: string;
+
+  @ApiProperty({ description: 'URL of the image if messageType is image', required: false })
+  @IsString()
+  @IsNotEmpty()
+  imageUrl?: string;
 }
+
+export class ImageUploadResponseDto {
+  @ApiProperty()
+  url: string;
+
+  @ApiProperty()
+  publicId: string;
+}
+
 
 export class MessageIdDto {
   @ApiProperty({ description: 'The MongoDB ObjectId of the message' })
@@ -25,7 +44,10 @@ export class ChatMessageResponseDto {
   @ApiProperty() conversationId: string;
   @ApiProperty() senderId: string;
   @ApiProperty() content: string;
+  @ApiProperty({ enum: ['text', 'image'] }) messageType: string;
+  @ApiProperty({ required: false }) imageUrl?: string;
   @ApiProperty() isRead: boolean;
+
   @ApiProperty() createdAt: string;
   @ApiProperty() updatedAt: string;
 }

@@ -7,6 +7,7 @@ import { Message, MessageSchema } from './schemas/message.schema';
 import { ConnectionsModule } from '../connections/connections.module';
 import { NotificationModule } from '../notification/notification.module';
 import { Neo4jModule } from '../neo4j/neo4j.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Neo4jModule } from '../neo4j/neo4j.module';
     ConnectionsModule,
     NotificationModule,
     Neo4jModule,
+    CloudinaryModule,
   ],
   controllers: [ChatController],
   providers: [ChatService],

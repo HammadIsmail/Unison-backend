@@ -1,22 +1,63 @@
-import { Controller, Get, Post, Body, Patch, Param, Req, UseGuards, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Req, UseGuards, Delete, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { SendMessageDto, MessageIdDto, ChatMessageResponseDto, ConversationResponseDto } from './dto/chat.dto';
+import { SendMessageDto, MessageIdDto, ChatMessageResponseDto, ConversationResponseDto, ImageUploadResponseDto } from './dto/chat.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+
 
 @ApiTags('Chat')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload an image for chat (Max 5MB)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, type: ImageUploadResponseDto })
+  async uploadImage(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg|webp)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    const result = await this.cloudinaryService.uploadFile(file);
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+  }
+
 
   @Post('messages')
   @ApiOperation({ summary: 'Send a message to a connected user' })
   @ApiResponse({ status: 201, type: ChatMessageResponseDto })
   async sendMessage(@Req() req: any, @Body() dto: SendMessageDto) {
     const senderId = req.user.sub;
-    return this.chatService.sendMessage(senderId, dto.receiverId, dto.content);
+    return this.chatService.sendMessage(senderId, dto.receiverId, dto.content, dto.messageType, dto.imageUrl);
   }
 
   @Get('conversations')
