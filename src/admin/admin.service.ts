@@ -572,33 +572,38 @@ export class AdminService {
   }
 
   async getAdvancedAnalytics(from?: string, to?: string) {
-    const fromDate = from ? new Date(from) : undefined;
-    const toDate = to ? new Date(to) : undefined;
+    try {
+      const fromDate = from && !isNaN(Date.parse(from)) ? new Date(from) : undefined;
+      const toDate = to && !isNaN(Date.parse(to)) ? new Date(to) : undefined;
 
-    const [
-      skillGap,
-      growth,
-      engagement,
-      departmental,
-      alignment,
-      mentorship
-    ] = await Promise.all([
-      this.getSkillGapAnalysis(),
-      this.getGrowthMetrics(fromDate, toDate),
-      this.getEngagementMetrics(fromDate, toDate),
-      this.getDepartmentalAnalysis(),
-      this.getCurriculumAlignmentScore(),
-      this.getAlumniMentorshipIndex(),
-    ]);
+      const [
+        skillGap,
+        growth,
+        engagement,
+        departmental,
+        alignment,
+        mentorship
+      ] = await Promise.all([
+        this.getSkillGapAnalysis(),
+        this.getGrowthMetrics(fromDate, toDate),
+        this.getEngagementMetrics(fromDate, toDate),
+        this.getDepartmentalAnalysis(),
+        this.getCurriculumAlignmentScore(),
+        this.getAlumniMentorshipIndex(),
+      ]);
 
-    return {
-      skill_gap: skillGap,
-      growth_trends: growth,
-      engagement_metrics: engagement,
-      departmental_analysis: departmental,
-      curriculum_alignment: alignment,
-      mentorship_impact: mentorship,
-    };
+      return {
+        skill_gap: skillGap,
+        growth_trends: growth,
+        engagement_metrics: engagement,
+        departmental_analysis: departmental,
+        curriculum_alignment: alignment,
+        mentorship_impact: mentorship,
+      };
+    } catch (error) {
+      console.error('Error fetching advanced analytics:', error);
+      throw new BadRequestException('Failed to fetch analytics. Ensure date formats are correct (YYYY-MM-DD).');
+    }
   }
 
   async getSkillGapAnalysis() {
@@ -618,11 +623,15 @@ export class AdminService {
     `);
 
     const supplyMap = new Map();
-    supplyResult.records.forEach(r => supplyMap.set(r.get('skill'), r.get('supply').toNumber()));
+    supplyResult.records.forEach(r => {
+      const supply = r.get('supply');
+      supplyMap.set(r.get('skill'), (supply?.toNumber ? supply.toNumber() : Number(supply || 0)));
+    });
 
     return demandResult.records.map(r => {
       const skill = r.get('skill');
-      const demand = r.get('demand').toNumber();
+      const rawDemand = r.get('demand');
+      const demand = rawDemand?.toNumber ? rawDemand.toNumber() : Number(rawDemand || 0);
       const supply = supplyMap.get(skill) || 0;
       return {
         skill,
@@ -688,7 +697,7 @@ export class AdminService {
     return {
       messages_last_30_days: messageCount,
       active_conversations: activeConversations,
-      connections_activity: connectionResult.records[0].get('count').toNumber()
+      connections_activity: connectionResult.records[0]?.get('count').toNumber() || 0
     };
   }
 
@@ -701,11 +710,14 @@ export class AdminService {
       ORDER BY student_count DESC
     `);
 
-    return result.records.map(r => ({
-      degree: r.get('degree'),
-      student_count: r.get('student_count').toNumber(),
-      top_skills: r.get('top_skills')
-    }));
+    return result.records.map(r => {
+      const studentCount = r.get('student_count');
+      return {
+        degree: r.get('degree'),
+        student_count: (studentCount?.toNumber ? studentCount.toNumber() : Number(studentCount || 0)),
+        top_skills: r.get('top_skills')
+      };
+    });
   }
 
   async getCurriculumAlignmentScore() {
@@ -717,8 +729,13 @@ export class AdminService {
       RETURN sum(demand * supply) / (sum(demand) * sum(supply) + 1) * 100 AS score
     `);
 
+    const rawScore = result.records[0]?.get('score');
+    const score = (rawScore && typeof rawScore === 'object' && 'toNumber' in rawScore) 
+      ? rawScore.toNumber() 
+      : Number(rawScore || 0);
+
     return {
-      overall_alignment_score: Math.min(100, Math.round(result.records[0].get('score') || 0))
+      overall_alignment_score: Math.min(100, Math.round(score))
     };
   }
 
@@ -729,10 +746,21 @@ export class AdminService {
     `);
 
     const records = result.records[0];
+    if (!records) {
+      return {
+        active_mentors: 0,
+        mentored_students: 0,
+        interaction_density: 0
+      };
+    }
+    const active_mentors = records.get('active_mentors');
+    const mentored_students = records.get('mentored_students');
+    const total_interactions = records.get('total_interactions');
+
     return {
-      active_mentors: records.get('active_mentors').toNumber(),
-      mentored_students: records.get('mentored_students').toNumber(),
-      interaction_density: records.get('total_interactions').toNumber()
+      active_mentors: (active_mentors?.toNumber ? active_mentors.toNumber() : Number(active_mentors || 0)),
+      mentored_students: (mentored_students?.toNumber ? mentored_students.toNumber() : Number(mentored_students || 0)),
+      interaction_density: (total_interactions?.toNumber ? total_interactions.toNumber() : Number(total_interactions || 0))
     };
   }
 }
