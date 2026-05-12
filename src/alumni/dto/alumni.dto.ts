@@ -81,6 +81,7 @@ export class UpdateWorkExperienceDto {
   is_current?: boolean;
 }
 
+
 export class AddSkillDto {
   @ApiProperty({ description: 'Name of the skill', example: 'TypeScript' })
   @IsNotEmpty()
@@ -101,5 +102,55 @@ export class AddSkillDto {
   @IsOptional()
   @IsInt()
   years_experience?: number;
+}
+
+export class CreateEducationDto {
+  @ApiProperty({ description: 'Name of the university', example: 'UET Lahore' })
+  @IsNotEmpty()
+  @IsString()
+  university: string;
+
+  @ApiProperty({ description: 'Degree name', example: 'Masters in Computer Science' })
+  @IsNotEmpty()
+  @IsString()
+  degree: string;
+
+  @ApiPropertyOptional({ description: 'Field of study', example: 'Artificial Intelligence' })
+  @IsOptional()
+  @IsString()
+  field_of_study?: string;
+
+  @ApiProperty({ description: 'Start date of the education', example: '2023-09-01' })
+  @IsNotEmpty()
+  @IsDateString()
+  start_date: string;
+
+  @ApiPropertyOptional({ description: 'End date of the education', example: '2025-06-30' })
+  @ValidateIf(o => !o.is_current || (o.end_date && o.end_date !== ''))
+  @IsDateString()
+  end_date?: string;
+
+  @ApiProperty({ description: 'Whether this is the current education', example: true })
+  @IsNotEmpty()
+  @IsBoolean()
+  is_current: boolean;
+}
+
+export class UpdateEducationDto {
+  @ApiPropertyOptional({ description: 'Updated degree name', example: 'PhD in Computer Science' })
+  @IsOptional()
+  @IsString()
+  degree?: string;
+
+  @ApiPropertyOptional({ description: 'Updated end date', example: '2026-06-30' })
+  @IsOptional()
+  @ValidateIf(o => (o.end_date !== undefined && o.end_date !== null && o.end_date !== ''))
+  @IsDateString()
+  end_date?: string;
+
+  @ApiPropertyOptional({ description: 'Whether this is now the current education', example: false })
+  @IsOptional()
+  @IsBoolean()
+  is_current?: boolean;
 }
 

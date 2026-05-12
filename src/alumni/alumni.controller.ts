@@ -7,6 +7,8 @@ import {
   CreateWorkExperienceDto,
   UpdateWorkExperienceDto,
   AddSkillDto,
+  CreateEducationDto,
+  UpdateEducationDto,
 } from './dto/alumni.dto';
 import { AlumniProfileResponseDto, ConnectionRequestResponseDto, NetworkUserResponseDto } from './dto/alumni-response.dto';
 import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
@@ -84,6 +86,34 @@ export class AlumniController {
   @ApiResponse({ status: 201, type: SuccessResponseDto })
   addSkill(@GetUser('sub') userId: string, @Body() dto: AddSkillDto) {
     return this.alumniService.addSkill(userId, dto);
+  }
+
+  @Post('education')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Add a new education record' })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
+  addEducation(@GetUser('sub') userId: string, @Body() dto: CreateEducationDto) {
+    return this.alumniService.addEducation(userId, dto);
+  }
+
+  @Put('education/:id')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Update an existing education record' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  updateEducation(
+    @GetUser('sub') userId: string,
+    @Param('id') eduId: string,
+    @Body() dto: UpdateEducationDto,
+  ) {
+    return this.alumniService.updateEducation(userId, eduId, dto);
+  }
+
+  @Delete('education/:id')
+  @Roles('alumni')
+  @ApiOperation({ summary: 'Delete an education record' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  deleteEducation(@GetUser('sub') userId: string, @Param('id') eduId: string) {
+    return this.alumniService.deleteEducation(userId, eduId);
   }
 
 

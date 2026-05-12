@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { RejectAccountDto, RejectUpgradeDto } from './dto/admin.dto';
+import { CreateAnnouncementDto } from './dto/admin-request.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -12,9 +13,12 @@ import { OTPRecord } from '../auth/schemas/otp.schema';
 import { Activity } from '../common/activity/schemas/activity.schema';
 import { Message } from '../chat/schemas/message.schema';
 import { Conversation } from '../chat/schemas/conversation.schema';
+import { Announcement } from './schemas/announcement.schema';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly neo4j: Neo4jService,
     private readonly mail: MailService,
@@ -31,6 +35,8 @@ export class AdminService {
     private readonly messageModel: Model<Message>,
     @InjectModel(Conversation.name)
     private readonly conversationModel: Model<Conversation>,
+    @InjectModel(Announcement.name)
+    private readonly announcementModel: Model<Announcement>,
   ) { }
 
   async getPendingAccounts() {
@@ -419,30 +425,120 @@ export class AdminService {
     return { total, page, data };
   }
 
-  async removeAccount(id: string) {
-    const now = new Date().toISOString();
+  async removeAccount(adminId: string, id: string, reason?: string) {
+    const now = new Date();
+    const nowIso = now.toISOString();
 
-    // 1. Soft Delete in Neo4j
-    const result = await this.neo4j.run(
+    // ── Phase 1: Soft-delete in Neo4j ────────────────────────────────────────
+    const neo4jResult = await this.neo4j.run(
       `MATCH (u:User {id: $id})
        OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
-       SET u.is_deleted = true, u.deleted_at = $now, o.is_deleted = true
-       RETURN count(u) as updated`,
-      { id, now }
+       SET u.is_deleted = true, u.deleted_at = $now,
+           o.is_deleted = true
+       RETURN count(u) AS updated`,
+      { id, now: nowIso }
     );
 
-    // 2. Soft Delete in MongoDB
-    await this.userAuthModel.updateOne(
-      { userId: id },
-      { is_deleted: true, deleted_at: new Date() }
-    );
+    const updated = neo4jResult.records[0]?.get('updated').toNumber() ?? 0;
+    if (updated === 0) throw new NotFoundException('Account not found.');
 
-    const updated = result.records[0]?.get('updated').toNumber() || 0;
-    if (updated === 0) {
-      throw new NotFoundException('Account not found.');
+    // ── Phase 2: Soft-delete in MongoDB (with rollback on failure) ────────────
+    try {
+      await this.userAuthModel.updateOne(
+        { userId: id },
+        {
+          is_deleted: true,
+          deleted_at: now,
+          deleted_by: adminId,
+          deletion_reason: reason ?? 'Admin removal',
+          deletion_source: 'admin',
+        }
+      );
+    } catch (mongoError) {
+      // Compensation: revert Neo4j soft-delete to keep both DBs consistent
+      this.logger.error(
+        `MongoDB soft-delete failed for user ${id} — reverting Neo4j. Error: ${mongoError.message}`,
+      );
+      await this.neo4j.run(
+        `MATCH (u:User {id: $id})
+         OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+         REMOVE u.is_deleted, u.deleted_at, o.is_deleted`,
+        { id }
+      ).catch((revertErr) =>
+        this.logger.error(`Neo4j revert also failed for user ${id}: ${revertErr.message}`)
+      );
+      throw new Error('Account deletion failed due to a database error. Please try again.');
     }
 
+    await this.activity.logActivity(
+      ActivityType.PROFILE_UPDATED,
+      `Admin soft-deleted account ${id}. Reason: ${reason ?? 'Admin removal'}`,
+      adminId,
+    );
+
     return { message: 'Account has been soft-deleted. Historical data is preserved.' };
+  }
+
+  async restoreAccount(adminId: string, userId: string) {
+    // ── Phase 1: Verify account exists and is actually soft-deleted ───────────
+    const auth = await this.userAuthModel.findOne({ userId, is_deleted: true });
+    if (!auth) {
+      throw new NotFoundException('No soft-deleted account found with this ID.');
+    }
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    // ── Phase 2: Restore in Neo4j first ──────────────────────────────────────
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId})
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       REMOVE u.is_deleted, u.deleted_at
+       SET o.is_deleted = false
+       RETURN count(u) AS restored`,
+      { userId }
+    );
+
+    // ── Phase 3: Restore in MongoDB (with compensation on failure) ────────────
+    try {
+      await this.userAuthModel.updateOne(
+        { userId },
+        {
+          is_deleted: false,
+          deleted_at: null,
+          deleted_by: null,
+          deletion_reason: null,
+          deletion_source: null,
+          restored_at: now,
+          restored_by: adminId,
+        }
+      );
+    } catch (mongoError) {
+      // Compensation: re-apply soft-delete in Neo4j to stay consistent
+      this.logger.error(
+        `MongoDB restore failed for user ${userId} — reverting Neo4j. Error: ${mongoError.message}`,
+      );
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId})
+         SET u.is_deleted = true, u.deleted_at = $now`,
+        { userId, now: nowIso }
+      ).catch((revertErr) =>
+        this.logger.error(`Neo4j re-delete revert also failed for ${userId}: ${revertErr.message}`)
+      );
+      throw new Error('Account restoration failed due to a database error. Please try again.');
+    }
+
+    await this.activity.logActivity(
+      ActivityType.PROFILE_UPDATED,
+      `Admin restored soft-deleted account ${userId}.`,
+      adminId,
+    );
+
+    return {
+      message: 'Account restored successfully. The user can now log in.',
+      userId,
+      restored_at: now.toISOString(),
+    };
   }
 
   async requestEmailChange(newEmail: string) {
@@ -776,5 +872,102 @@ export class AdminService {
       mentored_students: (mentored_students?.toNumber ? mentored_students.toNumber() : Number(mentored_students || 0)),
       interaction_density: (total_interactions?.toNumber ? total_interactions.toNumber() : Number(total_interactions || 0))
     };
+  }
+
+  async broadcastAnnouncement(
+    adminId: string,
+    dto: CreateAnnouncementDto,
+    file?: Express.Multer.File,
+  ) {
+    let media_url: string | undefined;
+    let media_type: 'image' | 'video' | undefined;
+
+    // Upload media to Cloudinary if provided
+    if (file) {
+      const isVideo = file.mimetype.startsWith('video/');
+      const uploadResult = await this.cloudinary.uploadFile(file);
+      media_url = uploadResult.secure_url;
+      media_type = isVideo ? 'video' : 'image';
+    }
+
+    // Persist announcement record
+    const announcement = await this.announcementModel.create({
+      title: dto.title,
+      description: dto.description,
+      event_date: dto.event_date,
+      media_url,
+      media_type,
+      created_by_admin: adminId,
+    }) as Announcement;
+
+    // Fetch all approved user IDs from Neo4j
+    const result = await this.neo4j.run(
+      `MATCH (u:User {account_status: 'approved'})
+       WHERE u.is_deleted IS NULL OR u.is_deleted = false
+       RETURN u.id AS id`,
+    );
+    const userIds: string[] = result.records.map(r => r.get('id'));
+
+    // Broadcast notification to each user (fire-and-forget, non-blocking)
+    const notifMessage = dto.event_date
+      ? `📢 ${dto.title} — ${dto.description} (Event: ${new Date(dto.event_date).toLocaleDateString()})`
+      : `📢 ${dto.title} — ${dto.description}`;
+
+    await Promise.allSettled(
+      userIds.map(userId =>
+        this.notification.createNotification(userId, notifMessage, 'announcement', {
+          sender_display_name: 'UNISON Administration',
+          reference_link: `/announcements/${announcement._id}`,
+        }),
+      ),
+    );
+
+    await this.activity.logActivity(
+      ActivityType.PROFILE_UPDATED,
+      `Admin broadcast announcement: "${dto.title}" to ${userIds.length} users`,
+      adminId,
+    );
+
+    return {
+      message: `Announcement broadcasted to ${userIds.length} users.`,
+      id: announcement._id,
+      title: announcement.title,
+      media_url: announcement.media_url || null,
+    };
+  }
+
+  async getAnnouncements(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.announcementModel
+        .find()
+        .sort({ created_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.announcementModel.countDocuments(),
+    ]);
+
+    return {
+      total,
+      page,
+      data: data.map(a => ({
+        id: a._id,
+        title: a.title,
+        description: a.description,
+        event_date: a.event_date || null,
+        media_url: a.media_url || null,
+        media_type: a.media_type || null,
+        created_by_admin: a.created_by_admin,
+        created_at: a.created_at,
+      })),
+    };
+  }
+
+  async deleteAnnouncement(id: string) {
+    const result = await this.announcementModel.findByIdAndDelete(id);
+    if (!result) throw new NotFoundException('Announcement not found.');
+    return { message: 'Announcement deleted successfully.' };
   }
 }

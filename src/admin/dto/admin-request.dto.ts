@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import { IsArray, IsString, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
 
 export class BulkActionDto {
   @ApiProperty({ type: [String], example: ['uuid-1', 'uuid-2'] })
@@ -42,4 +42,21 @@ export class AnalyticsFilterDto {
   @IsString()
   @IsOptional()
   to?: string;
+}
+
+export class CreateAnnouncementDto {
+  @ApiProperty({ example: 'Annual Convocation 2025' })
+  @IsNotEmpty()
+  @IsString()
+  title: string;
+
+  @ApiProperty({ example: 'Join us for the Annual Convocation ceremony at UET Faisalabad.' })
+  @IsNotEmpty()
+  @IsString()
+  description: string;
+
+  @ApiPropertyOptional({ example: '2025-06-15T10:00:00Z' })
+  @IsOptional()
+  @IsDateString()
+  event_date?: string;
 }

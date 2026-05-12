@@ -308,14 +308,46 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
-### 7. Remove Account
+### 7. Remove Account (Soft Delete)
 `DELETE /api/admin/remove-account/:id`  
-**Summary**: Permanently deletes a user account from the system.
+**Summary**: Soft-deletes a user account. All historical data (chats, activities, analytics) is preserved. The user cannot log in and is invisible across all active platform APIs.
+
+**Query Parameters** (optional):
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `reason` | String | Audit trail reason (e.g. `Violation of community guidelines`) |
+
+**Deletion metadata stored**:
+- `deleted_by` — admin UUID
+- `deletion_reason` — reason string
+- `deletion_source` — `"admin"`
+- `deleted_at` — timestamp
 
 **Response (200)**:
 ```json
-{ "message": "Account removed successfully." }
+{ "message": "Account has been soft-deleted. Historical data is preserved." }
 ```
+
+> [!NOTE]
+> If MongoDB update fails after Neo4j update, an automatic compensation rollback reverts Neo4j to maintain distributed consistency.
+
+---
+
+### 7b. Restore Account
+`PATCH /api/admin/restore-account/:id`  
+**Summary**: Restores a previously soft-deleted account. Re-enables login and makes the user visible on all active platform APIs. Cascades to restore their posted opportunities.
+
+**Response (200)**:
+```json
+{
+  "message": "Account restored successfully. The user can now log in.",
+  "userId": "uuid-123",
+  "restored_at": "2025-05-12T10:00:00Z"
+}
+```
+
+> [!NOTE]
+> Full compensation logic: if MongoDB restore fails, Neo4j is automatically re-soft-deleted to keep both databases consistent.
 
 ---
 
@@ -478,6 +510,76 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
+### 20. Broadcast Announcement
+`POST /api/admin/announcements`  
+**Summary**: Creates a platform-wide event announcement and broadcasts it as a real-time notification to **every approved user** in the network. Supports optional image or video attachment.
+
+**Request**: `multipart/form-data`
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | String | **Required** | Short event title (e.g., `Annual Convocation 2025`) |
+| `description` | String | **Required** | Full announcement body |
+| `event_date` | String | *Optional* | ISO date-time of the event (e.g., `2025-06-15T10:00:00Z`) |
+| `media` | File | *Optional* | Image (jpg/png/webp) or Video file to attach to the announcement |
+
+**Response (201)**:
+```json
+{
+  "message": "Announcement broadcasted to 542 users.",
+  "id": "663f1a2b3c4d5e6f78901234",
+  "title": "Annual Convocation 2025",
+  "media_url": "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg"
+}
+```
+
+> [!NOTE]
+> The announcement is persisted in MongoDB and each user receives a notification of type `announcement` — both stored in DB and pushed via Socket.io for real-time delivery to online users.
+
+---
+
+### 21. List Announcements
+`GET /api/admin/announcements`  
+**Summary**: Paginated list of all past announcements.
+
+**Query Parameters**:
+| Parameter | Type | Status | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `page` | Number | *Optional* | `1` | Page number |
+| `limit` | Number | *Optional* | `10` | Items per page |
+
+**Response (200)**:
+```json
+{
+  "total": 12,
+  "page": 1,
+  "data": [
+    {
+      "id": "663f1a2b3c4d5e6f78901234",
+      "title": "Annual Convocation 2025",
+      "description": "Join us for the Annual Convocation ceremony at UET Faisalabad.",
+      "event_date": "2025-06-15T10:00:00Z",
+      "media_url": "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg",
+      "media_type": "image",
+      "created_by_admin": "admin-uuid-123",
+      "created_at": "2025-05-12T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 22. Delete Announcement
+`DELETE /api/admin/announcements/:id`  
+**Summary**: Removes an announcement record by its MongoDB ID.
+
+**Response (200)**:
+```json
+{ "message": "Announcement deleted successfully." }
+```
+
+---
+
 ## 👤 Alumni
 Requires `Bearer JWT`. Role restriction: `alumni`.
 
@@ -504,7 +606,8 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
   "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
   "backDropImage": "https://cloudinary.com/ahmed_backdrop.jpg",
   "work_experiences": [...],
-  "detailed_skills": [...]
+  "detailed_skills": [...],
+  "education": [...]
 }
 ```
 
@@ -599,9 +702,58 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
+### 7. Add Education
+`POST /api/alumni/education`  
+**Summary**: Records a new degree or academic achievement.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `university` | String | **Required** | Name of the institution |
+| `degree` | String | **Required** | e.g., `Masters in AI` |
+| `field_of_study`| String | *Optional* | e.g., `Computer Science` |
+| `start_date` | Date | **Required** | ISO date (YYYY-MM-DD) |
+| `end_date` | Date | *Optional* | ISO date |
+| `is_current` | Boolean| **Required** | Set `true` if currently studying |
+
+**Response (201)**:
+```json
+{ "message": "Education added successfully." }
+```
+
 ---
 
-### 7. Get My Connections
+### 8. Update Education
+`PUT /api/alumni/education/:id`  
+**Summary**: Modifies an existing education record.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `degree` | String | *Optional* | Updated degree name |
+| `end_date` | Date | *Optional* | ISO date |
+| `is_current` | Boolean| *Optional* | Update enrollment status |
+
+**Response (200)**:
+```json
+{ "message": "Education updated successfully." }
+```
+
+---
+
+### 9. Delete Education
+`DELETE /api/alumni/education/:id`
+
+**Response (200)**:
+```json
+{ "message": "Education removed successfully." }
+```
+
+---
+
+---
+
+### 10. Get My Connections
 `GET /api/alumni/connections`  
 **Summary**: Retrieves a list of all accepted professional connections.
 
@@ -623,7 +775,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 8. Find Batch Mates
+### 11. Find Batch Mates
 `GET /api/alumni/batch-mates`  
 **Summary**: Discovery based on graduation year.
 
@@ -657,7 +809,7 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 
 ---
 
-### 9. Delete Account
+### 12. Delete Account
 `DELETE /api/alumni/me`  
 **Summary**: Permanently deletes your alumni account and all associated data (profile, work history, posted opportunities, notifications, and media).
 

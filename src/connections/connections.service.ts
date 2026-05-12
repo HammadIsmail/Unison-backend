@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { NotificationService } from '../notification/notification.service';
+import { ACTIVE_USER } from '../common/utils/neo4j-filters';
 
 @Injectable()
 export class ConnectionsService {
@@ -12,6 +13,7 @@ export class ConnectionsService {
   async getConnectionStatus(userId: string, targetId: string) {
     const result = await this.neo4j.run(
       `MATCH (u1:User {id: $userId}), (u2:User {id: $targetId})
+       WHERE ${ACTIVE_USER('u1')} AND ${ACTIVE_USER('u2')}
        OPTIONAL MATCH (u1)-[r:CONNECTED_TO]-(u2)
        RETURN 
          CASE 
@@ -54,19 +56,20 @@ export class ConnectionsService {
     if (userId === targetId) throw new ForbiddenException('Cannot connect with yourself.');
 
     const userResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) RETURN u.role AS role, u.username AS username, u.display_name AS name, u.profile_picture AS pic`, 
+      `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')}
+       RETURN u.role AS role, u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
       { userId }
     );
     if (!userResult.records.length) throw new NotFoundException('Sender user not found.');
-    
+
     const sender = userResult.records[0].toObject();
-    
+
     const targetResult = await this.neo4j.run(
-      `MATCH (t:User {id: $targetId}) RETURN t.role AS role`,
+      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} RETURN t.role AS role`,
       { targetId }
     );
     if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
-    
+
     await this.neo4j.run(
       `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
        MERGE (u)-[r:CONNECTED_TO]->(t)
@@ -82,7 +85,7 @@ export class ConnectionsService {
         sender_username: sender.username,
         sender_display_name: sender.name,
         sender_profile_picture: sender.pic,
-        reference_link: '/network/requests'
+        reference_link: '/network/requests',
       }
     );
 
@@ -92,7 +95,8 @@ export class ConnectionsService {
   async getPendingRequests(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User)-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
-       RETURN u.id AS id, u.display_name AS display_name, u.username AS username, 
+       WHERE ${ACTIVE_USER('u')}
+       RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, r.created_at AS created_at`,
       { userId }
     );
@@ -109,7 +113,8 @@ export class ConnectionsService {
   async getSentPendingRequests(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (me:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(u:User)
-       RETURN u.id AS id, u.display_name AS display_name, u.username AS username, 
+       WHERE ${ACTIVE_USER('u')}
+       RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, r.created_at AS created_at`,
       { userId }
     );
@@ -147,7 +152,8 @@ export class ConnectionsService {
       if (!result.records.length) throw new NotFoundException('Connection request not found.');
 
       const userResult = await this.neo4j.run(
-        `MATCH (u:User {id: $userId}) RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`, 
+        `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')}
+         RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
         { userId }
       );
       const responder = userResult.records[0].toObject();
@@ -160,7 +166,7 @@ export class ConnectionsService {
           sender_username: responder.username,
           sender_display_name: responder.name,
           sender_profile_picture: responder.pic,
-          reference_link: '/network'
+          reference_link: '/network',
         }
       );
 
@@ -171,7 +177,8 @@ export class ConnectionsService {
          DELETE r RETURN count(r) AS cnt`,
         { userId, senderId }
       );
-      if (result.records[0].get('cnt').toNumber() === 0) throw new NotFoundException('Connection request not found.');
+      if (result.records[0].get('cnt').toNumber() === 0)
+        throw new NotFoundException('Connection request not found.');
       return { message: 'Connection request rejected.' };
     }
   }

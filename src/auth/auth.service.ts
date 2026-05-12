@@ -132,8 +132,11 @@ export class AuthService {
             throw new BadRequestException('Email mismatch with verified_token.');
         }
 
-        // Check duplicate email in MongoDB
-        const existingEmail = await this.userAuthModel.findOne({ email: dto.email });
+        // Check duplicate email — only block if a non-deleted account already holds this email
+        const existingEmail = await this.userAuthModel.findOne({
+            email: dto.email,
+            is_deleted: { $ne: true },
+        });
         if (existingEmail) {
             throw new ConflictException('An account with this email already exists.');
         }

@@ -23,6 +23,7 @@ export class WorkExperienceResponseDto {
     employment_type: string;
 }
 
+
 export class SkillDetailResponseDto {
     @ApiProperty({ example: 'uuid-skill-123' })
     id: string;
@@ -35,6 +36,29 @@ export class SkillDetailResponseDto {
 
     @ApiProperty({ example: 'expert' })
     proficiency_level: string;
+}
+
+export class EducationResponseDto {
+    @ApiProperty({ example: 'uuid-edu-123' })
+    id: string;
+
+    @ApiProperty({ example: 'UET Lahore' })
+    university: string;
+
+    @ApiProperty({ example: 'Masters in Computer Science' })
+    degree: string;
+
+    @ApiPropertyOptional({ example: 'Artificial Intelligence' })
+    field_of_study?: string;
+
+    @ApiProperty({ example: '2023-09-01' })
+    start_date: string;
+
+    @ApiPropertyOptional({ example: '2025-06-30' })
+    end_date?: string;
+
+    @ApiProperty({ example: true })
+    is_current: boolean;
 }
 
 export class AlumniProfileResponseDto {
@@ -85,6 +109,9 @@ export class AlumniProfileResponseDto {
 
     @ApiProperty({ type: [SkillDetailResponseDto] })
     detailed_skills: SkillDetailResponseDto[];
+
+    @ApiProperty({ type: [EducationResponseDto] })
+    education: EducationResponseDto[];
 }
 
 export class NetworkUserResponseDto {

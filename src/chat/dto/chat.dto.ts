@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsMongoId } from 'class-validator';
+import { IsString, IsNotEmpty, IsMongoId, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendMessageDto {
@@ -18,8 +18,8 @@ export class SendMessageDto {
   messageType: string;
 
   @ApiProperty({ description: 'URL of the image if messageType is image', required: false })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   imageUrl?: string;
 }
 

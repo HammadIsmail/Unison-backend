@@ -1,8 +1,10 @@
-import { Controller, Get, Patch, Delete, Param, Body, Query, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
 import type { Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminService } from './admin.service';
 import { RejectAccountDto, RequestEmailChangeDto, VerifyEmailChangeDto, RejectUpgradeDto } from './dto/admin.dto';
+import { CreateAnnouncementDto } from './dto/admin-request.dto';
 import {
   AdminAlumniPaginationResponseDto,
   AdminStudentPaginationResponseDto,
@@ -10,6 +12,8 @@ import {
   PendingAccountResponseDto,
   UpgradeRequestResponseDto,
   AdvancedAnalyticsResponseDto,
+  AnnouncementResponseDto,
+  AnnouncementPaginationResponseDto,
 } from './dto/admin-response.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -131,10 +135,24 @@ export class AdminController {
   }
 
   @Delete('remove-account/:id')
-  @ApiOperation({ summary: 'Completely remove an account' })
+  @ApiOperation({ summary: 'Soft-delete an account (preserves all historical data)' })
+  @ApiQuery({ name: 'reason', required: false, type: String, description: 'Optional deletion reason for audit trail' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
-  removeAccount(@Param('id') id: string) {
-    return this.adminService.removeAccount(id);
+  removeAccount(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Query('reason') reason?: string,
+  ) {
+    const adminId = req.user.sub;
+    return this.adminService.removeAccount(adminId, id, reason);
+  }
+
+  @Patch('restore-account/:id')
+  @ApiOperation({ summary: 'Restore a soft-deleted account — re-enables login' })
+  @ApiResponse({ status: 200 })
+  restoreAccount(@Req() req: any, @Param('id') id: string) {
+    const adminId = req.user.sub;
+    return this.adminService.restoreAccount(adminId, id);
   }
 
   @Patch('request-email-change')
@@ -193,5 +211,42 @@ export class AdminController {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=unison_${role}_export.csv`);
     return res.status(200).send(csv);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Announcements
+  // ─────────────────────────────────────────────────────────────────────────
+
+  @Post('announcements')
+  @UseInterceptors(FileInterceptor('media'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Create and broadcast an event announcement to all network users' })
+  @ApiResponse({ status: 201 })
+  broadcastAnnouncement(
+    @Req() req: any,
+    @Body() dto: CreateAnnouncementDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const adminId = req.user.sub;
+    return this.adminService.broadcastAnnouncement(adminId, dto, file);
+  }
+
+  @Get('announcements')
+  @ApiOperation({ summary: 'List all past announcements (paginated)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiResponse({ status: 200, type: AnnouncementPaginationResponseDto })
+  getAnnouncements(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.adminService.getAnnouncements(parseInt(page) || 1, parseInt(limit) || 10);
+  }
+
+  @Delete('announcements/:id')
+  @ApiOperation({ summary: 'Delete an announcement by ID' })
+  @ApiResponse({ status: 200 })
+  deleteAnnouncement(@Param('id') id: string) {
+    return this.adminService.deleteAnnouncement(id);
   }
 }

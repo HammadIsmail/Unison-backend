@@ -40,7 +40,13 @@ async function initNeo4j() {
         await session.run(`CREATE CONSTRAINT user_username_unique IF NOT EXISTS FOR (u:User) REQUIRE u.username IS UNIQUE`);
 
         console.log('Creating uniqueness constraint on User(email)...');
-        await session.run(`CREATE CONSTRAINT user_email_unique IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE`);
+        // NOTE: Email uniqueness for active users is enforced in MongoDB via a partial
+        // unique index (migrate-email-index.ts). Neo4j does NOT support partial constraints,
+        // so we only keep a range index here for query performance.
+        await session.run(`CREATE INDEX user_email_idx IF NOT EXISTS FOR (u:User) ON (u.email)`);
+
+        console.log('Creating range index on User(is_deleted) for soft-delete filtering...');
+        await session.run(`CREATE INDEX user_is_deleted_idx IF NOT EXISTS FOR (u:User) ON (u.is_deleted)`);
 
         // Opportunity Uniqueness
         console.log('Creating uniqueness constraint on Opportunity(id)...');

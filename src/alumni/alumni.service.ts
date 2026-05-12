@@ -7,6 +7,8 @@ import {
   CreateWorkExperienceDto,
   UpdateWorkExperienceDto,
   AddSkillDto,
+  CreateEducationDto,
+  UpdateEducationDto,
 } from './dto/alumni.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
@@ -30,10 +32,12 @@ export class AlumniService {
       `MATCH (u:User {id: $id, role: 'alumni'})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
        OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
+       OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education)
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
        OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
        RETURN u, collect(DISTINCT w) AS experiences, 
+              collect(DISTINCT e) AS education,
               collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, 
               count(DISTINCT c) AS connections_count`,
       { id }
@@ -46,6 +50,7 @@ export class AlumniService {
     const record = result.records[0];
     const user = record.get('u').properties;
     const experiences = record.get('experiences').map((node: any) => node.properties);
+    const education = record.get('education').map((node: any) => node.properties);
     const skills = record.get('skills').filter((s: any) => s.id !== null);
     const connections_count = record.get('connections_count').toNumber();
 
@@ -67,6 +72,7 @@ export class AlumniService {
       backDropImage: user.backDropImage || null,
       work_experiences: experiences,
       detailed_skills: skills,
+      education: education,
     };
   }
 
@@ -221,6 +227,71 @@ export class AlumniService {
     );
 
     return { message: 'Skill added successfully.' };
+  }
+
+  async addEducation(userId: string, dto: CreateEducationDto) {
+    const eduId = uuidv4();
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId})
+       CREATE (e:Education {
+         id: $eduId,
+         university: $dto.university,
+         degree: $dto.degree,
+         field_of_study: $dto.field_of_study,
+         start_date: $dto.start_date,
+         end_date: $dto.end_date,
+         is_current: $dto.is_current
+       })
+       CREATE (u)-[:HAS_EDUCATION]->(e)`,
+      { userId, eduId, dto }
+    );
+
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) RETURN u.display_name AS name`,
+      { userId }
+    );
+    const name = result.records[0]?.get('name') || 'User';
+
+    await this.activity.logActivity(
+      ActivityType.PROFILE_UPDATED,
+      `${name} added new education: ${dto.degree} at ${dto.university}`,
+      userId
+    );
+
+    return { message: 'Education added successfully.' };
+  }
+
+  async updateEducation(userId: string, eduId: string, dto: UpdateEducationDto) {
+    const setQuery = Object.keys(dto)
+      .filter((k) => dto[k as keyof UpdateEducationDto] !== undefined)
+      .map((k) => `e.${k} = $${k}`)
+      .join(', ');
+
+    if (!setQuery) return { message: 'No fields to update.' };
+
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[:HAS_EDUCATION]->(e:Education {id: $eduId})
+       SET ${setQuery} RETURN e`,
+      { userId, eduId, ...dto }
+    );
+
+    if (!result.records.length) throw new NotFoundException('Education record not found.');
+
+    return { message: 'Education updated successfully.' };
+  }
+
+  async deleteEducation(userId: string, eduId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[:HAS_EDUCATION]->(e:Education {id: $eduId})
+       DETACH DELETE e RETURN count(e) AS cnt`,
+      { userId, eduId }
+    );
+
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Education record not found.');
+    }
+
+    return { message: 'Education removed successfully.' };
   }
 
 

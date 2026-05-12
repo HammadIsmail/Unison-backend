@@ -243,3 +243,40 @@ export class AdvancedAnalyticsResponseDto {
         interaction_density: number;
     };
 }
+
+export class AnnouncementResponseDto {
+    @ApiProperty({ example: '663f1a2b3c4d5e6f78901234' })
+    id: string;
+
+    @ApiProperty({ example: 'Annual Convocation 2025' })
+    title: string;
+
+    @ApiProperty({ example: 'Join us for the Annual Convocation ceremony at UET Faisalabad.' })
+    description: string;
+
+    @ApiPropertyOptional({ example: '2025-06-15T10:00:00Z' })
+    event_date?: string;
+
+    @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/v123/banner.jpg' })
+    media_url?: string;
+
+    @ApiPropertyOptional({ example: 'image', enum: ['image', 'video'] })
+    media_type?: string;
+
+    @ApiProperty({ example: 'admin-uuid-123' })
+    created_by_admin: string;
+
+    @ApiProperty({ example: '2025-05-12T10:00:00Z' })
+    created_at: string;
+}
+
+export class AnnouncementPaginationResponseDto {
+    @ApiProperty({ example: 50 })
+    total: number;
+
+    @ApiProperty({ example: 1 })
+    page: number;
+
+    @ApiProperty({ type: [AnnouncementResponseDto] })
+    data: AnnouncementResponseDto[];
+}
