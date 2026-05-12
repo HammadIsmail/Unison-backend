@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
+import { ACTIVE_USER } from '../common/utils/neo4j-filters';
 
 @Injectable()
 export class ProfilesService {
@@ -8,6 +9,7 @@ export class ProfilesService {
   async getUserPublicProfile(targetId: string, currentUserId: string) {
     const query = `
       MATCH (u:User {id: $targetId, account_status: 'approved'})
+      WHERE ${ACTIVE_USER('u')}
       
       // 1. Fetch Work Experience
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
@@ -30,8 +32,9 @@ export class ProfilesService {
         proficiency: s.proficiency_level
       }) AS skills
       
-      // 3. Fetch Posted Opportunities
+      // 3. Fetch Posted Opportunities (exclude soft-deleted)
       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+      WHERE o.is_deleted IS NULL OR o.is_deleted = false
       WITH u, work_exp, skills, collect(DISTINCT {
         id: o.id,
         title: o.title,
@@ -96,7 +99,10 @@ export class ProfilesService {
   async getSuggestions(userId: string) {
     const query = `
       MATCH (u:User {id: $userId})
-      MATCH (other:User) WHERE other.id <> $userId AND other.account_status = 'approved' AND NOT (u)-[:CONNECTED_TO]-(other)
+      MATCH (other:User) WHERE other.id <> $userId 
+        AND other.account_status = 'approved'
+        AND ${ACTIVE_USER('other')}
+        AND NOT (u)-[:CONNECTED_TO]-(other)
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(other)
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
       OPTIONAL MATCH (other)-[:HAS_EXPERIENCE]->(ow:WorkExperience) WHERE toLower(w.company_name) = toLower(ow.company_name)

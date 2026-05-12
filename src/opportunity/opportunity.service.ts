@@ -5,6 +5,7 @@ import { CreateOpportunityDto, UpdateOpportunityDto, OpportunityStatus } from '.
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationService } from '../notification/notification.service';
+import { ACTIVE_USER } from '../common/utils/neo4j-filters';
 
 @Injectable()
 export class OpportunityService {
@@ -70,6 +71,7 @@ export class OpportunityService {
     const broadcastQuery = `
       MATCH (u:User)
       WHERE u.account_status = 'approved' AND (u.role = 'student' OR u.role = 'alumni') AND u.id <> $userId
+      AND ${ACTIVE_USER('u')}
       RETURN u.id AS userId
     `;
     const networkResult = await this.neo4j.run(broadcastQuery, { userId });
