@@ -6,6 +6,7 @@ export enum OpportunityType {
   JOB = 'job',
   INTERNSHIP = 'internship',
   FREELANCE = 'freelance',
+  SCHOLARSHIP = 'scholarship',
 }
 
 export enum OpportunityStatus {

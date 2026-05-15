@@ -26,6 +26,7 @@ import { ChatModule } from './chat/chat.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsModule } from './events/events.module';
+import { FeedModule } from './feed/feed.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { EventsModule } from './events/events.module';
     ProfilesModule,
     ChatModule,
     EventsModule,
+    FeedModule,
   ],
   controllers: [AppController],
   providers: [

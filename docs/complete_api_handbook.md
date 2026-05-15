@@ -1313,7 +1313,7 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
 | `title` | String | **Required** | Title of the role |
-| `type` | Enum | **Required** | `job`, `internship`, `freelance` |
+| `type` | Enum | **Required** | `job`, `internship`, `freelance`, `scholarship` |
 | `description`| String | **Required** | Job details |
 | `requirements`| String | **Required** | Skills needed |
 | `location` | String | **Required** | e.g. `Lahore`, `Remote` |
@@ -2259,4 +2259,79 @@ Module for managing and discovering alumni events, webinars, and reunions. Requi
 **Summary**: Returns events created by the user or RSVP'd to.
 
 **Response (200)**: same as List Events.
+
+---
+
+## 📱 Discovery Feed
+Unified view of all platform activity. Requires `Bearer JWT`.
+
+### 1. Get Feed
+`GET /api/feed`  
+**Summary**: Retrieves a merged, chronological list of announcements, opportunities, and events.
+
+**Query Parameters**:
+| Parameter | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `page` | Number | `1` | Page number |
+| `limit` | Number | `10` | Items per page |
+
+**Response (200)**:
+```json
+{
+  "total": 150,
+  "page": 1,
+  "data": [
+    {
+      "type": "announcement",
+      "id": "663f1a2b...",
+      "title": "Welcome to UNISON",
+      "description": "...",
+      "created_at": "2024-05-15T10:00:00Z",
+      "media_url": "...",
+      "media_type": "image",
+      "author": {
+        "id": "admin-uuid",
+        "display_name": "UNISON Administration",
+        "role": "admin"
+      }
+    },
+    {
+      "type": "opportunity",
+      "id": "uuid-opp-123",
+      "title": "Software Engineer",
+      "company_name": "Google",
+      "location": "Remote",
+      "is_remote": true,
+      "opportunity_type": "job",
+      "media_url": "https://res.cloudinary.com/...",
+      "created_at": "2024-05-14T15:00:00Z",
+      "author": {
+        "id": "user-uuid",
+        "display_name": "Ali Khan",
+        "username": "ali_k",
+        "profile_picture": "...",
+        "role": "alumni"
+      }
+    },
+    {
+      "type": "event",
+      "id": "uuid-event-456",
+      "title": "Alumni Homecoming",
+      "event_date": "2024-12-01T18:00:00Z",
+      "location": "UET Faisalabad",
+      "media_url": "https://banner.jpg",
+      "attendee_count": 45,
+      "max_attendees": 100,
+      "created_at": "2024-05-13T12:00:00Z",
+      "author": {
+        "id": "user-uuid",
+        "display_name": "Hammad Ismail",
+        "username": "hammad_i",
+        "profile_picture": "...",
+        "role": "alumni"
+      }
+    }
+  ]
+}
+```
 
