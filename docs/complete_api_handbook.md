@@ -1381,9 +1381,9 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
 ## 🔎 Search & Discovery
 Requires `Bearer JWT`.
 
-### 1. General Alumni Search
-`GET /api/search/alumni`  
-**Summary**: Search for graduates using multiple criteria.
+### 1. General User Search
+`GET /api/search/users`  
+**Summary**: Search for all users (students and alumni) using multiple criteria. Excludes admins.
 
 **Query Parameters**:
 | Parameter | Type | Status | Description |
@@ -1398,7 +1398,7 @@ Requires `Bearer JWT`.
 ```json
 [
   {
-    "id": "uuid-alumni-123",
+    "id": "uuid-user-123",
     "display_name": "Hammad Ismail",
     "username": "hammad_i",
     "email": "hammad@uet.edu.pk",
@@ -1993,3 +1993,176 @@ Real-time messaging using MongoDB + Socket.io. Requires `Bearer JWT`. Participan
 ```json
 { "success": true }
 ```
+
+---
+
+## 📅 Events
+Module for managing and discovering alumni events, webinars, and reunions. Requires `Bearer JWT`.
+
+### 1. Create Event
+`POST /api/events`  
+**Role Restriction**: `admin`, `alumni`  
+**Request**: `multipart/form-data`
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | String | **Required** | Event title |
+| `description` | String | **Required** | Detailed description |
+| `type` | Enum | **Required** | `reunion`, `webinar`, `workshop`, `networking`, `other` |
+| `date` | DateString | **Required** | ISO 8601 format |
+| `is_online` | Boolean | **Required** | True for online events |
+| `location` | String | *Optional* | Venue or platform name |
+| `meeting_link` | URL | *Optional* | Link for online events |
+| `max_attendees`| Number | *Optional* | Max capacity |
+| `banner` | File | *Optional* | Image file (png, jpg, webp) |
+
+**Response (201)**:
+```json
+{
+  "message": "Event created successfully.",
+  "eventId": "uuid-123"
+}
+```
+
+---
+
+### 2. Update Event
+`PUT /api/events/:id`  
+**Role Restriction**: `admin`, `alumni` (Owner only)  
+**Request**: `multipart/form-data` (Supports partial updates)
+
+**Response (200)**:
+```json
+{ "message": "Event updated successfully." }
+```
+
+---
+
+### 3. Delete/Cancel Event
+`DELETE /api/events/:id`  
+**Role Restriction**: `admin`, `alumni` (Owner only)
+
+**Response (200)**:
+```json
+{ "message": "Event cancelled successfully." }
+```
+
+---
+
+### 4. List Events
+`GET /api/events`  
+**Summary**: Discover upcoming or past events.
+
+**Query Parameters**:
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `type` | String | Filter by type |
+| `is_online`| Boolean | Filter online/offline |
+| `status` | Enum | `upcoming` (default) or `past` |
+| `limit` | Number | Default 20 |
+| `offset` | Number | Default 0 |
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-123",
+    "title": "Alumni Meetup",
+    "type": "reunion",
+    "date": "2024-12-01T18:00:00Z",
+    "is_online": false,
+    "location": "UET Campus",
+    "banner_url": "...",
+    "attendee_count": 50,
+    "max_attendees": 100,
+    "host": {
+      "id": "uuid-host",
+      "name": "Hammad Ismail",
+      "profile_picture": "..."
+    }
+  }
+]
+```
+
+---
+
+### 5. Get Event Details
+`GET /api/events/:id`  
+**Summary**: Detailed view of a specific event.
+
+**Response (200)**:
+```json
+{
+  "id": "uuid-123",
+  "title": "Alumni Meetup",
+  "description": "...",
+  "type": "reunion",
+  "date": "2024-12-01T18:00:00Z",
+  "is_online": false,
+  "location": "UET Campus",
+  "meeting_link": null,
+  "max_attendees": 100,
+  "banner_url": "...",
+  "attendee_count": 50,
+  "my_rsvp_status": "attending",
+  "host": {
+    "id": "uuid-host",
+    "name": "Hammad Ismail",
+    "username": "hammad_i",
+    "profile_picture": "...",
+    "role": "alumni"
+  }
+}
+```
+
+---
+
+### 6. RSVP to Event
+`POST /api/events/:id/rsvp`  
+**Request Body**:
+```json
+{ "status": "attending" } 
+```
+**Status Options**: `attending`, `maybe`
+
+**Response (201)**:
+```json
+{ "message": "RSVP status updated to attending." }
+```
+
+---
+
+### 7. Cancel RSVP
+`DELETE /api/events/:id/rsvp`
+
+**Response (200)**:
+```json
+{ "message": "RSVP cancelled successfully." }
+```
+
+---
+
+### 8. Get Event Attendees
+`GET /api/events/:id/attendees`
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user",
+    "display_name": "Ali Khan",
+    "username": "ali_k",
+    "profile_picture": "...",
+    "role": "student",
+    "bio": "..."
+  }
+]
+```
+
+---
+
+### 9. Get My Events
+`GET /api/events/my-events`  
+**Summary**: Returns events created by the user or RSVP'd to.
+
+**Response (200)**: same as List Events.
+

@@ -25,6 +25,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from './chat/chat.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { AppService } from './app.service';
     HealthModule,
     ProfilesModule,
     ChatModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [

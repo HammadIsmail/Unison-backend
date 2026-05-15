@@ -7,11 +7,17 @@ export class SearchService {
 
   private prepareLuceneQuery(q: string): string {
     if (!q) return '';
-    // Basic fuzzy search by adding ~ to each word
+    // Basic fuzzy search for main search
     return q.trim().split(/\s+/).map(word => `${word}~`).join(' AND ');
   }
 
-  async searchAlumni(display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
+  private prepareSuggestionQuery(q: string): string {
+    if (!q) return '';
+    // Prefix search with OR for more inclusive suggestions
+    return q.trim().split(/\s+/).map(word => `${word}*`).join(' OR ');
+  }
+
+  async searchUsers(display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
     let query = '';
     const params: any = { company, skill, batch_year, degree };
 
@@ -19,12 +25,12 @@ export class SearchService {
       const luceneQ = this.prepareLuceneQuery(display_name);
       query = `
         CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-        WHERE u.role = 'alumni' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        WHERE u.role <> 'admin' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     } else {
       query = `
-        MATCH (u:User {role: 'alumni', account_status: 'approved'})
-        WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
+        MATCH (u:User)
+        WHERE u.role <> 'admin' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     }
 
@@ -159,7 +165,7 @@ export class SearchService {
   }
 
   async getSuggestions(q: string) {
-    const luceneQ = this.prepareLuceneQuery(q);
+    const luceneQ = this.prepareSuggestionQuery(q);
     const query = `
       CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
       WHERE u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false) AND u.role <> 'admin'

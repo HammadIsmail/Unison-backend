@@ -1,8 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OpportunityPosterResponseDto } from '../../opportunity/dto/opportunity-response.dto';
 
-export class SearchAlumniResponseDto {
-    @ApiProperty({ example: 'uuid-alumni-123' })
+export class SearchUserResponseDto {
+    @ApiProperty({ example: 'uuid-user-123' })
     id: string;
 
     @ApiProperty({ example: 'ahmed_h' })
