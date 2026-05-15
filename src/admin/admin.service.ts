@@ -43,7 +43,9 @@ export class AdminService {
     const result = await this.neo4j.run(
       `MATCH (u:User {account_status: 'pending'})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, u.created_at AS registered_at, u.profile_picture AS profile_picture, u.student_card_url AS student_card_url`
+       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, 
+              u.created_at AS registered_at, u.profile_picture AS profile_picture, u.student_card_url AS student_card_url,
+              u.affiliation AS affiliation, u.job_title AS job_title`
     );
 
     return result.records.map((record) => {
@@ -57,6 +59,8 @@ export class AdminService {
         registered_at: registeredAt ? (typeof registeredAt === 'string' ? registeredAt : (registeredAt.toString ? registeredAt.toString() : registeredAt)) : null,
         profile_picture: record.get('profile_picture') || null,
         student_card_url: record.get('student_card_url') || null,
+        affiliation: record.get('affiliation') || null,
+        job_title: record.get('job_title') || null,
       };
     });
   }

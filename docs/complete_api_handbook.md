@@ -146,7 +146,9 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
     "role": "student",
     "registered_at": "2024-03-23T10:00:00Z",
     "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-    "student_card_url": "https://cloudinary.com/student_card.jpg"
+    "student_card_url": "https://cloudinary.com/student_card.jpg",
+    "affiliation": "Google",
+    "job_title": "HR Manager"
   }
 ]
 ```
@@ -301,6 +303,35 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
       "semester": 6,
       "degree": "BS Computer Science",
       "batch": "2021-2025",
+      "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+      "created_at": "2024-03-23T10:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 6b. All Partners (Paginated)
+`GET /api/admin/all-partners`  
+**Summary**: Lists all approved industry partners with search and pagination support.
+
+**Response (200)**:
+```json
+{
+  "total": 45,
+  "page": 1,
+  "data": [
+    {
+      "id": "uuid-partner-123",
+      "username": "sarah_j",
+      "display_name": "Sarah Jenkins",
+      "email": "sarah@google.com",
+      "phone": "+923009876543",
+      "bio": "Recruiting the next generation of talent.",
+      "affiliation": "Google",
+      "job_title": "HR Lead",
+      "linkedin_url": "https://linkedin.com/in/sarahj",
       "profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
       "created_at": "2024-03-23T10:00:00Z"
     }
