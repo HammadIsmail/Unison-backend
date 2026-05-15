@@ -1035,7 +1035,8 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
     "profile_picture": "https://cloudinary.com/sarah.jpg",
     "role": "alumni",
     "degree": "BSCS",
-    "batch": "2016-2020"
+    "batch": "2016-2020",
+    "mutual_connections": 3
   }
 ]
 ```
@@ -1517,6 +1518,7 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`.
 
 ### 4. Skill Supply vs Demand (Trends)
 `GET /api/network/skill-trends`  
+**Summary**: Analyze skill supply and demand. Restricted to `admin`, `alumni`, and `student`.
 **Response (200)**:
 ```json
 {

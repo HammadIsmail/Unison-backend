@@ -106,19 +106,21 @@ export class ProfilesService {
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(other)
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
       OPTIONAL MATCH (other)-[:HAS_EXPERIENCE]->(ow:WorkExperience) WHERE toLower(w.company_name) = toLower(ow.company_name)
-      WITH u, other, count(DISTINCT s) AS commonSkills, count(DISTINCT w) AS commonCompany
-      WITH u, other, commonSkills, commonCompany,
+      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(mutual:User)-[:CONNECTED_TO {status: 'accepted'}]-(other)
+      WHERE mutual.account_status = 'approved' AND ${ACTIVE_USER('mutual')}
+      WITH u, other, count(DISTINCT s) AS commonSkills, count(DISTINCT w) AS commonCompany, count(DISTINCT mutual) AS mutualConnections
+      WITH u, other, commonSkills, commonCompany, mutualConnections,
            CASE WHEN u.batch = other.batch AND u.batch IS NOT NULL THEN 1 ELSE 0 END AS sameBatch,
            CASE WHEN u.degree = other.degree AND u.degree IS NOT NULL THEN 1 ELSE 0 END AS sameDegree,
            CASE WHEN u.department = other.department AND u.department IS NOT NULL THEN 1 ELSE 0 END AS sameDepartment
-      WITH other, commonSkills, commonCompany, sameBatch, sameDegree, sameDepartment,
-           (commonSkills + commonCompany + sameBatch + sameDegree + sameDepartment) AS score
+      WITH other, commonSkills, commonCompany, mutualConnections, sameBatch, sameDegree, sameDepartment,
+           (commonSkills + commonCompany + mutualConnections + sameBatch + sameDegree + sameDepartment) AS score
       WHERE score > 0
       ORDER BY score DESC
       LIMIT 5
       RETURN other.id AS id, other.display_name AS display_name, other.username AS username, 
              other.profile_picture AS profile_picture, other.role AS role, 
-             other.degree AS degree, other.batch AS batch
+             other.degree AS degree, other.batch AS batch, mutualConnections AS mutual_connections
     `;
 
     const result = await this.neo4j.run(query, { userId });
@@ -131,6 +133,7 @@ export class ProfilesService {
       role: record.get('role'),
       degree: record.get('degree') || null,
       batch: record.get('batch') || null,
+      mutual_connections: record.get('mutual_connections').toNumber(),
     }));
   }
 }

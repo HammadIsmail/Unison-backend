@@ -136,4 +136,7 @@ export class SuggestionUserResponseDto {
 
   @ApiPropertyOptional({ example: '2016-2020' })
   batch?: string;
+
+  @ApiProperty({ example: 3, description: 'Number of mutual connections' })
+  mutual_connections: number;
 }
