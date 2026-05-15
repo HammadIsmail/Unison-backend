@@ -122,6 +122,15 @@ export class PublicProfileResponseDto {
 
   @ApiProperty({ example: true })
   is_following: boolean;
+
+  @ApiProperty({ example: 12 })
+  opportunities_count: number;
+
+  @ApiPropertyOptional({ example: 'Google' })
+  affiliation?: string;
+
+  @ApiPropertyOptional({ example: 'Technical Lead' })
+  job_title?: string;
 }
 
 export class SuggestionUserResponseDto {

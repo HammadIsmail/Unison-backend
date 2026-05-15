@@ -48,14 +48,20 @@ export class ProfilesService {
       OPTIONAL MATCH (me:User {id: $currentUserId})-[r:CONNECTED_TO]-(u)
       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+      
+      // 5. Count Total Opportunities (for display stats)
+      OPTIONAL MATCH (u)-[:POSTED]->(total_opps:Opportunity)
+      WHERE total_opps.is_deleted IS NULL OR total_opps.is_deleted = false
+      
       WITH u, work_exp, skills, opps, 
            r.status AS conn_status, 
            startNode(r) = me AS is_sender,
            count(DISTINCT f_in) AS followers_count,
            count(DISTINCT f_out) AS following_count,
-           EXISTS((:User {id: $currentUserId})-[:FOLLOWS]->(u)) AS is_following
+           EXISTS((:User {id: $currentUserId})-[:FOLLOWS]->(u)) AS is_following,
+           count(DISTINCT total_opps) AS opps_count
       
-      RETURN u, work_exp, skills, opps, conn_status, is_sender, followers_count, following_count, is_following
+      RETURN u, work_exp, skills, opps, conn_status, is_sender, followers_count, following_count, is_following, opps_count
     `;
 
     const result = await this.neo4j.run(query, { targetId, currentUserId });
@@ -100,7 +106,10 @@ export class ProfilesService {
       is_connection_sender: record.get('is_sender'),
       followers_count: record.get('followers_count').toNumber(),
       following_count: record.get('following_count').toNumber(),
-      is_following: record.get('is_following')
+      is_following: record.get('is_following'),
+      opportunities_count: record.get('opps_count').toNumber(),
+      affiliation: user.affiliation || null,
+      job_title: user.job_title || null
     };
   }
 

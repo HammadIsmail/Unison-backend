@@ -168,10 +168,14 @@ export class AuthService {
         });
 
         // 2. Save Profile to Neo4j
-        const extraProps =
-            dto.role === 'alumni'
-                ? `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`
-                : `semester: $semester, batch: $batch,`;
+        let extraProps = '';
+        if (dto.role === 'alumni') {
+          extraProps = `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`;
+        } else if (dto.role === 'student') {
+          extraProps = `semester: $semester, batch: $batch,`;
+        } else if (dto.role === 'partner') {
+          extraProps = `affiliation: $affiliation, job_title: $job_title,`;
+        }
 
         await this.neo4j.run(
             `CREATE (u:User {
@@ -196,12 +200,14 @@ export class AuthService {
                 display_name: dto.display_name,
                 email: dto.email,
                 role: dto.role,
-                roll_number: dto.roll_number,
-                degree: dto.degree,
+                roll_number: dto.roll_number ?? null,
+                degree: dto.degree ?? null,
                 studentCardUrl: studentCardUrl,
                 graduation_year: dto.graduation_year ?? null,
                 semester: dto.semester ?? null,
                 batch: dto.batch ?? null,
+                affiliation: dto.affiliation ?? null,
+                job_title: dto.job_title ?? null,
                 now,
             },
         );

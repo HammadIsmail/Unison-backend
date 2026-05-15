@@ -61,19 +61,19 @@ export class RegisterDto {
     @MinLength(8)
     password: string;
 
-    @ApiProperty({ enum: ['alumni', 'student'], example: 'alumni' })
-    @IsEnum(['alumni', 'student'])
-    role: 'alumni' | 'student';
+    @ApiProperty({ enum: ['alumni', 'student', 'partner'], example: 'alumni' })
+    @IsEnum(['alumni', 'student', 'partner'])
+    role: 'alumni' | 'student' | 'partner';
 
-    @ApiProperty({ example: '2021-CS-101' })
+    @ApiPropertyOptional({ example: '2021-CS-101' })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    roll_number: string;
+    roll_number?: string;
 
-    @ApiProperty({ example: 'BS Computer Science' })
+    @ApiPropertyOptional({ example: 'BS Computer Science' })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    degree: string;
+    degree?: string;
 
     @ApiProperty({ type: 'string', format: 'binary', description: 'Student card image file', required: true })
     @IsOptional()
@@ -91,10 +91,20 @@ export class RegisterDto {
     @IsInt()
     semester?: number;
 
-    @ApiProperty({ description: 'Batch year (e.g., 2021)', example: '2021' })
+    @ApiPropertyOptional({ description: 'Batch year (e.g., 2021)', example: '2021' })
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    batch: string;
+    batch?: string;
+
+    @ApiPropertyOptional({ example: 'Google' })
+    @IsOptional()
+    @IsString()
+    affiliation?: string;
+
+    @ApiPropertyOptional({ example: 'Talent Acquisition' })
+    @IsOptional()
+    @IsString()
+    job_title?: string;
 }
 
 export class LoginDto {

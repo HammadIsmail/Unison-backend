@@ -134,6 +134,26 @@ export class AdminController {
     );
   }
 
+  @Get('all-partners')
+  @ApiOperation({ summary: 'Get all approved industry partners with pagination' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({ name: 'search', required: false, type: String, example: 'Google' })
+  getAllPartners(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
+  ) {
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const validatedSearch = search === 'string' ? '' : search;
+    return this.adminService.getAllPartners(
+      isNaN(pageNum) ? 1 : pageNum,
+      isNaN(limitNum) ? 10 : limitNum,
+      validatedSearch
+    );
+  }
+
   @Delete('remove-account/:id')
   @ApiOperation({ summary: 'Soft-delete an account (preserves all historical data)' })
   @ApiQuery({ name: 'reason', required: false, type: String, description: 'Optional deletion reason for audit trail' })
@@ -202,6 +222,26 @@ export class AdminController {
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   adminDeleteOpportunity(@Param('id') id: string) {
     return this.adminService.adminDeleteOpportunity(id);
+  }
+
+  @Get('events')
+  @ApiOperation({ summary: 'Moderation: List all system events' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  getAllEvents(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search: string = '',
+  ) {
+    return this.adminService.getAllEvents(parseInt(page), parseInt(limit), search);
+  }
+
+  @Delete('events/:id')
+  @ApiOperation({ summary: 'Moderation: Delete any event by ID' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  adminDeleteEvent(@Param('id') id: string) {
+    return this.adminService.adminDeleteEvent(id);
   }
 
   @Get('export/:role')

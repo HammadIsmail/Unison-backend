@@ -60,10 +60,12 @@ Handle user entry, verification, and security.
 | `display_name` | String | **Required** | Preferred name |
 | `email` | String | **Required** | Must match verified email |
 | `password` | String | **Required** | Min 8 characters |
-| `role` | Enum | **Required** | `alumni` or `student` |
-| `roll_number` | String | **Required** | University ID (e.g., `2021-CS-101`) |
-| `degree` | String | **Required** | e.g., `BS Computer Science` |
-| `student_card` | File | **Required** | Student card image file (binary) |
+| `role` | Enum | **Required** | `alumni`, `student`, or `partner` |
+| `roll_number` | String | *Optional* | University ID (Required for students/alumni) |
+| `degree` | String | *Optional* | e.g. `BS Computer Science` (Required for students/alumni) |
+| `student_card` | File | **Required** | ID image file (Student Card or Business Card) |
+| `affiliation` | String | *Optional* | **Partner Only** (e.g. `Google`) |
+| `job_title` | String | *Optional* | **Partner Only** (e.g. `HR Manager`) |
 | `graduation_year`| Number | *Optional* | **Alumni Only** (Required for graduates) |
 | `semester` | Number | *Optional* | **Student Only** (Required for students) |
 | `batch` | String | **Required** | Batch year (e.g., `2021`) |
@@ -576,6 +578,41 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 **Response (200)**:
 ```json
 { "message": "Announcement deleted successfully." }
+```
+
+---
+
+### 23. Moderation: List All Events
+`GET /api/admin/events`  
+**Summary**: Lists all events in the system for administrative oversight.
+**Query Parameters**: `page`, `limit`, `search`
+
+**Response (200)**:
+```json
+{
+  "total": 5,
+  "page": 1,
+  "data": [
+    {
+      "id": "uuid-event-123",
+      "title": "Alumni Meetup",
+      "date": "2024-12-01T18:00:00Z",
+      "hosted_by": "Hammad Ismail",
+      "host_username": "hammad_i"
+    }
+  ]
+}
+```
+
+---
+
+### 24. Moderation: Admin Delete Event
+`DELETE /api/admin/events/:id`  
+**Summary**: Allows an admin to remove any event from the platform.
+
+**Response (200)**:
+```json
+{ "message": "Event removed by administrator." }
 ```
 
 ---
@@ -1468,6 +1505,7 @@ Requires `Bearer JWT`.
   "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
   "bio": "Passionate software engineer from UET Faisalabad.",
   "role": "alumni",
+  "opportunities_count": 5,
   "degree": "BSCS",
   "graduation_year": 2024,
   "batch": "2020-2024",

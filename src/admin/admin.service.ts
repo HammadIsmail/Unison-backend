@@ -425,6 +425,60 @@ export class AdminService {
     return { total, page, data };
   }
 
+  async getAllPartners(page: number, limit: number, search: string) {
+    const skip = (page - 1) * limit;
+    let queryBase = '';
+    const params: any = { skip, limit };
+
+    if (search) {
+      const luceneQ = this.prepareLuceneQuery(search);
+      queryBase = `
+        CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
+        WHERE u.role = 'partner' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    } else {
+      queryBase = `
+        MATCH (u:User {role: 'partner', account_status: 'approved'})
+        WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
+      `;
+    }
+
+    const countResult = await this.neo4j.run(
+      `${queryBase} RETURN count(u) AS total`,
+      params
+    );
+    const total = countResult.records[0]?.get('total').toNumber() || 0;
+
+    const result = await this.neo4j.run(
+      `${queryBase}
+       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.phone AS phone, u.bio AS bio,
+              u.affiliation AS affiliation, u.job_title AS job_title, u.linkedin_url AS linkedin_url,
+              u.profile_picture AS profile_picture, u.created_at AS created_at
+       ORDER BY u.created_at DESC
+       SKIP toInteger($skip) LIMIT toInteger($limit)`,
+      params
+    );
+
+    const data = result.records.map((record) => {
+      const createdAt = record.get('created_at');
+      return {
+        id: record.get('id'),
+        username: record.get('username'),
+        display_name: record.get('display_name'),
+        email: record.get('email'),
+        phone: record.get('phone') || null,
+        bio: record.get('bio') || null,
+        affiliation: record.get('affiliation') || null,
+        job_title: record.get('job_title') || null,
+        linkedin_url: record.get('linkedin_url') || null,
+        profile_picture: record.get('profile_picture') || null,
+        created_at: createdAt ? (typeof createdAt === 'string' ? createdAt : (createdAt.toString ? createdAt.toString() : createdAt)) : null,
+      };
+    });
+
+    return { total, page, data };
+  }
+
   async removeAccount(adminId: string, id: string, reason?: string) {
     const now = new Date();
     const nowIso = now.toISOString();
@@ -969,5 +1023,69 @@ export class AdminService {
     const result = await this.announcementModel.findByIdAndDelete(id);
     if (!result) throw new NotFoundException('Announcement not found.');
     return { message: 'Announcement deleted successfully.' };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Event Moderation
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async getAllEvents(page: number, limit: number, search: string) {
+    const skip = (page - 1) * limit;
+    let queryBase = '';
+    const params: any = { skip, limit };
+
+    if (search) {
+      queryBase = `
+        MATCH (e:Event)
+        WHERE (toLower(e.title) CONTAINS toLower($search) OR toLower(e.description) CONTAINS toLower($search))
+          AND (e.is_deleted IS NULL OR e.is_deleted = false)
+      `;
+      params.search = search;
+    } else {
+      queryBase = `
+        MATCH (e:Event)
+        WHERE (e.is_deleted IS NULL OR e.is_deleted = false)
+      `;
+    }
+
+    const countResult = await this.neo4j.run(`${queryBase} RETURN count(e) AS total`, params);
+    const total = countResult.records[0].get('total').toNumber();
+
+    const result = await this.neo4j.run(
+      `${queryBase}
+       MATCH (u:User)-[:CREATED_EVENT]->(e)
+       RETURN e, u.display_name AS hosted_by, u.username AS host_username
+       ORDER BY e.date DESC
+       SKIP toInteger($skip) LIMIT toInteger($limit)`,
+      params
+    );
+
+    const data = result.records.map(r => {
+      const event = r.get('e').properties;
+      return {
+        ...event,
+        hosted_by: r.get('hosted_by'),
+        host_username: r.get('host_username'),
+        date: event.date ? (typeof event.date === 'string' ? event.date : (event.date.toString ? event.date.toString() : event.date)) : null,
+        created_at: event.created_at ? (typeof event.created_at === 'string' ? event.created_at : (event.created_at.toString ? event.created_at.toString() : event.created_at)) : null,
+      };
+    });
+
+    return { total, page, data };
+  }
+
+  async adminDeleteEvent(id: string) {
+    const result = await this.neo4j.run(
+      `MATCH (e:Event {id: $id})
+       SET e.is_deleted = true, e.deleted_at = datetime(), e.deleted_by = 'admin'
+       RETURN count(e) AS cnt`,
+      { id }
+    );
+
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Event not found.');
+    }
+
+    return { message: 'Event removed by administrator.' };
   }
 }
