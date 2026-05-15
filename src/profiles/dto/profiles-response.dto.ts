@@ -113,6 +113,15 @@ export class PublicProfileResponseDto {
 
   @ApiPropertyOptional({ example: true, description: 'True if the REQUESTING user initiated the pending connection' })
   is_connection_sender?: boolean;
+
+  @ApiProperty({ example: 120 })
+  followers_count: number;
+
+  @ApiProperty({ example: 45 })
+  following_count: number;
+
+  @ApiProperty({ example: true })
+  is_following: boolean;
 }
 
 export class SuggestionUserResponseDto {

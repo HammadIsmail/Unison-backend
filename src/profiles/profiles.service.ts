@@ -44,13 +44,18 @@ export class ProfilesService {
         deadline: o.deadline
       }) AS opps
       
-      // 4. Check Connection Status (Social Context)
+      // 4. Check Connection Status and Followers (Social Context)
       OPTIONAL MATCH (me:User {id: $currentUserId})-[r:CONNECTED_TO]-(u)
+      OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
+      OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
       WITH u, work_exp, skills, opps, 
            r.status AS conn_status, 
-           startNode(r) = me AS is_sender
+           startNode(r) = me AS is_sender,
+           count(DISTINCT f_in) AS followers_count,
+           count(DISTINCT f_out) AS following_count,
+           EXISTS((:User {id: $currentUserId})-[:FOLLOWS]->(u)) AS is_following
       
-      RETURN u, work_exp, skills, opps, conn_status, is_sender
+      RETURN u, work_exp, skills, opps, conn_status, is_sender, followers_count, following_count, is_following
     `;
 
     const result = await this.neo4j.run(query, { targetId, currentUserId });
@@ -92,7 +97,10 @@ export class ProfilesService {
       skills: skills,
       opportunities_posted: opportunities,
       connection_status: record.get('conn_status') || 'none',
-      is_connection_sender: record.get('is_sender')
+      is_connection_sender: record.get('is_sender'),
+      followers_count: record.get('followers_count').toNumber(),
+      following_count: record.get('following_count').toNumber(),
+      is_following: record.get('is_following')
     };
   }
 

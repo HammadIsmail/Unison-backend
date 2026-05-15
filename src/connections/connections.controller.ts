@@ -80,6 +80,40 @@ export class ConnectionsController {
     return this.connectionsService.respondToRequest(userId, senderId, dto.action);
   }
 
+  @Post('follow/:target_id')
+  @ApiOperation({ summary: 'Follow another user' })
+  @ApiResponse({ status: 201, type: SuccessResponseDto })
+  followUser(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.connectionsService.followUser(userId, targetId);
+  }
+
+  @Delete('unfollow/:target_id')
+  @ApiOperation({ summary: 'Unfollow a user' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  unfollowUser(
+    @GetUser('sub') userId: string,
+    @Param('target_id') targetId: string,
+  ) {
+    return this.connectionsService.unfollowUser(userId, targetId);
+  }
+
+  @Get(':target_id/followers')
+  @ApiOperation({ summary: 'Get followers of a user' })
+  @ApiResponse({ status: 200 })
+  getFollowers(@Param('target_id') targetId: string) {
+    return this.connectionsService.getFollowers(targetId);
+  }
+
+  @Get(':target_id/following')
+  @ApiOperation({ summary: 'Get users followed by a user' })
+  @ApiResponse({ status: 200 })
+  getFollowing(@Param('target_id') targetId: string) {
+    return this.connectionsService.getFollowing(targetId);
+  }
+
   @Post('block/:target_id')
   @ApiOperation({ summary: 'Block another user' })
   @ApiResponse({ status: 201, type: SuccessResponseDto })

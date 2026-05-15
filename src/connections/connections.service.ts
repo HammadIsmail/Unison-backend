@@ -146,6 +146,10 @@ export class ConnectionsService {
       const result = await this.neo4j.run(
         `MATCH (u:User {id: $senderId})-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
          SET r.status = 'accepted', r.accepted_at = datetime()
+         MERGE (u)-[f1:FOLLOWS]->(me)
+         ON CREATE SET f1.created_at = datetime()
+         MERGE (me)-[f2:FOLLOWS]->(u)
+         ON CREATE SET f2.created_at = datetime()
          RETURN r`,
         { userId, senderId }
       );
@@ -181,6 +185,99 @@ export class ConnectionsService {
         throw new NotFoundException('Connection request not found.');
       return { message: 'Connection request rejected.' };
     }
+  }
+
+  async followUser(userId: string, targetId: string) {
+    if (userId === targetId) throw new ForbiddenException('Cannot follow yourself.');
+
+    const targetResult = await this.neo4j.run(
+      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND t.role <> 'admin' RETURN t.id`,
+      { targetId }
+    );
+    if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
+
+    const userResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')}
+       RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
+      { userId }
+    );
+    const follower = userResult.records[0]?.toObject();
+
+    await this.neo4j.run(
+      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
+       MERGE (u)-[r:FOLLOWS]->(t)
+       ON CREATE SET r.created_at = datetime()`,
+      { userId, targetId }
+    );
+
+    if (follower) {
+      await this.notification.createNotification(
+        targetId,
+        `${follower.name} started following you.`,
+        'new_follower',
+        {
+          sender_username: follower.username,
+          sender_display_name: follower.name,
+          sender_profile_picture: follower.pic,
+          reference_link: `/profile/${follower.username}`,
+        }
+      );
+    }
+
+    return { message: 'Successfully followed user.' };
+  }
+
+  async unfollowUser(userId: string, targetId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[r:FOLLOWS]->(t:User {id: $targetId})
+       DELETE r
+       RETURN count(r) AS cnt`,
+      { userId, targetId }
+    );
+
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('You are not following this user.');
+    }
+
+    return { message: 'Successfully unfollowed user.' };
+  }
+
+  async getFollowers(targetId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (f:User)-[:FOLLOWS]->(u:User {id: $targetId})
+       WHERE ${ACTIVE_USER('f')} AND f.role <> 'admin'
+       RETURN f.id AS id, f.display_name AS display_name, f.username AS username,
+              f.profile_picture AS profile_picture, f.role AS role, f.bio AS bio`,
+      { targetId }
+    );
+
+    return result.records.map((r) => ({
+      id: r.get('id'),
+      display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture'),
+      role: r.get('role'),
+      bio: r.get('bio'),
+    }));
+  }
+
+  async getFollowing(userId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[:FOLLOWS]->(f:User)
+       WHERE ${ACTIVE_USER('f')} AND f.role <> 'admin'
+       RETURN f.id AS id, f.display_name AS display_name, f.username AS username,
+              f.profile_picture AS profile_picture, f.role AS role, f.bio AS bio`,
+      { userId }
+    );
+
+    return result.records.map((r) => ({
+      id: r.get('id'),
+      display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture'),
+      role: r.get('role'),
+      bio: r.get('bio'),
+    }));
   }
 
   async blockUser(userId: string, targetId: string) {

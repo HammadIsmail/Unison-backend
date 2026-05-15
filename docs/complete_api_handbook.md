@@ -954,6 +954,66 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
+### 10. Follow User
+`POST /api/connections/follow/:target_id`  
+**Summary**: Follow another user to receive updates.
+
+**Response (201)**:
+```json
+{ "message": "Successfully followed user." }
+```
+
+---
+
+### 11. Unfollow User
+`DELETE /api/connections/unfollow/:target_id`  
+**Summary**: Unfollow a user you are currently following.
+
+**Response (200)**:
+```json
+{ "message": "Successfully unfollowed user." }
+```
+
+---
+
+### 12. Get Followers
+`GET /api/connections/:target_id/followers`  
+**Summary**: Retrieve a list of users who are following the specified target user.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user-123",
+    "display_name": "Hammad Ismail",
+    "username": "hammad_i",
+    "profile_picture": "https://cloudinary.com/pic.jpg",
+    "role": "alumni",
+    "bio": "Software Engineer"
+  }
+]
+```
+
+---
+
+### 13. Get Following
+`GET /api/connections/:target_id/following`  
+**Summary**: Retrieve a list of users that the specified target user is following.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user-456",
+    "display_name": "Sarah Chen",
+    "username": "sarah_c",
+    "profile_picture": "https://cloudinary.com/sarah.jpg",
+    "role": "student",
+    "bio": "Computer Science Junior"
+  }
+]
+```
+
 ---
 
 ## 🎭 Profiles
@@ -1014,6 +1074,9 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
   ],
   "connection_status": "pending",
   "is_connection_sender": true,
+  "followers_count": 120,
+  "following_count": 45,
+  "is_following": true,
   "is_online": true,
   "last_seen": "2024-03-23T10:00:00Z"
 }
