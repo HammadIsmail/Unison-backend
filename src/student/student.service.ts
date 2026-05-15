@@ -133,7 +133,7 @@ export class StudentService {
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
-       WHERE c.is_deleted IS NULL OR c.is_deleted = false
+       WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND c.role <> 'admin'
        OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
