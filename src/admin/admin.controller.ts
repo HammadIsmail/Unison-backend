@@ -175,6 +175,13 @@ export class AdminController {
     return this.adminService.restoreAccount(adminId, id);
   }
 
+  @Get('deleted-users')
+  @ApiOperation({ summary: 'List all soft-deleted user accounts' })
+  @ApiResponse({ status: 200 })
+  getDeletedUsers() {
+    return this.adminService.getDeletedUsers();
+  }
+
   @Patch('request-email-change')
   @ApiOperation({ summary: 'Request an email change for the admin account (sends OTP to new email)' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })

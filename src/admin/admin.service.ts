@@ -599,6 +599,48 @@ export class AdminService {
     };
   }
 
+  async getDeletedUsers() {
+    const deletedUsers = await this.userAuthModel
+      .find({ is_deleted: true })
+      .sort({ deleted_at: -1 })
+      .lean()
+      .exec();
+
+    if (deletedUsers.length === 0) return [];
+
+    const userIds = deletedUsers.map((u) => u.userId);
+
+    // Fetch display names and usernames from Neo4j in bulk
+    const result = await this.neo4j.run(
+      `MATCH (u:User)
+       WHERE u.id IN $userIds
+       RETURN u.id AS id, u.display_name AS display_name, u.username AS username`,
+      { userIds },
+    );
+
+    const profileMap = new Map();
+    result.records.forEach((r) => {
+      profileMap.set(r.get('id'), {
+        display_name: r.get('display_name'),
+        username: r.get('username'),
+      });
+    });
+
+    return deletedUsers.map((u) => {
+      const profile = profileMap.get(u.userId) || {};
+      return {
+        id: u.userId,
+        username: profile.username || null,
+        display_name: profile.display_name || 'Deleted User',
+        email: u.email,
+        role: u.role,
+        deleted_at: u.deleted_at,
+        deletion_reason: u.deletion_reason || 'No reason provided',
+        deletion_source: u.deletion_source,
+      };
+    });
+  }
+
   async requestEmailChange(newEmail: string) {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min

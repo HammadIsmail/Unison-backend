@@ -384,6 +384,28 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
+### 7c. List Soft-Deleted Accounts
+`GET /api/admin/deleted-users`  
+**Summary**: Retrieves all accounts that are currently soft-deleted. Includes identity details and deletion metadata for administrative review.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-123",
+    "username": "ahmed_h",
+    "display_name": "Ahmed The Dev",
+    "email": "ahmed@uet.edu.pk",
+    "role": "alumni",
+    "deleted_at": "2025-05-10T12:00:00Z",
+    "deletion_reason": "Requested by user",
+    "deletion_source": "self"
+  }
+]
+```
+
+---
+
 ### 8. Request Email Change
 `PATCH /api/admin/request-email-change`  
 **Summary**: Initiates an email change by sending a 6-digit OTP to the new email address.
