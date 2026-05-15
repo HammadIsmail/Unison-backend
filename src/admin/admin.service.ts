@@ -626,7 +626,7 @@ export class AdminService {
       });
     });
 
-    return deletedUsers.map((u) => {
+    const data = deletedUsers.map((u) => {
       const profile = profileMap.get(u.userId) || {};
       return {
         id: u.userId,
@@ -639,6 +639,11 @@ export class AdminService {
         deletion_source: u.deletion_source,
       };
     });
+
+    return {
+      total: deletedUsers.length,
+      data,
+    };
   }
 
   async requestEmailChange(newEmail: string) {

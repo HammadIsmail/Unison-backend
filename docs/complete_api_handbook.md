@@ -390,18 +390,21 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 **Response (200)**:
 ```json
-[
-  {
-    "id": "uuid-123",
-    "username": "ahmed_h",
-    "display_name": "Ahmed The Dev",
-    "email": "ahmed@uet.edu.pk",
-    "role": "alumni",
-    "deleted_at": "2025-05-10T12:00:00Z",
-    "deletion_reason": "Requested by user",
-    "deletion_source": "self"
-  }
-]
+{
+  "total": 1,
+  "data": [
+    {
+      "id": "uuid-123",
+      "username": "ahmed_h",
+      "display_name": "Ahmed The Dev",
+      "email": "ahmed@uet.edu.pk",
+      "role": "alumni",
+      "deleted_at": "2025-05-10T12:00:00Z",
+      "deletion_reason": "Requested by user",
+      "deletion_source": "self"
+    }
+  ]
+}
 ```
 
 ---
