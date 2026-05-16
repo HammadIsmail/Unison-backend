@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, ConflictException } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { RejectAccountDto, RejectUpgradeDto } from './dto/admin.dto';
-import { CreateAnnouncementDto } from './dto/admin-request.dto';
+import * as bcrypt from 'bcryptjs';
+import { CreateAnnouncementDto, UpdateAdminProfileDto, CreateStaffDto } from './dto/admin-request.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import { NotificationService } from '../notification/notification.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -1180,5 +1182,132 @@ export class AdminService {
     }
 
     return { message: 'Event removed by administrator.' };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Admin Profile & Staff Management
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async getAdminProfile(adminId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $adminId}) RETURN u`,
+      { adminId }
+    );
+    if (!result.records.length) throw new NotFoundException('Admin profile not found');
+    const u = result.records[0].get('u').properties;
+    return {
+      id: u.id,
+      username: u.username,
+      display_name: u.display_name,
+      profile_picture: u.profile_picture || null,
+      role: u.role,
+    };
+  }
+
+  async updateAdminProfile(adminId: string, dto: UpdateAdminProfileDto, file?: Express.Multer.File) {
+    let profile_picture: string | undefined;
+    if (file) {
+      const upload = await this.cloudinary.uploadFile(file);
+      profile_picture = upload.secure_url;
+    }
+
+    const setClauses: string[] = [];
+    const params: any = { adminId };
+
+    if (dto.username) {
+      setClauses.push('u.username = $username');
+      params.username = dto.username;
+    }
+    if (dto.display_name) {
+      setClauses.push('u.display_name = $display_name');
+      params.display_name = dto.display_name;
+    }
+    if (profile_picture) {
+      setClauses.push('u.profile_picture = $profile_picture');
+      params.profile_picture = profile_picture;
+    }
+
+    if (setClauses.length > 0) {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $adminId}) SET ${setClauses.join(', ')}`,
+        params
+      );
+    }
+
+    return { message: 'Profile updated successfully' };
+  }
+
+  async createStaff(dto: CreateStaffDto) {
+    // 1. Check uniqueness
+    const existing = await this.userAuthModel.findOne({ email: dto.email });
+    if (existing) throw new ConflictException('Email already in use');
+
+    const neoExisting = await this.neo4j.run(
+      `MATCH (u:User) WHERE u.username = $username OR u.email = $email RETURN u`,
+      { username: dto.username, email: dto.email }
+    );
+    if (neoExisting.records.length) throw new ConflictException('Username or Email already in use in profile system');
+
+    const userId = uuidv4();
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // 2. Create MongoDB Auth
+    await this.userAuthModel.create({
+      userId,
+      email: dto.email,
+      password: hashedPassword,
+      role: dto.role,
+      account_status: 'approved',
+    });
+
+    // 3. Create Neo4j Profile
+    await this.neo4j.run(
+      `CREATE (u:User {
+        id: $userId,
+        username: $username,
+        display_name: $display_name,
+        email: $email,
+        role: $role,
+        account_status: 'approved',
+        created_at: datetime()
+      })`,
+      {
+        userId,
+        username: dto.username,
+        display_name: dto.display_name,
+        email: dto.email,
+        role: dto.role,
+      }
+    );
+
+    return { message: `${dto.role} created successfully`, userId };
+  }
+
+  async removeStaff(currentAdminId: string, staffId: string) {
+    if (currentAdminId === staffId) throw new BadRequestException('You cannot remove yourself');
+
+    const auth = await this.userAuthModel.findOne({ userId: staffId });
+    if (!auth) throw new NotFoundException('Staff account not found');
+    if (!['admin', 'moderator'].includes(auth.role)) throw new BadRequestException('Can only remove staff accounts');
+
+    await this.removeAccount(currentAdminId, staffId, 'Removed by Admin');
+
+    return { message: 'Staff member removed successfully' };
+  }
+
+  async getStaffList() {
+    const result = await this.neo4j.run(
+      `MATCH (u:User) WHERE u.role IN ['admin', 'moderator'] AND (u.is_deleted IS NULL OR u.is_deleted = false)
+       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.role AS role, u.email AS email, u.profile_picture AS profile_picture`
+    );
+
+    return result.records.map(r => ({
+      id: r.get('id'),
+      username: r.get('username'),
+      display_name: r.get('display_name'),
+      role: r.get('role'),
+      email: r.get('email'),
+      profile_picture: r.get('profile_picture') || null,
+    }));
   }
 }

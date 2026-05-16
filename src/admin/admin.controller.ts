@@ -15,6 +15,7 @@ import {
   AnnouncementResponseDto,
   AnnouncementPaginationResponseDto,
 } from './dto/admin-response.dto';
+import { UpdateAdminProfileDto, CreateStaffDto } from './dto/admin-request.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -25,11 +26,11 @@ import { BulkActionDto, BulkRejectDto, AdminActivityFilterDto, AnalyticsFilterDt
 @ApiBearerAuth()
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin') // Assuming "admin" is the role string
 export class AdminController {
   constructor(private readonly adminService: AdminService) { }
 
   @Get('pending-accounts')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'List all accounts pending approval' })
   @ApiResponse({ status: 200, type: [PendingAccountResponseDto] })
   getPendingAccounts() {
@@ -37,6 +38,7 @@ export class AdminController {
   }
 
   @Patch('approve-account/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Approve a pending account' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   approveAccount(@Param('id') id: string) {
@@ -44,6 +46,7 @@ export class AdminController {
   }
 
   @Patch('reject-account/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Reject a pending account request' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   rejectAccount(@Param('id') id: string, @Body() dto: RejectAccountDto) {
@@ -51,6 +54,7 @@ export class AdminController {
   }
 
   @Patch('bulk/approve')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Approve multiple pending accounts at once' })
   @ApiResponse({ status: 200 })
   bulkApprove(@Body() dto: BulkActionDto) {
@@ -58,6 +62,7 @@ export class AdminController {
   }
 
   @Patch('bulk/reject')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Reject multiple pending accounts at once' })
   @ApiResponse({ status: 200 })
   bulkReject(@Body() dto: BulkRejectDto) {
@@ -65,6 +70,7 @@ export class AdminController {
   }
 
   @Get('upgrade-requests')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'List all profile upgrade requests from students' })
   @ApiResponse({ status: 200, type: [UpgradeRequestResponseDto] })
   getPendingUpgrades() {
@@ -72,6 +78,7 @@ export class AdminController {
   }
 
   @Patch('approve-upgrade/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Approve a student to alumni profile upgrade request' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   approveUpgrade(@Param('id') id: string) {
@@ -79,6 +86,7 @@ export class AdminController {
   }
 
   @Patch('reject-upgrade/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Reject a student to alumni profile upgrade request' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   rejectUpgrade(@Param('id') id: string, @Body() dto: RejectUpgradeDto) {
@@ -86,6 +94,7 @@ export class AdminController {
   }
 
   @Get('dashboard-stats')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Get overall dashboard statistics' })
   @ApiResponse({ status: 200, type: DashboardStatsResponseDto })
   getDashboardStats() {
@@ -93,6 +102,7 @@ export class AdminController {
   }
 
   @Get('all-alumni')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Get all approved alumni with pagination' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)', example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)', example: 10 })
@@ -114,6 +124,7 @@ export class AdminController {
   }
 
   @Get('all-students')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Get all approved students with pagination' })
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)', example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)', example: 10 })
@@ -135,6 +146,7 @@ export class AdminController {
   }
 
   @Get('all-partners')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Get all approved industry partners with pagination' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
@@ -155,6 +167,7 @@ export class AdminController {
   }
 
   @Delete('remove-account/:id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Soft-delete an account (preserves all historical data)' })
   @ApiQuery({ name: 'reason', required: false, type: String, description: 'Optional deletion reason for audit trail' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
@@ -168,6 +181,7 @@ export class AdminController {
   }
 
   @Patch('restore-account/:id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Restore a soft-deleted account — re-enables login' })
   @ApiResponse({ status: 200 })
   restoreAccount(@Req() req: any, @Param('id') id: string) {
@@ -176,6 +190,7 @@ export class AdminController {
   }
 
   @Get('deleted-users')
+  @Roles('admin')
   @ApiOperation({ summary: 'List all soft-deleted user accounts' })
   @ApiResponse({ status: 200 })
   getDeletedUsers() {
@@ -183,6 +198,7 @@ export class AdminController {
   }
 
   @Patch('request-email-change')
+  @Roles('admin')
   @ApiOperation({ summary: 'Request an email change for the admin account (sends OTP to new email)' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   requestEmailChange(@Body() dto: RequestEmailChangeDto) {
@@ -190,6 +206,7 @@ export class AdminController {
   }
 
   @Patch('verify-email-change')
+  @Roles('admin')
   @ApiOperation({ summary: 'Verify OTP and update admin email address' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   verifyEmailChange(@Req() req: any, @Body() dto: VerifyEmailChangeDto) {
@@ -198,6 +215,7 @@ export class AdminController {
   }
 
   @Get('recent-activity')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Get recent platform activities with filtering' })
   @ApiResponse({ status: 200 })
   getRecentActivity(@Query() filter: AdminActivityFilterDto) {
@@ -205,6 +223,7 @@ export class AdminController {
   }
 
   @Get('advanced-analytics')
+  @Roles('admin')
   @ApiOperation({ summary: 'Get professional-grade analytics with date filtering' })
   @ApiResponse({ status: 200, type: AdvancedAnalyticsResponseDto })
   getAdvancedAnalytics(@Query() filter: AnalyticsFilterDto) {
@@ -212,6 +231,7 @@ export class AdminController {
   }
 
   @Get('opportunities')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Moderation: List all system opportunities' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -225,6 +245,7 @@ export class AdminController {
   }
 
   @Delete('opportunities/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Moderation: Delete any opportunity by ID' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   adminDeleteOpportunity(@Param('id') id: string) {
@@ -232,6 +253,7 @@ export class AdminController {
   }
 
   @Get('events')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Moderation: List all system events' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -245,6 +267,7 @@ export class AdminController {
   }
 
   @Delete('events/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Moderation: Delete any event by ID' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   adminDeleteEvent(@Param('id') id: string) {
@@ -252,6 +275,7 @@ export class AdminController {
   }
 
   @Get('export/:role')
+  @Roles('admin')
   @ApiOperation({ summary: 'Export user list to CSV' })
   async exportToCsv(@Param('role') role: string, @Res() res: Response) {
     const csv = await this.adminService.exportUsersToCsv(role);
@@ -265,6 +289,7 @@ export class AdminController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Post('announcements')
+  @Roles('admin', 'moderator')
   @UseInterceptors(FileInterceptor('media'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create and broadcast an event announcement to all network users' })
@@ -279,6 +304,7 @@ export class AdminController {
   }
 
   @Get('announcements')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'List all past announcements (paginated)' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
@@ -291,6 +317,7 @@ export class AdminController {
   }
 
   @Get('announcements/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Get complete details of a single announcement' })
   @ApiResponse({ status: 200, type: AnnouncementResponseDto })
   getAnnouncementById(@Param('id') id: string) {
@@ -298,9 +325,58 @@ export class AdminController {
   }
 
   @Delete('announcements/:id')
+  @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'Delete an announcement by ID' })
   @ApiResponse({ status: 200 })
   deleteAnnouncement(@Param('id') id: string) {
     return this.adminService.deleteAnnouncement(id);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Admin Profile & Staff Management (Admin Only)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  @Get('profile')
+  @Roles('admin', 'moderator')
+  @ApiOperation({ summary: 'Get current admin/moderator profile' })
+  getAdminProfile(@Req() req: any) {
+    const adminId = req.user.sub;
+    return this.adminService.getAdminProfile(adminId);
+  }
+
+  @Patch('profile')
+  @Roles('admin', 'moderator')
+  @UseInterceptors(FileInterceptor('profile_picture'))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Update current admin/moderator profile' })
+  updateAdminProfile(
+    @Req() req: any,
+    @Body() dto: UpdateAdminProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    const adminId = req.user.sub;
+    return this.adminService.updateAdminProfile(adminId, dto, file);
+  }
+
+  @Post('staff')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Create a new staff member (Admin or Moderator)' })
+  createStaff(@Body() dto: CreateStaffDto) {
+    return this.adminService.createStaff(dto);
+  }
+
+  @Get('staff')
+  @Roles('admin')
+  @ApiOperation({ summary: 'List all staff members' })
+  getStaffList() {
+    return this.adminService.getStaffList();
+  }
+
+  @Delete('staff/:id')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Remove a staff member' })
+  removeStaff(@Req() req: any, @Param('id') id: string) {
+    const adminId = req.user.sub;
+    return this.adminService.removeStaff(adminId, id);
   }
 }

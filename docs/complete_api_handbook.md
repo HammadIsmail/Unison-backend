@@ -590,6 +590,9 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 }
 ```
 
+> [!TIP]
+> **HTML Sanitization**: The `description` field is automatically sanitized on the server. Dangerous tags like `<script>` and `<iframe>` are stripped, while safe formatting tags (like `<b>`, `<i>`, `<p>`, `<a>`) are preserved.
+
 > [!NOTE]
 > The announcement is persisted in MongoDB and each user receives a notification of type `announcement` — both stored in DB and pushed via Socket.io for real-time delivery to online users.
 
@@ -618,7 +621,10 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
       "event_date": "2025-06-15T10:00:00Z",
       "media_url": "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg",
       "media_type": "image",
-      "created_by_admin": "admin-uuid-123",
+      "created_by_admin": {
+        "id": "admin-uuid-123",
+        "name": "UNISON Administration"
+      },
       "created_at": "2025-05-12T10:00:00Z"
     }
   ]
@@ -640,7 +646,10 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
   "event_date": "2025-06-15T10:00:00Z",
   "media_url": "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg",
   "media_type": "image",
-  "created_by_admin": "admin-uuid-123",
+  "created_by_admin": {
+    "id": "admin-uuid-123",
+    "name": "UNISON Administration"
+  },
   "created_at": "2025-05-12T10:00:00Z"
 }
 ```
@@ -1329,6 +1338,9 @@ Broadcast and discover career prospects. Requires `Bearer JWT`.
 `POST /api/opportunities`  
 **Summary**: Restricted to `alumni` and `admin`. Allows posting job or internship opportunities with optional batch media (images/videos).
 
+> [!TIP]
+> **HTML Sanitization**: The `description` and `requirements` fields are automatically sanitized on the server to prevent XSS while allowing safe rich text formatting.
+
 **Request**: `multipart/form-data`
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
@@ -1514,11 +1526,11 @@ Requires `Bearer JWT`.
     "id": "uuid-user-123",
     "display_name": "Hammad Ismail",
     "username": "hammad_i",
-    "email": "hammad@uet.edu.pk",
-    "current_company": "Google",
-    "role": "Software Engineer",
+    "role": "alumni",
+    "job_role": "Software Engineer",
+    "company": "Google",
     "skills": ["TypeScript", "NestJS"],
-    "batch": "2021-2025",
+    "batch_year": "2021-2025",
     "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
     "bio": "Software engineer with 5 years of experience.",
     "backDropImage": "https://cloudinary.com/ahmed_backdrop.jpg"
@@ -2115,6 +2127,11 @@ Module for managing and discovering alumni events, webinars, and reunions. Requi
 
 ### 1. Create Event
 `POST /api/events`  
+**Summary**: Create a social or professional event. Restricted to `alumni` and `admin`.
+
+> [!TIP]
+> **HTML Sanitization**: The `description` field is automatically sanitized on the server to prevent XSS while allowing safe rich text formatting.
+
 **Role Restriction**: `admin`, `alumni`  
 **Request**: `multipart/form-data`
 | Field | Type | Status | Description |

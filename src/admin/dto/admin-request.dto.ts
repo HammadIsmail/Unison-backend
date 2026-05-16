@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsString, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
+import { IsArray, IsString, IsNotEmpty, IsOptional, IsDateString, IsEmail, IsEnum, MinLength } from 'class-validator';
 
 export class BulkActionDto {
   @ApiProperty({ type: [String], example: ['uuid-1', 'uuid-2'] })
@@ -59,4 +59,45 @@ export class CreateAnnouncementDto {
   @IsOptional()
   @IsDateString()
   event_date?: string;
+}
+
+export class UpdateAdminProfileDto {
+  @ApiPropertyOptional({ example: 'admin_user' })
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @ApiPropertyOptional({ example: 'Admin Name' })
+  @IsOptional()
+  @IsString()
+  display_name?: string;
+
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @IsOptional()
+  profile_picture?: any;
+}
+
+export class CreateStaffDto {
+  @ApiProperty({ example: 'mod@unison.pk' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ example: 'StrongPass123' })
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @ApiProperty({ example: 'mod_ahmed' })
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+
+  @ApiProperty({ example: 'Ahmed Moderator' })
+  @IsString()
+  @IsNotEmpty()
+  display_name: string;
+
+  @ApiProperty({ enum: ['admin', 'moderator'], example: 'moderator' })
+  @IsEnum(['admin', 'moderator'])
+  role: 'admin' | 'moderator';
 }
