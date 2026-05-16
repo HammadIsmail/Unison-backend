@@ -263,8 +263,14 @@ export class AnnouncementResponseDto {
     @ApiPropertyOptional({ example: 'image', enum: ['image', 'video'] })
     media_type?: string;
 
-    @ApiProperty({ example: 'admin-uuid-123' })
-    created_by_admin: string;
+    @ApiProperty({ 
+        example: { id: 'admin-uuid-123', name: 'UNISON Administration' },
+        description: 'Details of the admin who created this announcement'
+    })
+    created_by_admin: {
+        id: string;
+        name: string;
+    };
 
     @ApiProperty({ example: '2025-05-12T10:00:00Z' })
     created_at: string;

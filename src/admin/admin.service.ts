@@ -1055,6 +1055,17 @@ export class AdminService {
       this.announcementModel.countDocuments(),
     ]);
 
+    // Fetch admin names from Neo4j in bulk
+    const adminIds = [...new Set(data.map(a => a.created_by_admin))];
+    const adminResult = await this.neo4j.run(
+      `MATCH (u:User) WHERE u.id IN $adminIds RETURN u.id AS id, u.display_name AS name, u.username AS username`,
+      { adminIds }
+    );
+    const adminMap = new Map();
+    adminResult.records.forEach(r => {
+      adminMap.set(r.get('id'), r.get('name') || r.get('username') || 'Unknown Admin');
+    });
+
     return {
       total,
       page,
@@ -1065,7 +1076,10 @@ export class AdminService {
         event_date: a.event_date || null,
         media_url: a.media_url || null,
         media_type: a.media_type || null,
-        created_by_admin: a.created_by_admin,
+        created_by_admin: {
+          id: a.created_by_admin,
+          name: adminMap.get(a.created_by_admin) || 'Unknown Admin'
+        },
         created_at: a.created_at,
       })),
     };
@@ -1077,6 +1091,12 @@ export class AdminService {
       throw new NotFoundException('Announcement not found.');
     }
 
+    const adminResult = await this.neo4j.run(
+      `MATCH (u:User {id: $adminId}) RETURN u.display_name AS name, u.username AS username`,
+      { adminId: announcement.created_by_admin }
+    );
+    const adminName = adminResult.records[0]?.get('name') || adminResult.records[0]?.get('username') || 'Unknown Admin';
+
     return {
       id: announcement._id,
       title: announcement.title,
@@ -1084,7 +1104,10 @@ export class AdminService {
       event_date: announcement.event_date || null,
       media_url: announcement.media_url || null,
       media_type: announcement.media_type || null,
-      created_by_admin: announcement.created_by_admin,
+      created_by_admin: {
+        id: announcement.created_by_admin,
+        name: adminName
+      },
       created_at: announcement.created_at,
     };
   }
