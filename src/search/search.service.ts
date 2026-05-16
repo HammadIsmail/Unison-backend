@@ -52,7 +52,7 @@ export class SearchService {
     query += `
       WITH u, w, collect(DISTINCT s.name) AS skills
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, 
-             u.bio AS bio, u.backDropImage AS backDropImage, w.company_name AS company, w.role AS role, skills
+             u.bio AS bio, u.backDropImage AS backDropImage, u.batch AS batch_year, w.company_name AS company, w.role AS role, skills
       ORDER BY u.created_at DESC
       LIMIT 50
     `;
@@ -68,6 +68,7 @@ export class SearchService {
       backDropImage: r.get('backDropImage') || null,
       company: r.get('company') || null,
       role: r.get('role') || null,
+      batch_year: r.get('batch_year') || null,
       skills: r.get('skills'),
     }));
   }

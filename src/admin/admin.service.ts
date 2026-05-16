@@ -1070,6 +1070,24 @@ export class AdminService {
     };
   }
 
+  async getAnnouncementById(id: string) {
+    const announcement = await this.announcementModel.findById(id).lean().exec();
+    if (!announcement) {
+      throw new NotFoundException('Announcement not found.');
+    }
+
+    return {
+      id: announcement._id,
+      title: announcement.title,
+      description: announcement.description,
+      event_date: announcement.event_date || null,
+      media_url: announcement.media_url || null,
+      media_type: announcement.media_type || null,
+      created_by_admin: announcement.created_by_admin,
+      created_at: announcement.created_at,
+    };
+  }
+
   async deleteAnnouncement(id: string) {
     const result = await this.announcementModel.findByIdAndDelete(id);
     if (!result) throw new NotFoundException('Announcement not found.');

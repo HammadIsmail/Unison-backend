@@ -627,6 +627,26 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 
 ---
 
+### 21b. Get Announcement by ID
+`GET /api/admin/announcements/:id`  
+**Summary**: Fetches complete details of a specific announcement by its MongoDB ID.
+
+**Response (200)**:
+```json
+{
+  "id": "663f1a2b3c4d5e6f78901234",
+  "title": "Annual Convocation 2025",
+  "description": "Join us for the Annual Convocation ceremony at UET Faisalabad.",
+  "event_date": "2025-06-15T10:00:00Z",
+  "media_url": "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg",
+  "media_type": "image",
+  "created_by_admin": "admin-uuid-123",
+  "created_at": "2025-05-12T10:00:00Z"
+}
+```
+
+---
+
 ### 22. Delete Announcement
 `DELETE /api/admin/announcements/:id`  
 **Summary**: Removes an announcement record by its MongoDB ID.

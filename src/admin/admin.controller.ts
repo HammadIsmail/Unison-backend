@@ -290,6 +290,13 @@ export class AdminController {
     return this.adminService.getAnnouncements(parseInt(page) || 1, parseInt(limit) || 10);
   }
 
+  @Get('announcements/:id')
+  @ApiOperation({ summary: 'Get complete details of a single announcement' })
+  @ApiResponse({ status: 200, type: AnnouncementResponseDto })
+  getAnnouncementById(@Param('id') id: string) {
+    return this.adminService.getAnnouncementById(id);
+  }
+
   @Delete('announcements/:id')
   @ApiOperation({ summary: 'Delete an announcement by ID' })
   @ApiResponse({ status: 200 })

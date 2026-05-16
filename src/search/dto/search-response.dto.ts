@@ -28,6 +28,9 @@ export class SearchUserResponseDto {
 
     @ApiPropertyOptional({ example: 'https://cloudinary.com/ahmed_backdrop.jpg' })
     backDropImage?: string;
+
+    @ApiPropertyOptional({ example: '2021' })
+    batch_year?: string;
 }
 
 export class SearchOpportunityResponseDto {
