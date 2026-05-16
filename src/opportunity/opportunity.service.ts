@@ -6,6 +6,7 @@ import { ActivityService, ActivityType } from '../common/activity/activity.servi
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationService } from '../notification/notification.service';
 import { ACTIVE_USER } from '../common/utils/neo4j-filters';
+import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class OpportunityService {
@@ -53,7 +54,17 @@ export class OpportunityService {
        MERGE (s:Skill {name: toLower(skillName)})
        ON CREATE SET s.id = randomUUID()
        MERGE (o)-[:REQUIRES_SKILL]->(s)`,
-      { userId, opportunityId, dto, mediaUrls, now }
+      { 
+        userId, 
+        opportunityId, 
+        dto: {
+          ...dto,
+          description: sanitizeHtml(dto.description),
+          requirements: sanitizeHtml(dto.requirements)
+        }, 
+        mediaUrls, 
+        now 
+      }
     );
 
     await this.activity.logActivity(
@@ -261,7 +272,11 @@ export class OpportunityService {
     const setQuery = setClauses.join(', ');
 
     if (setQuery) {
-      await this.neo4j.run(`MATCH (o:Opportunity {id: $id}) SET ${setQuery} RETURN o`, { id, ...updateData, mediaUrls });
+      const sanitizedData = { ...updateData };
+      if (sanitizedData.description) sanitizedData.description = sanitizeHtml(sanitizedData.description);
+      if (sanitizedData.requirements) sanitizedData.requirements = sanitizeHtml(sanitizedData.requirements);
+      
+      await this.neo4j.run(`MATCH (o:Opportunity {id: $id}) SET ${setQuery} RETURN o`, { id, ...sanitizedData, mediaUrls });
     }
 
     if (required_skills) {

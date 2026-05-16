@@ -5,6 +5,7 @@ import { NotificationService } from '../notification/notification.service';
 import { CreateEventDto, UpdateEventDto, RsvpDto } from './dto/events.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { ACTIVE_USER } from '../common/utils/neo4j-filters';
+import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class EventsService {
@@ -44,7 +45,15 @@ export class EventsService {
       RETURN e
     `;
 
-    const result = await this.neo4j.run(query, { userId, eventId, dto, bannerUrl });
+    const result = await this.neo4j.run(query, { 
+      userId, 
+      eventId, 
+      dto: {
+        ...dto,
+        description: sanitizeHtml(dto.description)
+      }, 
+      bannerUrl 
+    });
     if (!result.records.length) {
       throw new ForbiddenException('Only alumni and admins can create events, or user not found.');
     }
@@ -96,7 +105,10 @@ export class EventsService {
       RETURN e
     `;
 
-    await this.neo4j.run(updateQuery, { eventId, dto, bannerUrl });
+    const resultDto = { ...dto };
+    if (resultDto.description) resultDto.description = sanitizeHtml(resultDto.description);
+
+    await this.neo4j.run(updateQuery, { eventId, dto: resultDto, bannerUrl });
 
     // Notify attendees of update
     const notifyQuery = `

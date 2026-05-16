@@ -15,7 +15,10 @@ export class SearchUserResponseDto {
     company?: string;
 
     @ApiPropertyOptional({ example: 'Software Engineer' })
-    role?: string;
+    job_role?: string;
+
+    @ApiProperty({ example: 'alumni', description: 'Platform role: alumni, student, or partner' })
+    role: string;
 
     @ApiProperty({ type: [String], example: ['Node.js', 'Neo4j'] })
     skills: string[];

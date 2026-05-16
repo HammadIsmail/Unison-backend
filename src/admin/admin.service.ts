@@ -14,6 +14,7 @@ import { Activity } from '../common/activity/schemas/activity.schema';
 import { Message } from '../chat/schemas/message.schema';
 import { Conversation } from '../chat/schemas/conversation.schema';
 import { Announcement } from './schemas/announcement.schema';
+import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class AdminService {
@@ -998,7 +999,7 @@ export class AdminService {
     // Persist announcement record
     const announcement = await this.announcementModel.create({
       title: dto.title,
-      description: dto.description,
+      description: sanitizeHtml(dto.description),
       event_date: dto.event_date,
       media_url,
       media_type,
