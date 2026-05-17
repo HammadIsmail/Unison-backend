@@ -17,20 +17,20 @@ export class SearchService {
     return q.trim().split(/\s+/).map(word => `${word}*`).join(' OR ');
   }
 
-  async searchUsers(display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
+  async searchUsers(currentUserId: string, display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
     let query = '';
-    const params: any = { company, skill, batch_year, degree };
+    const params: any = { currentUserId, company, skill, batch_year, degree };
 
     if (display_name) {
       const luceneQ = this.prepareLuceneQuery(display_name);
       query = `
         CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-        WHERE NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        WHERE u.id <> $currentUserId AND NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     } else {
       query = `
         MATCH (u:User)
-        WHERE NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        WHERE u.id <> $currentUserId AND NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     }
 
@@ -167,16 +167,16 @@ export class SearchService {
     };
   }
 
-  async getSuggestions(q: string) {
+  async getSuggestions(q: string, currentUserId: string) {
     const luceneQ = this.prepareSuggestionQuery(q);
     const query = `
       CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-      WHERE u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
+      WHERE u.id <> $currentUserId AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, u.role AS role
       ORDER BY score DESC
       LIMIT 10
     `;
-    const result = await this.neo4j.run(query);
+    const result = await this.neo4j.run(query, { currentUserId });
     return result.records.map(record => ({
       id: record.get('id'),
       username: record.get('username'),

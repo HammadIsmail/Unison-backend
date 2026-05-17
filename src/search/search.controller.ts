@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Query, Param, Req, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { SearchService } from './search.service';
 import { SearchUserResponseDto, SearchOpportunityResponseDto, UserDetailResponseDto } from './dto/search-response.dto';
@@ -20,13 +20,15 @@ export class SearchController {
   @ApiQuery({ name: 'degree', required: false, type: String, example: 'BSCS' })
   @ApiResponse({ status: 200, type: [SearchUserResponseDto] })
   searchUsers(
+    @Req() req: any,
     @Query('display_name') display_name?: string,
     @Query('company') company?: string,
     @Query('skill') skill?: string,
     @Query('batch_year') batch_year?: string,
     @Query('degree') degree?: string,
   ) {
-    return this.searchService.searchUsers(display_name, company, skill, batch_year, degree);
+    const currentUserId: string = req.user.sub;
+    return this.searchService.searchUsers(currentUserId, display_name, company, skill, batch_year, degree);
   }
 
   @Get('opportunities')
@@ -61,8 +63,9 @@ export class SearchController {
   @ApiOperation({ summary: 'Get user suggestions for search-as-you-type (dropdown)' })
   @ApiQuery({ name: 'q', required: true, type: String, example: 'ahmed' })
   @ApiResponse({ status: 200, description: 'List of matching users' })
-  getSuggestions(@Query('q') q: string) {
+  getSuggestions(@Req() req: any, @Query('q') q: string) {
     if (!q || q.length < 2) return [];
-    return this.searchService.getSuggestions(q);
+    const currentUserId: string = req.user.sub;
+    return this.searchService.getSuggestions(q, currentUserId);
   }
 }
