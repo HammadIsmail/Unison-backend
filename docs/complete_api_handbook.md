@@ -2304,15 +2304,28 @@ Unified view of all platform activity. Requires `Bearer JWT`.
 
 ### 1. Get Feed
 `GET /api/feed`  
-**Summary**: Retrieves a merged, chronological list of announcements, opportunities, and events.
+**Summary**: Retrieves a merged, chronological list of announcements, opportunities, and events. Supports optional filtering by content type for screens that display only one category.
 
 **Query Parameters**:
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `page` | Number | `1` | Page number |
 | `limit` | Number | `10` | Items per page |
+| `type` | Enum | *(none — all types)* | Filter by content type: `announcement`, `opportunity`, or `event` |
 
-**Response (200)**:
+> [!TIP]
+> When `type` is provided, the API queries only the relevant data source (MongoDB for `announcement`, Neo4j for `opportunity`/`event`), making filtered requests faster and the `total` count accurate for that type alone.
+
+**Examples**:
+```
+GET /api/feed                          → All types merged, sorted by date
+GET /api/feed?type=announcement        → Announcements only
+GET /api/feed?type=opportunity         → Opportunities only
+GET /api/feed?type=event               → Events only
+GET /api/feed?type=event&page=2&limit=5
+```
+
+**Response (200) — No filter (all types)**:
 ```json
 {
   "total": 150,
@@ -2340,6 +2353,8 @@ Unified view of all platform activity. Requires `Bearer JWT`.
       "location": "Remote",
       "is_remote": true,
       "opportunity_type": "job",
+      "apply_link": "https://careers.google.com/...",
+      "deadline": "2024-06-30T00:00:00Z",
       "media_url": "https://res.cloudinary.com/...",
       "created_at": "2024-05-14T15:00:00Z",
       "author": {
@@ -2355,10 +2370,44 @@ Unified view of all platform activity. Requires `Bearer JWT`.
       "id": "uuid-event-456",
       "title": "Alumni Homecoming",
       "event_date": "2024-12-01T18:00:00Z",
+      "event_type": "reunion",
       "location": "UET Faisalabad",
-      "media_url": "https://banner.jpg",
-      "attendee_count": 45,
+      "is_online": false,
+      "meeting_link": null,
       "max_attendees": 100,
+      "attendee_count": 45,
+      "media_url": "https://banner.jpg",
+      "created_at": "2024-05-13T12:00:00Z",
+      "author": {
+        "id": "user-uuid",
+        "display_name": "Hammad Ismail",
+        "username": "hammad_i",
+        "profile_picture": "...",
+        "role": "alumni"
+      }
+    }
+  ]
+}
+```
+
+**Response (200) — Filtered (`?type=event`)**:
+```json
+{
+  "total": 32,
+  "page": 1,
+  "data": [
+    {
+      "type": "event",
+      "id": "uuid-event-456",
+      "title": "Alumni Homecoming",
+      "event_date": "2024-12-01T18:00:00Z",
+      "event_type": "reunion",
+      "location": "UET Faisalabad",
+      "is_online": false,
+      "meeting_link": null,
+      "max_attendees": 100,
+      "attendee_count": 45,
+      "media_url": "https://banner.jpg",
       "created_at": "2024-05-13T12:00:00Z",
       "author": {
         "id": "user-uuid",

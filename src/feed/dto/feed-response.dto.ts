@@ -1,98 +1,101 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FeedAuthorDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Author UUID' })
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Author display name' })
   display_name: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Author @username' })
   username?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Author profile picture URL' })
   profile_picture?: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Author role', enum: ['admin', 'alumni', 'student', 'moderator'] })
   role: string;
 }
 
 export class FeedItemDto {
-  @ApiProperty({ enum: ['announcement', 'opportunity', 'event'] })
+  @ApiProperty({
+    enum: ['announcement', 'opportunity', 'event'],
+    description: 'Content type of this feed item',
+  })
   type: 'announcement' | 'opportunity' | 'event';
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Item UUID (MongoDB ObjectId for announcements, Neo4j UUID for others)' })
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Item title' })
   title: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Item description (may contain sanitized HTML)' })
   description: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'ISO 8601 creation timestamp' })
   created_at: string;
 
-  @ApiProperty({ type: FeedAuthorDto })
+  @ApiProperty({ type: FeedAuthorDto, description: 'Author profile info' })
   author: FeedAuthorDto;
 
-  // Shared Media (Announcement, Opportunity media[0], Event banner_url)
-  @ApiPropertyOptional()
+  // ─── Shared ───────────────────────────────────────────────────────────────
+  @ApiPropertyOptional({ description: 'Primary media URL (announcement media, opportunity media[0], event banner)' })
   media_url?: string;
 
-  // Announcement specific
-  @ApiPropertyOptional()
+  // ─── Announcement-specific ────────────────────────────────────────────────
+  @ApiPropertyOptional({ description: '[announcement] Media type', enum: ['image', 'video'] })
   media_type?: string;
 
-  // Opportunity specific
-  @ApiPropertyOptional()
+  // ─── Opportunity-specific ─────────────────────────────────────────────────
+  @ApiPropertyOptional({ description: '[opportunity] Company name' })
   company_name?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[opportunity] Opportunity type', enum: ['job', 'internship', 'freelance', 'other'] })
   opportunity_type?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[opportunity | event] Location or venue' })
   location?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[opportunity] Whether the role is remote' })
   is_remote?: boolean;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[opportunity] Application link URL' })
   apply_link?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[opportunity] Application deadline (ISO 8601)' })
   deadline?: string;
 
-  @ApiPropertyOptional({ type: [String] })
+  @ApiPropertyOptional({ type: [String], description: '[opportunity] Additional media URLs' })
   media?: string[];
 
-  // Event specific
-  @ApiPropertyOptional()
+  // ─── Event-specific ───────────────────────────────────────────────────────
+  @ApiPropertyOptional({ description: '[event] Event date (ISO 8601)' })
   event_date?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[event] Whether the event is online' })
   is_online?: boolean;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[event] Meeting/stream link for online events' })
   meeting_link?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[event] Maximum attendee capacity' })
   max_attendees?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[event] Event type', enum: ['reunion', 'webinar', 'workshop', 'networking', 'other'] })
   event_type?: string;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: '[event] Number of users who RSVP\'d as attending' })
   attendee_count?: number;
 }
 
 export class FeedResponseDto {
-  @ApiProperty({ type: [FeedItemDto] })
-  data: FeedItemDto[];
-
-  @ApiProperty()
+  @ApiProperty({ description: 'Total items matching the query (respects type filter)', example: 150 })
   total: number;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Current page number', example: 1 })
   page: number;
+
+  @ApiProperty({ type: [FeedItemDto], description: 'Feed items sorted newest first, sliced to the requested limit' })
+  data: FeedItemDto[];
 }
