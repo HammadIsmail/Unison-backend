@@ -25,12 +25,12 @@ export class SearchService {
       const luceneQ = this.prepareLuceneQuery(display_name);
       query = `
         CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-        WHERE u.role <> 'admin' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        WHERE NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     } else {
       query = `
         MATCH (u:User)
-        WHERE u.role <> 'admin' AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        WHERE NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     }
 
@@ -137,7 +137,7 @@ export class SearchService {
   async findByUsername(username: string) {
     const query = `
       MATCH (u:User {username: $username, account_status: 'approved'})
-      WHERE (u.is_deleted IS NULL OR u.is_deleted = false) AND u.role <> 'admin'
+      WHERE (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture,
@@ -171,7 +171,7 @@ export class SearchService {
     const luceneQ = this.prepareSuggestionQuery(q);
     const query = `
       CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-      WHERE u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false) AND u.role <> 'admin'
+      WHERE u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, u.role AS role
       ORDER BY score DESC
       LIMIT 10

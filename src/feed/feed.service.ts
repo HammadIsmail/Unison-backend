@@ -20,10 +20,15 @@ export class FeedService {
     const [mongoTotal, neo4jTotalResult] = await Promise.all([
       this.announcementModel.countDocuments(),
       this.neo4j.run(`
-        MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false
-        WITH count(o) AS oppCount
-        MATCH (e:Event) WHERE e.is_deleted IS NULL OR e.is_deleted = false
-        RETURN oppCount + count(e) AS total
+        CALL {
+          MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false
+          RETURN count(o) AS oppCount
+        }
+        CALL {
+          MATCH (e:Event) WHERE e.is_deleted IS NULL OR e.is_deleted = false
+          RETURN count(e) AS eventCount
+        }
+        RETURN oppCount + eventCount AS total
       `),
     ]);
 
@@ -129,7 +134,7 @@ export class FeedService {
         meeting_link: r.get('meeting_link'),
         max_attendees: r.get('max_attendees') ? r.get('max_attendees').toNumber() : null,
         event_type: r.get('event_type'),
-        attendee_count: r.get('attendee_count').toNumber(),
+        attendee_count: r.get('attendee_count') != null ? (typeof r.get('attendee_count').toNumber === 'function' ? r.get('attendee_count').toNumber() : Number(r.get('attendee_count'))) : 0,
         author: {
           id: r.get('author_id'),
           display_name: r.get('author_name'),

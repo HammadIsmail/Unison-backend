@@ -56,7 +56,7 @@ export class ConnectionsService {
     if (userId === targetId) throw new ForbiddenException('Cannot connect with yourself.');
 
     const userResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')} AND u.role <> 'admin'
+      `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.role AS role, u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
       { userId }
     );
@@ -65,7 +65,7 @@ export class ConnectionsService {
     const sender = userResult.records[0].toObject();
 
     const targetResult = await this.neo4j.run(
-      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND t.role <> 'admin' RETURN t.role AS role`,
+      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND NOT t.role IN ['admin', 'moderator'] RETURN t.role AS role`,
       { targetId }
     );
     if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
@@ -95,7 +95,7 @@ export class ConnectionsService {
   async getPendingRequests(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User)-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
-       WHERE ${ACTIVE_USER('u')} AND u.role <> 'admin'
+       WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, r.created_at AS created_at`,
       { userId }
@@ -113,7 +113,7 @@ export class ConnectionsService {
   async getSentPendingRequests(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (me:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(u:User)
-       WHERE ${ACTIVE_USER('u')} AND u.role <> 'admin'
+       WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, r.created_at AS created_at`,
       { userId }
@@ -191,7 +191,7 @@ export class ConnectionsService {
     if (userId === targetId) throw new ForbiddenException('Cannot follow yourself.');
 
     const targetResult = await this.neo4j.run(
-      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND t.role <> 'admin' RETURN t.id`,
+      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND NOT t.role IN ['admin', 'moderator'] RETURN t.id`,
       { targetId }
     );
     if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
@@ -245,7 +245,7 @@ export class ConnectionsService {
   async getFollowers(targetId: string) {
     const result = await this.neo4j.run(
       `MATCH (f:User)-[:FOLLOWS]->(u:User {id: $targetId})
-       WHERE ${ACTIVE_USER('f')} AND f.role <> 'admin'
+       WHERE ${ACTIVE_USER('f')} AND NOT f.role IN ['admin', 'moderator']
        RETURN f.id AS id, f.display_name AS display_name, f.username AS username,
               f.profile_picture AS profile_picture, f.role AS role, f.bio AS bio`,
       { targetId }
@@ -264,7 +264,7 @@ export class ConnectionsService {
   async getFollowing(userId: string) {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $userId})-[:FOLLOWS]->(f:User)
-       WHERE ${ACTIVE_USER('f')} AND f.role <> 'admin'
+       WHERE ${ACTIVE_USER('f')} AND NOT f.role IN ['admin', 'moderator']
        RETURN f.id AS id, f.display_name AS display_name, f.username AS username,
               f.profile_picture AS profile_picture, f.role AS role, f.bio AS bio`,
       { userId }

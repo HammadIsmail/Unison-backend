@@ -10,7 +10,7 @@ export class NetworkService {
       MATCH (u:User {role: 'alumni', account_status: 'approved'})
       WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
-      WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND c.role <> 'admin'
+      WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
       WITH u, count(c) AS connections_count
       RETURN u.id AS alumni_id, u.display_name AS display_name, connections_count,
              toFloat(connections_count) / 100.0 AS centrality_score
@@ -32,7 +32,7 @@ export class NetworkService {
       WHERE (u1.is_deleted IS NULL OR u1.is_deleted = false) AND (u2.is_deleted IS NULL OR u2.is_deleted = false)
       MATCH p = shortestPath((u1)-[:CONNECTED_TO*]-(u2))
       WHERE all(r IN relationships(p) WHERE r.status = 'accepted')
-        AND all(n IN nodes(p) WHERE (n.is_deleted IS NULL OR n.is_deleted = false) AND n.role <> 'admin')
+        AND all(n IN nodes(p) WHERE (n.is_deleted IS NULL OR n.is_deleted = false) AND NOT n.role IN ['admin', 'moderator'])
       RETURN [n in nodes(p) | n.name] AS path, length(p) AS hops
     `;
     const result = await this.neo4j.run(query, { fromId, toId });
@@ -47,7 +47,7 @@ export class NetworkService {
   async getTopCompanies() {
     const query = `
       MATCH (w:WorkExperience)<-[:HAS_EXPERIENCE]-(u:User)
-      WHERE u.role <> 'admin' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+      WHERE NOT u.role IN ['admin', 'moderator'] AND (u.is_deleted IS NULL OR u.is_deleted = false)
       RETURN w.company_name AS company, count(DISTINCT u) AS alumni_count
       ORDER BY alumni_count DESC
       LIMIT 10
@@ -68,7 +68,7 @@ export class NetworkService {
       WITH collect({skill: skill, demand: demand}) AS demanded
       
       MATCH (u:User)-[:HAS_SKILL]->(s2:Skill)
-      WHERE (u.is_deleted IS NULL OR u.is_deleted = false) AND u.role <> 'admin'
+      WHERE (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
       WITH demanded, s2.name AS user_skill, count(DISTINCT u) AS supply
       ORDER BY supply DESC
       WITH demanded, collect({skill: user_skill, supply: supply}) AS supplied
@@ -93,7 +93,7 @@ export class NetworkService {
       WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
-      WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND c.role <> 'admin'
+      WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
       WITH u.batch AS batch, u, collect(DISTINCT w.company_name) AS companies,
            collect(DISTINCT w.role) AS roles, count(DISTINCT c) AS conn_count
       WITH batch, count(u) AS total_alumni, 

@@ -119,7 +119,7 @@ export class ProfilesService {
       MATCH (other:User) WHERE other.id <> $userId 
         AND other.account_status = 'approved'
         AND ${ACTIVE_USER('other')}
-        AND other.role <> 'admin'
+        AND NOT other.role IN ['admin', 'moderator']
         AND NOT (u)-[:CONNECTED_TO]-(other)
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(other)
       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
