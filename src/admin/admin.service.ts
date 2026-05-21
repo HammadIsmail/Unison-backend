@@ -1026,6 +1026,7 @@ export class AdminService {
         this.notification.createNotification(userId, notifMessage, 'announcement', {
           sender_display_name: 'UNISON Administration',
           reference_link: `/announcements/${announcement._id}`,
+          reference_id: announcement._id.toString(),
         }),
       ),
     );

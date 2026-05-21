@@ -123,7 +123,10 @@ export class EventsService {
         attendeeId,
         `An event you RSVP'd to ("${title}") has been updated.`,
         'event_update',
-        { reference_link: `/events/${eventId}` }
+        { 
+          reference_link: `/events/${eventId}`,
+          reference_id: eventId,
+        }
       );
     }
 
@@ -157,7 +160,9 @@ export class EventsService {
         attendeeId,
         `The event "${title}" has been cancelled.`,
         'event_cancelled',
-        {}
+        {
+          reference_id: eventId,
+        }
       );
     }
 
@@ -314,6 +319,7 @@ export class EventsService {
         'new_rsvp',
         { 
           reference_link: `/events/${eventId}`,
+          reference_id: eventId,
           sender_profile_picture: userPic
         }
       );

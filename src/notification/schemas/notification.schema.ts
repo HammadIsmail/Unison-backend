@@ -28,6 +28,9 @@ export class Notification extends Document {
 
   @Prop({ type: String })
   reference_link: string;
+
+  @Prop({ type: String })
+  reference_id: string;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

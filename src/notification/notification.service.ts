@@ -9,6 +9,7 @@ export interface NotificationMetadata {
   sender_display_name?: string;
   sender_profile_picture?: string;
   reference_link?: string;
+  reference_id?: string;
 }
 
 @Injectable()
@@ -38,7 +39,8 @@ export class NotificationService {
       sender_username: n.sender_username || null,
       sender_display_name: n.sender_display_name || null,
       sender_profile_picture: n.sender_profile_picture || null,
-      reference_link: (['new_opportunity', 'connection_request', 'new_message'].includes(n.type)) ? (n.reference_link || null) : undefined,
+      reference_link: (['new_opportunity', 'connection_request', 'new_message', 'announcement', 'event_update', 'new_rsvp', 'event_cancelled'].includes(n.type)) ? (n.reference_link || null) : undefined,
+      reference_id: n.reference_id || null,
     }));
   }
 
@@ -81,6 +83,7 @@ export class NotificationService {
       sender_display_name: metadata?.sender_display_name,
       sender_profile_picture: metadata?.sender_profile_picture,
       reference_link: metadata?.reference_link,
+      reference_id: metadata?.reference_id,
     }) as Notification;
 
     // Push real-time via gateway
@@ -93,7 +96,8 @@ export class NotificationService {
       sender_username: metadata?.sender_username || null,
       sender_display_name: metadata?.sender_display_name || null,
       sender_profile_picture: metadata?.sender_profile_picture || null,
-      reference_link: (['new_opportunity', 'connection_request', 'new_message'].includes(type)) ? (metadata?.reference_link || null) : undefined
+      reference_link: (['new_opportunity', 'connection_request', 'new_message', 'announcement', 'event_update', 'new_rsvp', 'event_cancelled'].includes(type)) ? (metadata?.reference_link || null) : undefined,
+      reference_id: metadata?.reference_id || null,
     });
 
     return { id: notification._id, message, type, created_at: notification.created_at };

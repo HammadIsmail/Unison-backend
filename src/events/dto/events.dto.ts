@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsEnum, IsBoolean, IsOptional, IsNumber, Min, IsDateString, IsUrl } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export enum EventType {
   REUNION = 'reunion',
@@ -29,6 +30,10 @@ export class CreateEventDto {
   date: string;
 
   @ApiProperty({ example: true })
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    return value === 'true' || value === true;
+  })
   @IsBoolean()
   is_online: boolean;
 
@@ -44,6 +49,11 @@ export class CreateEventDto {
 
   @ApiPropertyOptional({ example: 100 })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const num = Number(value);
+    return isNaN(num) ? value : num;
+  })
   @IsNumber()
   @Min(1)
   max_attendees?: number;
@@ -72,6 +82,10 @@ export class UpdateEventDto {
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    return value === 'true' || value === true;
+  })
   @IsBoolean()
   is_online?: boolean;
 
@@ -87,6 +101,11 @@ export class UpdateEventDto {
 
   @ApiPropertyOptional({ example: 150 })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    const num = Number(value);
+    return isNaN(num) ? value : num;
+  })
   @IsNumber()
   @Min(1)
   max_attendees?: number;
