@@ -27,4 +27,7 @@ export class NotificationResponseDto {
 
     @ApiProperty({ example: '/opportunities/uuid-123', required: false })
     reference_link?: string;
+
+    @ApiProperty({ example: '65f12345ab6789cd12345678', required: false })
+    reference_id?: string;
 }

@@ -1738,21 +1738,28 @@ Advanced graph analytics. Requires `Bearer JWT`. Restriction: `admin`.
 ---
 
 ## 📬 Notifications
-Requires `Bearer JWT`. Notifications are both **persisted in Neo4j** and **delivered in real-time** via Socket.io for online users.
+Requires `Bearer JWT`. Notifications are both **persisted in MongoDB** and **delivered in real-time** via Socket.io for online users.
 
 ### Notification Types
 | `type` | When it is sent |
 | :--- | :--- |
-| `connection_request` | An alumni or student sends a connection request |
-| `connection_accepted` | The recipient accepts a connection request |
+| `connection_request` | An alumni or student sends a professional connection request |
+| `connection_accepted` | A connection request is accepted |
 | `account_approved` | Admin approves a pending user account |
 | `account_rejected` | Admin rejects a pending user account |
 | `new_opportunity` | An alumni/admin posts a new opportunity (broadcast to all) |
+| `announcement` | Admin broadcasts an announcement |
+| `event_update` | A host updates an event (sent to all RSVP'd attendees) |
+| `event_cancelled` | A host cancels/deletes an event (sent to all RSVP'd attendees) |
+| `new_rsvp` | A user RSVPs "attending" to a host's event (sent to host) |
+| `new_message` | A user sends a direct chat message |
+| `profile_upgraded` | Admin approves student upgrade to alumni |
+| `upgrade_rejected` | Admin rejects student upgrade to alumni |
 
 ### Notification Payload Structure
 ```typescript
 interface NotificationPayload {
-  id: string;          // UUID of the notification
+  id: string;          // UUID/ObjectID of the notification
   message: string;     // Human-readable message
   type: string;        // See notification types above
   created_at: string;  // ISO 8601 timestamp
@@ -1760,7 +1767,8 @@ interface NotificationPayload {
   sender_username?: string | null;
   sender_display_name?: string | null;
   sender_profile_picture?: string | null;
-  reference_link?: string | null; // Only for 'new_opportunity' and 'connection_request'
+  reference_link?: string | null; // Only for 'new_opportunity', 'connection_request', 'new_message', 'announcement', 'event_update', 'new_rsvp', 'event_cancelled'
+  reference_id?: string | null;   // The UUID or ObjectID of the related resource (Event, Announcement, Opportunity, Connection, Message, etc.)
 }
 ```
 
@@ -1772,8 +1780,8 @@ interface NotificationPayload {
 
 **Query Parameters**:
 | Parameter | Type | Status | Description |
-+| :--- | :--- | :--- | :--- |
-+| `read` | String | *Optional* | Filter by read status (`true` or `false`). Returns all if omitted. |
+| :--- | :--- | :--- | :--- |
+| `read` | String | *Optional* | Filter by read status (`true` or `false`). Returns all if omitted. |
 
 **Response (200)**:
 ```json
@@ -1787,7 +1795,8 @@ interface NotificationPayload {
     "sender_username": "ahmed123",
     "sender_display_name": "Ahmed Hassan",
     "sender_profile_picture": "https://example.com/ahmed.jpg",
-    "reference_link": "/network/requests"
+    "reference_link": "/network/requests",
+    "reference_id": "uuid-connection-req-123"
   },
   {
     "id": "uuid-notification-789",
@@ -1798,7 +1807,8 @@ interface NotificationPayload {
     "sender_username": "hammad_i",
     "sender_display_name": "Google",
     "sender_profile_picture": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-    "reference_link": "/opportunities/uuid-opp-123"
+    "reference_link": "/opportunities/uuid-opp-123",
+    "reference_id": "uuid-opp-123"
   }
 ]
 ```
