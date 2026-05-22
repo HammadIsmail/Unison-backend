@@ -253,7 +253,7 @@ export class FeedService {
           : undefined,
         is_online: r.get('is_online'),
         meeting_link: r.get('meeting_link'),
-        max_attendees: r.get('max_attendees') ? r.get('max_attendees').toNumber() : null,
+        max_attendees: r.get('max_attendees') ? (typeof r.get('max_attendees').toNumber === 'function' ? r.get('max_attendees').toNumber() : Number(r.get('max_attendees'))) : null,
         event_type: r.get('event_type'),
         attendee_count:
           r.get('attendee_count') != null

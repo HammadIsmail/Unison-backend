@@ -224,7 +224,7 @@ export class EventsService {
       location: r.get('location') || null,
       banner_url: r.get('banner_url') || null,
       attendee_count: r.get('attendee_count').toNumber(),
-      max_attendees: r.get('max_attendees') ? r.get('max_attendees').toNumber() : null,
+      max_attendees: r.get('max_attendees') ? (typeof r.get('max_attendees').toNumber === 'function' ? r.get('max_attendees').toNumber() : Number(r.get('max_attendees'))) : null,
       host: {
         id: r.get('host_id'),
         name: r.get('host_name'),
@@ -259,7 +259,7 @@ export class EventsService {
       is_online: e.is_online,
       location: e.location || null,
       meeting_link: e.meeting_link || null,
-      max_attendees: e.max_attendees ? e.max_attendees.toNumber() : null,
+      max_attendees: e.max_attendees ? (typeof e.max_attendees.toNumber === 'function' ? e.max_attendees.toNumber() : Number(e.max_attendees)) : null,
       banner_url: e.banner_url || null,
       created_at: e.created_at ? new Date(e.created_at.toString()).toISOString() : null,
       attendee_count: record.get('attendee_count').toNumber(),
@@ -285,7 +285,7 @@ export class EventsService {
     const checkResult = await this.neo4j.run(checkQuery, { eventId });
     if (!checkResult.records.length) throw new NotFoundException('Upcoming event not found.');
 
-    const max = checkResult.records[0].get('max') ? checkResult.records[0].get('max').toNumber() : null;
+    const max = checkResult.records[0].get('max') ? (typeof checkResult.records[0].get('max').toNumber === 'function' ? checkResult.records[0].get('max').toNumber() : Number(checkResult.records[0].get('max'))) : null;
     const current = checkResult.records[0].get('current_attendees').toNumber();
     const hostId = checkResult.records[0].get('host_id');
     const title = checkResult.records[0].get('title');
