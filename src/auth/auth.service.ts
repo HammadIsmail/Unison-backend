@@ -52,14 +52,18 @@ export class AuthService {
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────
     async sendOtp(dto: SendOtpDto) {
-        // Check for existing OTP to enforce rate limit (1 min)
+        // Check for existing OTP to enforce rolling rate limit (60 s per resend)
         const existing = await this.otpModel.findOne({ email: dto.email, type: dto.type });
 
         if (existing) {
             const diff = Date.now() - existing.last_sent_at.getTime();
             if (diff < 60000) {
+                const secondsLeft = Math.ceil((60000 - diff) / 1000);
                 throw new HttpException(
-                    'Please wait 1 minute before requesting another OTP.',
+                    {
+                        message: 'Please wait before requesting another OTP.',
+                        retry_after_seconds: secondsLeft,
+                    },
                     HttpStatus.TOO_MANY_REQUESTS,
                 );
             }
@@ -254,10 +258,51 @@ export class AuthService {
             throw new UnauthorizedException('Invalid email or password.');
         }
 
+        // ── Check lockout ─────────────────────────────────────────────────────
+        if (auth.login_locked_until && auth.login_locked_until > new Date()) {
+            const secondsLeft = Math.ceil((auth.login_locked_until.getTime() - Date.now()) / 1000);
+            this.logger.warn(`Login blocked (locked) for ${email}, ${secondsLeft}s remaining`);
+            throw new HttpException(
+                {
+                    message: 'Too many failed login attempts. Please try again later.',
+                    retry_after_seconds: secondsLeft,
+                },
+                HttpStatus.TOO_MANY_REQUESTS,
+            );
+        }
+
         const passwordMatch = await bcrypt.compare(dto.password, auth.password);
         if (!passwordMatch) {
             this.logger.warn(`Login failed: Password mismatch for ${email}`);
+
+            const attempts = (auth.login_attempts || 0) + 1;
+            if (attempts >= 3) {
+                // Lock for 5 minutes
+                const lockUntil = new Date(Date.now() + 5 * 60 * 1000);
+                await this.userAuthModel.updateOne(
+                    { email },
+                    { login_attempts: 0, login_locked_until: lockUntil },
+                );
+                const secondsLeft = Math.ceil((lockUntil.getTime() - Date.now()) / 1000);
+                throw new HttpException(
+                    {
+                        message: 'Too many failed login attempts. Please try again later.',
+                        retry_after_seconds: secondsLeft,
+                    },
+                    HttpStatus.TOO_MANY_REQUESTS,
+                );
+            }
+
+            await this.userAuthModel.updateOne({ email }, { login_attempts: attempts });
             throw new UnauthorizedException('Invalid email or password.');
+        }
+
+        // ── Password correct — reset counters ─────────────────────────────────
+        if ((auth.login_attempts ?? 0) > 0 || auth.login_locked_until) {
+            await this.userAuthModel.updateOne(
+                { email },
+                { login_attempts: 0, login_locked_until: null },
+            );
         }
 
         if (auth.account_status === 'pending') {

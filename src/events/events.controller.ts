@@ -32,7 +32,7 @@ export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
   @Post()
-  @Roles('admin', 'alumni')
+  @Roles('admin', 'alumni', 'partner')
   @UseInterceptors(FileInterceptor('banner'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new event (Admin/Alumni only)' })
@@ -54,7 +54,7 @@ export class EventsController {
   }
 
   @Put(':id')
-  @Roles('admin', 'alumni')
+  @Roles('admin', 'alumni', 'partner')
   @UseInterceptors(FileInterceptor('banner'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update an event' })
@@ -77,7 +77,7 @@ export class EventsController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'alumni')
+  @Roles('admin', 'alumni', 'partner')
   @ApiOperation({ summary: 'Cancel/Delete an event' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteEvent(

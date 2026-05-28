@@ -50,6 +50,15 @@ export class UserAuth extends Document {
   /** UUID of the admin who restored the account */
   @Prop({ type: String })
   restored_by: string;
+
+  // ─── Login Rate Limiting ──────────────────────────────────────────────────
+  /** Number of consecutive failed login attempts */
+  @Prop({ type: Number, default: 0 })
+  login_attempts: number;
+
+  /** Timestamp until which login is locked (null = not locked) */
+  @Prop({ type: Date, default: null })
+  login_locked_until: Date | null;
 }
 
 export const UserAuthSchema = SchemaFactory.createForClass(UserAuth);

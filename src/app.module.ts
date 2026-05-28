@@ -27,6 +27,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { EventsModule } from './events/events.module';
 import { FeedModule } from './feed/feed.module';
+import { PartnerModule } from './partner/partner.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { FeedModule } from './feed/feed.module';
     ChatModule,
     EventsModule,
     FeedModule,
+    PartnerModule,
   ],
   controllers: [AppController],
   providers: [

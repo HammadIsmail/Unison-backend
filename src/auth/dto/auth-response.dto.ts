@@ -5,11 +5,19 @@ export { SuccessResponseDto };
 
 
 export class OtpResponseDto {
-    @ApiProperty({ example: 'Operation successful.' })
+    @ApiProperty({ example: 'OTP sent to your email.' })
     message: string;
 
     @ApiProperty({ example: '10 minutes' })
     otp_expires_in: string;
+}
+
+export class RateLimitResponseDto {
+    @ApiProperty({ example: 'Please wait before requesting another OTP.' })
+    message: string;
+
+    @ApiProperty({ example: 47, description: 'Seconds to wait before retrying' })
+    retry_after_seconds: number;
 }
 
 export class VerifyOtpResponseDto {

@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-@Schema({ timestamps: { createdAt: 'last_sent_at', updatedAt: 'last_sent_at' } })
+@Schema({ timestamps: { createdAt: 'created_at', updatedAt: 'last_sent_at' } })
 export class OTPRecord extends Document {
+  created_at: Date;
   last_sent_at: Date;
 
   @Prop({ type: String, required: true, index: true })

@@ -22,7 +22,7 @@ export class SkillController {
   }
 
   @Delete(':skill_id')
-  @Roles('student', 'alumni')
+  @Roles('student', 'alumni', 'partner')
   @ApiOperation({ summary: 'Remove a skill from your profile (shared for students and alumni)' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteSkill(@GetUser('sub') userId: string, @Param('skill_id') skillId: string) {

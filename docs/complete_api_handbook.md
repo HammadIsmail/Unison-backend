@@ -22,7 +22,15 @@ Handle user entry, verification, and security.
 ```
 
 > [!IMPORTANT]
-> **Rate Limiting**: Users can only request one OTP every 1 minute per email and type. Subsequent requests within this window will return a `429 Too Many Requests` error.
+> **Rate Limiting**: Each OTP send triggers a **60-second rolling cooldown** per email + type. Subsequent requests within this window return `429 Too Many Requests` with a `retry_after_seconds` field so the client can show an accurate countdown.
+
+**Error Response (429)**:
+```json
+{
+  "message": "Please wait before requesting another OTP.",
+  "retry_after_seconds": 47
+}
+```
 
 
 ---
@@ -68,7 +76,7 @@ Handle user entry, verification, and security.
 | `job_title` | String | *Optional* | **Partner Only** (e.g. `HR Manager`) |
 | `graduation_year`| Number | *Optional* | **Alumni Only** (Required for graduates) |
 | `semester` | Number | *Optional* | **Student Only** (Required for students) |
-| `batch` | String | **Required** | Batch year (e.g., `2021`) |
+| `batch` | String | *Optional* | **Alumni / Student Only** — auto-computed for alumni if omitted |
 
 **Response (201)**:
 ```json
@@ -109,7 +117,16 @@ Handle user entry, verification, and security.
 }
 ```
 
----
+> [!WARNING]
+> **Brute-Force Protection**: After **3 consecutive wrong passwords**, the account is locked for **5 minutes**. Further attempts (or the 3rd failing attempt itself) return `429 Too Many Requests` with `retry_after_seconds` so the frontend can display a live countdown.
+
+**Error Response (429 — account locked)**:
+```json
+{
+  "message": "Too many failed login attempts. Please try again later.",
+  "retry_after_seconds": 298
+}
+```
 
 ### 5. Reset Password
 `POST /api/auth/reset-password`  
@@ -703,7 +720,7 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 ---
 
 ## 👤 Alumni
-Requires `Bearer JWT`. Role restriction: `alumni`.
+Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner` (partners have full alumni-level access on all routes in this section).
 
 ### 1. Get My Profile
 `GET /api/alumni/me`  
@@ -943,6 +960,68 @@ Requires `Bearer JWT`. Role restriction: `alumni`.
 ---
 
 ---
+
+---
+
+## 🤝 Partner
+Requires `Bearer JWT`. Role restriction: `partner` only.
+
+> [!NOTE]
+> Partners also have access to **all** routes in the 👤 Alumni section, as well as Opportunities (create/edit/delete/my-posts), Events (create/edit/delete), Network skill-trends, and skill management.
+
+### 1. Get My Profile
+`GET /api/partner/me`  
+**Summary**: Retrieves the full profile of the logged-in partner.
+
+**Response (200)**:
+```json
+{
+  "username": "google_hr",
+  "display_name": "John Smith",
+  "email": "john@google.com",
+  "bio": "Connecting talent with opportunity.",
+  "affiliation": "Google",
+  "job_title": "Talent Acquisition Manager",
+  "phone": "+923001234567",
+  "linkedin_url": "https://linkedin.com/in/johnsmith",
+  "profile_picture": "https://cloudinary.com/profile.jpg",
+  "backDropImage": "https://cloudinary.com/backdrop.jpg",
+  "connections_count": 12
+}
+```
+
+---
+
+### 2. Update My Profile
+`PUT /api/partner/me`  
+**Summary**: Updates partner profile information including optional image uploads.
+
+**Request**: `multipart/form-data`
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `bio` | String | *Optional* | Professional summary |
+| `affiliation` | String | *Optional* | Company or organisation name |
+| `job_title` | String | *Optional* | Your role at the company |
+| `phone` | String | *Optional* | Contact number |
+| `linkedin_url` | String | *Optional* | LinkedIn profile URL |
+| `profile_picture` | File | *Optional* | Profile picture (binary) |
+| `backDropImage` | File | *Optional* | Backdrop cover image (binary) |
+
+**Response (200)**:
+```json
+{ "message": "Profile updated successfully." }
+```
+
+---
+
+### 3. Delete Account
+`DELETE /api/partner/me`  
+**Summary**: Soft-deletes your partner account. Historical data is preserved.
+
+**Response (200)**:
+```json
+{ "message": "Your account has been soft-deleted. Historical data is preserved." }
+```
 
 ---
 

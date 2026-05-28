@@ -27,7 +27,7 @@ export class AlumniController {
 
 
   @Get('me')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Get your own alumni profile' })
   @ApiResponse({ status: 200, type: AlumniProfileResponseDto })
   getMe(@GetUser('sub') userId: string) {
@@ -35,7 +35,7 @@ export class AlumniController {
   }
 
   @Put('me')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'profile_picture', maxCount: 1 },
     { name: 'backDropImage', maxCount: 1 },
@@ -53,7 +53,7 @@ export class AlumniController {
 
 
   @Post('work-experience')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Add a new work experience record' })
   @ApiResponse({ status: 201, type: SuccessResponseDto })
   addWorkExperience(@GetUser('sub') userId: string, @Body() dto: CreateWorkExperienceDto) {
@@ -61,7 +61,7 @@ export class AlumniController {
   }
 
   @Put('work-experience/:id')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Update an existing work experience record' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   updateWorkExperience(
@@ -73,7 +73,7 @@ export class AlumniController {
   }
 
   @Delete('work-experience/:id')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Delete a work experience record' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteWorkExperience(@GetUser('sub') userId: string, @Param('id') expId: string) {
@@ -81,7 +81,7 @@ export class AlumniController {
   }
 
   @Post('skills')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Add a new skill to your profile' })
   @ApiResponse({ status: 201, type: SuccessResponseDto })
   addSkill(@GetUser('sub') userId: string, @Body() dto: AddSkillDto) {
@@ -89,7 +89,7 @@ export class AlumniController {
   }
 
   @Post('education')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Add a new education record' })
   @ApiResponse({ status: 201, type: SuccessResponseDto })
   addEducation(@GetUser('sub') userId: string, @Body() dto: CreateEducationDto) {
@@ -97,7 +97,7 @@ export class AlumniController {
   }
 
   @Put('education/:id')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Update an existing education record' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   updateEducation(
@@ -109,7 +109,7 @@ export class AlumniController {
   }
 
   @Delete('education/:id')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Delete an education record' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteEducation(@GetUser('sub') userId: string, @Param('id') eduId: string) {
@@ -118,7 +118,7 @@ export class AlumniController {
 
 
   @Get('connections')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Get your accepted connections' })
   @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getConnections(@GetUser('sub') userId: string) {
@@ -126,7 +126,7 @@ export class AlumniController {
   }
 
   @Get('batch-mates')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Find your batch mates' })
   @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
   getBatchMates(@GetUser('sub') userId: string) {
@@ -134,7 +134,7 @@ export class AlumniController {
   }
 
   @Delete('me')
-  @Roles('alumni')
+  @Roles('alumni', 'partner')
   @ApiOperation({ summary: 'Permanently delete your alumni account' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteMe(@GetUser('sub') userId: string) {

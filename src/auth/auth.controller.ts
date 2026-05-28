@@ -14,6 +14,7 @@ import {
     SuccessResponseDto,
     OtpResponseDto,
     VerifyOtpResponseDto,
+    RateLimitResponseDto,
 } from './dto/auth-response.dto';
 
 @ApiTags('Authentication')
@@ -24,6 +25,7 @@ export class AuthController {
     @Post('send-otp')
     @ApiOperation({ summary: 'Send OTP to email for verification or forgot password' })
     @ApiResponse({ status: 201, type: OtpResponseDto })
+    @ApiResponse({ status: 429, description: 'Rate limited — retry_after_seconds tells the client how long to wait', type: RateLimitResponseDto })
     sendOtp(@Body() dto: SendOtpDto) {
         return this.authService.sendOtp(dto);
     }
@@ -50,6 +52,7 @@ export class AuthController {
     @Post('login')
     @ApiOperation({ summary: 'Login and receive a JWT token' })
     @ApiResponse({ status: 201, type: LoginResponseDto })
+    @ApiResponse({ status: 429, description: 'Account locked after 3 wrong passwords — retry_after_seconds tells the client how long to wait', type: RateLimitResponseDto })
     login(@Body() dto: LoginDto) {
         return this.authService.login(dto);
     }

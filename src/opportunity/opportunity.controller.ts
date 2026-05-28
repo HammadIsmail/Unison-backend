@@ -23,7 +23,7 @@ export class OpportunityController {
   constructor(private readonly opportunityService: OpportunityService) {}
 
   @Post()
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'admin', 'partner')
   @UseInterceptors(FilesInterceptor('media', 10))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Post a new job or internship opportunity with optional images/videos (max 5)' })
@@ -58,7 +58,7 @@ export class OpportunityController {
   }
 
   @Get('my-posts')
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'admin', 'partner')
   @ApiOperation({ summary: 'Get opportunities posted by you' })
   @ApiResponse({ status: 200, type: [MyOpportunityPostResponseDto] })
   findMyPosts(@GetUser('sub') userId: string) {
@@ -73,7 +73,7 @@ export class OpportunityController {
   }
 
   @Put(':id')
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'admin', 'partner')
   @UseInterceptors(FilesInterceptor('media', 10))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update an opportunity with optional images/videos' })
@@ -92,7 +92,7 @@ export class OpportunityController {
   }
 
   @Delete(':id')
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'admin', 'partner')
   @ApiOperation({ summary: 'Delete an opportunity' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   remove(

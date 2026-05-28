@@ -44,7 +44,7 @@ export class NetworkController {
   }
 
   @Get('skill-trends')
-  @Roles('admin', 'alumni', 'student')
+  @Roles('admin', 'alumni', 'student', 'partner')
   @ApiOperation({ summary: 'Analyze skill supply and demand' })
   @ApiResponse({ status: 200, type: SkillTrendResponseDto })
   getSkillTrends() {
