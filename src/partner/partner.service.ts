@@ -120,6 +120,29 @@ export class PartnerService {
     return { message: 'Profile updated successfully.' };
   }
 
+  async getConnections(userId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
+       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+       RETURN c.id AS id, c.display_name AS display_name, c.username AS username,
+              c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage,
+              w.company_name AS company, w.role AS role`,
+      { userId },
+    );
+
+    return result.records.map((r) => ({
+      id: r.get('id'),
+      display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture') || null,
+      bio: r.get('bio') || null,
+      backDropImage: r.get('backDropImage') || null,
+      company: r.get('company') || null,
+      role: r.get('role') || null,
+    }));
+  }
+
   async deleteAccount(userId: string) {
     const now = new Date().toISOString();
 

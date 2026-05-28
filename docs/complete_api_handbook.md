@@ -1014,7 +1014,32 @@ Requires `Bearer JWT`. Role restriction: `partner` only.
 
 ---
 
-### 3. Delete Account
+### 3. Get My Connections
+`GET /api/partner/connections`  
+**Summary**: Retrieves the list of all accepted professional connections for the logged-in partner.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user-123",
+    "display_name": "Ali Khan",
+    "username": "alikhan",
+    "profile_picture": "https://cloudinary.com/profile.jpg",
+    "bio": "Passionate about web development.",
+    "backDropImage": "https://cloudinary.com/backdrop.jpg",
+    "company": "Microsoft",
+    "role": "Product Manager"
+  }
+]
+```
+
+> [!NOTE]
+> Returns only connections with `status: 'accepted'`. Deleted and admin/moderator accounts are automatically excluded. The `company` and `role` fields reflect the connection's current active work experience (if any).
+
+---
+
+### 4. Delete Account
 `DELETE /api/partner/me`  
 **Summary**: Soft-deletes your partner account. Historical data is preserved.
 

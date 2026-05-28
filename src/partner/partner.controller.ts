@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '
 import { PartnerService } from './partner.service';
 import { UpdatePartnerProfileDto } from './dto/partner.dto';
 import { PartnerProfileResponseDto } from './dto/partner-response.dto';
+import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -43,6 +44,14 @@ export class PartnerController {
     files?: { profile_picture?: Express.Multer.File[]; backDropImage?: Express.Multer.File[] },
   ) {
     return this.partnerService.updateProfile(userId, dto, files);
+  }
+
+  @Get('connections')
+  @Roles('partner')
+  @ApiOperation({ summary: 'Get your accepted professional connections' })
+  @ApiResponse({ status: 200, type: [NetworkUserResponseDto] })
+  getConnections(@GetUser('sub') userId: string) {
+    return this.partnerService.getConnections(userId);
   }
 
   @Delete('me')
