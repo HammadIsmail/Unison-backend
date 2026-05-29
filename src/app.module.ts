@@ -28,6 +28,7 @@ import { AppService } from './app.service';
 import { EventsModule } from './events/events.module';
 import { FeedModule } from './feed/feed.module';
 import { PartnerModule } from './partner/partner.module';
+import { ProfileManagementModule } from './profile-management/profile-management.module';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { PartnerModule } from './partner/partner.module';
     EventsModule,
     FeedModule,
     PartnerModule,
+    ProfileManagementModule,
   ],
   controllers: [AppController],
   providers: [

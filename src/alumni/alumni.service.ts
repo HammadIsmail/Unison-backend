@@ -7,6 +7,7 @@ import {
   CreateWorkExperienceDto,
   UpdateWorkExperienceDto,
   AddSkillDto,
+  UpdateSkillDto,
   CreateEducationDto,
   UpdateEducationDto,
 } from './dto/alumni.dto';
@@ -215,6 +216,8 @@ export class AlumniService {
     return { message: 'Work experience removed successfully.' };
   }
 
+  // ── Unified Skill Methods (accessible by alumni, partner, student) ──────────
+
   async addSkill(userId: string, dto: AddSkillDto) {
     const skillId = uuidv4();
     await this.neo4j.run(
@@ -228,6 +231,44 @@ export class AlumniService {
 
     return { message: 'Skill added successfully.' };
   }
+
+  async updateSkill(userId: string, skillId: string, dto: UpdateSkillDto) {
+    const updates: string[] = [];
+    if (dto.proficiency_level !== undefined) updates.push('r.proficiency_level = $proficiency_level');
+    if (dto.years_experience !== undefined) updates.push('r.years_experience = $years_experience');
+
+    if (!updates.length) return { message: 'No fields to update.' };
+
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
+       SET ${updates.join(', ')}
+       RETURN r`,
+      { userId, skillId, ...dto }
+    );
+
+    if (!result.records.length) {
+      throw new NotFoundException('Skill not found on your profile.');
+    }
+
+    return { message: 'Skill updated successfully.' };
+  }
+
+  async deleteSkill(userId: string, skillId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
+       DELETE r
+       RETURN count(r) AS cnt`,
+      { userId, skillId }
+    );
+
+    if (result.records[0].get('cnt').toNumber() === 0) {
+      throw new NotFoundException('Skill not found on your profile.');
+    }
+
+    return { message: 'Skill removed successfully.' };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   async addEducation(userId: string, dto: CreateEducationDto) {
     const eduId = uuidv4();

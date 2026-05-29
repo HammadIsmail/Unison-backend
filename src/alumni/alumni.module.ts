@@ -16,5 +16,6 @@ import { UserAuth, UserAuthSchema } from '../auth/schemas/user-auth.schema';
   ],
   controllers: [AlumniController],
   providers: [AlumniService],
+  exports: [AlumniService],
 })
 export class AlumniModule {}

@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto } from './dto/student.dto';
-import { v4 as uuidv4 } from 'uuid';
+import { UpdateStudentProfileDto } from './dto/student.dto';
 import { NotificationService } from '../notification/notification.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -114,19 +113,8 @@ export class StudentService {
     return { message: 'Profile updated successfully.' };
   }
 
-  async addSkill(userId: string, dto: AddStudentSkillDto) {
-    const skillId = uuidv4();
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId, role: 'student'})
-       MERGE (s:Skill {name: toLower($dto.skill_name)})
-       ON CREATE SET s.id = $skillId, s.category = $dto.category
-       MERGE (u)-[r:HAS_SKILL]->(s)
-       SET r.proficiency_level = $dto.proficiency_level`,
-      { userId, skillId, dto }
-    );
-
-    return { message: 'Skill added successfully.' };
-  }
+  // Skill management (add/update/delete) is unified under AlumniService.
+  // Students use POST/PUT/DELETE /api/alumni/skills via @Roles('alumni','partner','student').
 
 
 

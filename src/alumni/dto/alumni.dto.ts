@@ -104,6 +104,18 @@ export class AddSkillDto {
   years_experience?: number;
 }
 
+export class UpdateSkillDto {
+  @ApiPropertyOptional({ description: 'Updated proficiency level', enum: ['beginner', 'intermediate', 'expert'], example: 'expert' })
+  @IsOptional()
+  @IsEnum(['beginner', 'intermediate', 'expert'])
+  proficiency_level?: string;
+
+  @ApiPropertyOptional({ description: 'Updated years of experience in this skill', example: 5 })
+  @IsOptional()
+  @IsInt()
+  years_experience?: number;
+}
+
 export class CreateEducationDto {
   @ApiProperty({ description: 'Name of the university', example: 'UET Lahore' })
   @IsNotEmpty()
@@ -153,4 +165,3 @@ export class UpdateEducationDto {
   @IsBoolean()
   is_current?: boolean;
 }
-

@@ -720,7 +720,10 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 ---
 
 ## 👤 Alumni
-Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner` (partners have full alumni-level access on all routes in this section).
+Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner`.
+
+> [!NOTE]
+> Work-experience, skills, and education management has moved to the **📋 Profile Management** section (`/api/profile/`) which uses semantically correct, role-neutral paths.
 
 ### 1. Get My Profile
 `GET /api/alumni/me`  
@@ -773,126 +776,7 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner` (partners hav
 
 ---
 
-### 3. Add Work Experience
-`POST /api/alumni/work-experience`  
-**Summary**: Records a new job or role in the profile.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `company_name` | String | **Required** | Name of the employer |
-| `role` | String | **Required** | Your job title |
-| `start_date` | Date | **Required** | Start date (YYYY-MM-DD) |
-| `end_date` | Date | *Optional* | End date (if applicable) |
-| `is_current` | Boolean| **Required** | Set `true` if this is your current job |
-| `employment_type`| Enum | **Required** | `full-time`, `part-time`, `freelance` |
-
-**Response (201)**:
-```json
-{ "message": "Work experience added successfully." }
-```
-
----
-
-### 4. Update Work Experience
-`PUT /api/alumni/work-experience/:id`  
-**Summary**: Modifies an existing work experience record.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `role` | String | *Optional* | Updated job title |
-| `end_date` | Date | *Optional* | ISO date |
-| `is_current` | Boolean| *Optional* | Update job status |
-
-**Response (200)**:
-```json
-{ "message": "Work experience updated successfully." }
-```
-
----
-
-### 5. Delete Work Experience
-`DELETE /api/alumni/work-experience/:id`
-
-**Response (200)**:
-```json
-{ "message": "Work experience deleted successfully." }
-```
-
----
-
-### 6. Add Skill
-`POST /api/alumni/skills`  
-**Summary**: Adds a technical or soft skill with proficiency level.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `skill_name` | String | **Required** | e.g., `TypeScript` |
-| `category` | String | **Required** | e.g., `Programming` |
-| `proficiency_level`| Enum | **Required** | `beginner`, `intermediate`, `expert` |
-| `years_experience`| Number | *Optional* | Years of experience |
-
-**Response (201)**:
-```json
-{ "message": "Skill added successfully." }
-```
-
----
-
-### 7. Add Education
-`POST /api/alumni/education`  
-**Summary**: Records a new degree or academic achievement.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `university` | String | **Required** | Name of the institution |
-| `degree` | String | **Required** | e.g., `Masters in AI` |
-| `field_of_study`| String | *Optional* | e.g., `Computer Science` |
-| `start_date` | Date | **Required** | ISO date (YYYY-MM-DD) |
-| `end_date` | Date | *Optional* | ISO date |
-| `is_current` | Boolean| **Required** | Set `true` if currently studying |
-
-**Response (201)**:
-```json
-{ "message": "Education added successfully." }
-```
-
----
-
-### 8. Update Education
-`PUT /api/alumni/education/:id`  
-**Summary**: Modifies an existing education record.
-
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `degree` | String | *Optional* | Updated degree name |
-| `end_date` | Date | *Optional* | ISO date |
-| `is_current` | Boolean| *Optional* | Update enrollment status |
-
-**Response (200)**:
-```json
-{ "message": "Education updated successfully." }
-```
-
----
-
-### 9. Delete Education
-`DELETE /api/alumni/education/:id`
-
-**Response (200)**:
-```json
-{ "message": "Education removed successfully." }
-```
-
----
-
----
-
-### 10. Get My Connections
+### 3. Get My Connections
 `GET /api/alumni/connections`  
 **Summary**: Retrieves a list of all accepted professional connections.
 
@@ -914,7 +798,7 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner` (partners hav
 
 ---
 
-### 11. Find Batch Mates
+### 4. Find Batch Mates
 `GET /api/alumni/batch-mates`  
 **Summary**: Discovery based on graduation year.
 
@@ -948,7 +832,7 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner` (partners hav
 
 ---
 
-### 12. Delete Account
+### 5. Delete Account
 `DELETE /api/alumni/me`  
 **Summary**: Permanently deletes your alumni account and all associated data (profile, work history, posted opportunities, notifications, and media).
 
@@ -963,11 +847,234 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner` (partners hav
 
 ---
 
+## 📋 Profile Management
+Requires `Bearer JWT`. Base path: `/api/profile`.
+
+> [!NOTE]
+> These endpoints are named after their **function**, not a role. Skills accept `alumni`, `partner`, and `student` JWTs. Work-experience and education accept `alumni` and `partner` only.
+
+### Work Experience
+
+#### 1. Add Work Experience
+`POST /api/profile/work-experience`  
+**Role**: `alumni`, `partner`  
+**Summary**: Records a new job or role in the profile.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `company_name` | String | **Required** | Name of the employer |
+| `role` | String | **Required** | Your job title |
+| `start_date` | Date | **Required** | Start date (YYYY-MM-DD) |
+| `end_date` | Date | *Optional* | End date (if applicable) |
+| `is_current` | Boolean| **Required** | Set `true` if this is your current job |
+| `employment_type`| Enum | **Required** | `full-time`, `part-time`, `freelance` |
+
+**Response (201)**:
+```json
+{ "message": "Work experience added successfully." }
+```
+
+---
+
+#### 2. Update Work Experience
+`PUT /api/profile/work-experience/:id`  
+**Role**: `alumni`, `partner`  
+**Summary**: Modifies an existing work experience record. `:id` is the work experience UUID.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `role` | String | *Optional* | Updated job title |
+| `end_date` | Date | *Optional* | ISO date |
+| `is_current` | Boolean| *Optional* | Update job status |
+
+**Response (200)**:
+```json
+{ "message": "Work experience updated successfully." }
+```
+
+**Error (404)**:
+```json
+{ "message": "Work experience not found." }
+```
+
+---
+
+#### 3. Delete Work Experience
+`DELETE /api/profile/work-experience/:id`  
+**Role**: `alumni`, `partner`  
+**Summary**: Removes a work experience entry. `:id` is the work experience UUID.
+
+**Response (200)**:
+```json
+{ "message": "Work experience removed successfully." }
+```
+
+**Error (404)**:
+```json
+{ "message": "Work experience not found." }
+```
+
+---
+
+### Skills
+
+> [!NOTE]
+> The skill `id` (UUID) is returned inside `detailed_skills` on any profile response — use it for update and delete.
+
+#### 4. Add Skill
+`POST /api/profile/skills`  
+**Role**: `alumni`, `partner`, `student`  
+**Summary**: Adds a technical or soft skill with proficiency level to your profile.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `skill_name` | String | **Required** | e.g., `TypeScript` |
+| `category` | String | **Required** | e.g., `Programming` |
+| `proficiency_level`| Enum | **Required** | `beginner`, `intermediate`, `expert` |
+| `years_experience`| Number | *Optional* | Years of experience with this skill |
+
+**Response (201)**:
+```json
+{ "message": "Skill added successfully." }
+```
+
+---
+
+#### 5. Update Skill
+`PUT /api/profile/skills/:id`  
+**Role**: `alumni`, `partner`, `student`  
+**Summary**: Updates proficiency level and/or years of experience for an existing skill. `:id` is the skill's UUID.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `proficiency_level`| Enum | *Optional* | `beginner`, `intermediate`, `expert` |
+| `years_experience`| Number | *Optional* | Updated years of experience |
+
+**Response (200)**:
+```json
+{ "message": "Skill updated successfully." }
+```
+
+**Error (404)**:
+```json
+{ "message": "Skill not found on your profile." }
+```
+
+---
+
+#### 6. Delete Skill
+`DELETE /api/profile/skills/:id`  
+**Role**: `alumni`, `partner`, `student`  
+**Summary**: Removes a skill from your profile. `:id` is the skill's UUID.
+
+**Response (200)**:
+```json
+{ "message": "Skill removed successfully." }
+```
+
+**Error (404)**:
+```json
+{ "message": "Skill not found on your profile." }
+```
+
+---
+
+### Education
+
+#### 7. Add Education
+`POST /api/profile/education`  
+**Role**: `alumni`, `partner`  
+**Summary**: Records a new degree or academic achievement.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `university` | String | **Required** | Name of the institution |
+| `degree` | String | **Required** | e.g., `Masters in AI` |
+| `field_of_study`| String | *Optional* | e.g., `Computer Science` |
+| `start_date` | Date | **Required** | ISO date (YYYY-MM-DD) |
+| `end_date` | Date | *Optional* | ISO date |
+| `is_current` | Boolean| **Required** | Set `true` if currently studying |
+
+**Response (201)**:
+```json
+{ "message": "Education added successfully." }
+```
+
+---
+
+#### 8. Update Education
+`PUT /api/profile/education/:id`  
+**Role**: `alumni`, `partner`  
+**Summary**: Modifies an existing education record. `:id` is the education UUID.
+
+**Request Body**:
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `degree` | String | *Optional* | Updated degree name |
+| `end_date` | Date | *Optional* | ISO date |
+| `is_current` | Boolean| *Optional* | Update enrollment status |
+
+**Response (200)**:
+```json
+{ "message": "Education updated successfully." }
+```
+
+**Error (404)**:
+```json
+{ "message": "Education record not found." }
+```
+
+---
+
+#### 9. Delete Education
+`DELETE /api/profile/education/:id`  
+**Role**: `alumni`, `partner`  
+**Summary**: Removes an education record. `:id` is the education UUID.
+
+**Response (200)**:
+```json
+{ "message": "Education removed successfully." }
+```
+
+**Error (404)**:
+```json
+{ "message": "Education record not found." }
+```
+
+---
+
+---
+
+---
+
 ## 🤝 Partner
 Requires `Bearer JWT`. Role restriction: `partner` only.
 
 > [!NOTE]
-> Partners also have access to **all** routes in the 👤 Alumni section, as well as Opportunities (create/edit/delete/my-posts), Events (create/edit/delete), Network skill-trends, and skill management.
+> Partners have access to **all** routes in the 👤 Alumni section **and** the 📋 Profile Management section. Inherited routes:
+>
+> | Route | Description |
+> | :--- | :--- |
+> | `GET /api/alumni/me` | Get alumni profile |
+> | `PUT /api/alumni/me` | Update alumni profile |
+> | `GET /api/alumni/connections` | Get connections |
+> | `GET /api/alumni/batch-mates` | Find batch mates |
+> | `POST /api/profile/work-experience` | Add work experience |
+> | `PUT /api/profile/work-experience/:id` | Update work experience |
+> | `DELETE /api/profile/work-experience/:id` | Delete work experience |
+> | `POST /api/profile/skills` | Add a skill |
+> | `PUT /api/profile/skills/:id` | Update a skill |
+> | `DELETE /api/profile/skills/:id` | Remove a skill |
+> | `POST /api/profile/education` | Add education |
+> | `PUT /api/profile/education/:id` | Update education |
+> | `DELETE /api/profile/education/:id` | Delete education |
+>
+> Partners also have access to Opportunities (create/edit/delete/my-posts), Events (create/edit/delete), and Network skill-trends.
 
 ### 1. Get My Profile
 `GET /api/partner/me`  
@@ -1373,18 +1480,12 @@ Requires `Bearer JWT`. Role restriction: `student`.
 
 ---
 
-### 3. Add Skill
-`POST /api/student/skills`  
-**Summary**: Adds a technical or soft skill to the student profile.
+### 3. Skill Management (Unified)
 
-**Request Body**:
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `skill_name` | String | **Required** | e.g., `Python` |
-| `category` | String | **Required** | e.g., `Data Science` |
-| `proficiency_level`| Enum | **Required** | `beginner`, `intermediate`, `expert` |
-
----
+> [!IMPORTANT]
+> `POST /api/student/skills` has been **removed**. Skill management is now unified under the Profile Management API and accessible to students.
+> Use `POST /api/profile/skills`, `PUT /api/profile/skills/:id`, and `DELETE /api/profile/skills/:id` — all three accept a `student` JWT.
+> See the **📋 Profile Management → Skills** section for full documentation.
 
 ### 4. Get My Connections
 `GET /api/student/connections`  

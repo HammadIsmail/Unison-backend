@@ -1,11 +1,10 @@
-import { Controller, Get, Put, Post, Param, Body, UseGuards, ForbiddenException, UseInterceptors, UploadedFile, UploadedFiles, Delete } from '@nestjs/common';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { Controller, Get, Put, Post, Param, Body, UseGuards, UseInterceptors, UploadedFiles, Delete } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
-import { UpdateStudentProfileDto, AddStudentSkillDto, RequestUpgradeDto } from './dto/student.dto';
+import { UpdateStudentProfileDto, RequestUpgradeDto } from './dto/student.dto';
 import { StudentProfileResponseDto } from './dto/student-response.dto';
 import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
-import { ConnectionStatusResponseDto } from '../common/dto/connection-status.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -45,14 +44,8 @@ export class StudentController {
     return this.studentService.updateProfile(userId, dto, files);
   }
 
-
-  @Post('skills')
-  @Roles('student')
-  @ApiOperation({ summary: 'Add a new skill to your profile' })
-  @ApiResponse({ status: 201, type: SuccessResponseDto })
-  addSkill(@GetUser('sub') userId: string, @Body() dto: AddStudentSkillDto) {
-    return this.studentService.addSkill(userId, dto);
-  }
+  // NOTE: Skill management (POST/PUT/DELETE) has been unified under /api/alumni/skills
+  // and is accessible to students via @Roles('alumni', 'partner', 'student').
 
   @Get('connections')
   @Roles('student')

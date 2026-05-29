@@ -174,11 +174,11 @@ export class AuthService {
         // 2. Save Profile to Neo4j
         let extraProps = '';
         if (dto.role === 'alumni') {
-          extraProps = `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`;
+            extraProps = `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`;
         } else if (dto.role === 'student') {
-          extraProps = `semester: $semester, batch: $batch,`;
+            extraProps = `semester: $semester, batch: $batch,`;
         } else if (dto.role === 'partner') {
-          extraProps = `affiliation: $affiliation, job_title: $job_title,`;
+            extraProps = `affiliation: $affiliation, job_title: $job_title,`;
         }
 
         await this.neo4j.run(
@@ -250,9 +250,9 @@ export class AuthService {
     async login(dto: LoginDto) {
         const email = dto.email.trim().toLowerCase();
         this.logger.log(`Attempting login for: ${email}`);
-        
+
         const auth = await this.userAuthModel.findOne({ email });
-        
+
         if (!auth || auth.is_deleted) {
             this.logger.warn(`Login failed: ${!auth ? 'Email not found' : 'Account soft-deleted'} - ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
@@ -319,9 +319,9 @@ export class AuthService {
             'MATCH (u:User {id: $userId}) RETURN u',
             { userId: auth.userId },
         );
-        
+
         const user = result.records[0]?.get('u')?.properties;
-        
+
         // Build response profile
         const profile: any = {
             id: auth.userId,
@@ -335,7 +335,7 @@ export class AuthService {
             profile.profile_picture = user.profile_picture || null;
             profile.bio = user.bio || null;
             profile.account_status = user.account_status;
-            
+
             if (auth.role !== 'admin') {
                 profile.degree = user.degree;
                 profile.roll_number = user.roll_number;
