@@ -71,7 +71,7 @@ Handle user entry, verification, and security.
 | `role` | Enum | **Required** | `alumni`, `student`, or `partner` |
 | `roll_number` | String | *Optional* | University ID (Required for students/alumni) |
 | `degree` | String | *Optional* | e.g. `BS Computer Science` (Required for students/alumni) |
-| `student_card` | File | **Required** | ID image file (Student Card or Business Card) |
+| `student_card` | File | **Required** | ID image file — **Required** for `student`/`alumni`, *Optional* for `partner` |
 | `affiliation` | String | *Optional* | **Partner Only** (e.g. `Google`) |
 | `job_title` | String | *Optional* | **Partner Only** (e.g. `HR Manager`) |
 | `graduation_year`| Number | *Optional* | **Alumni Only** (Required for graduates) |

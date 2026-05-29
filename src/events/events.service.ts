@@ -26,7 +26,7 @@ export class EventsService {
 
     const query = `
       MATCH (u:User {id: $userId})
-      WHERE ${ACTIVE_USER('u')} AND u.role IN ['admin', 'alumni']
+      WHERE ${ACTIVE_USER('u')} AND u.role IN ['admin', 'alumni', 'partner']
       CREATE (e:Event {
         id: $eventId,
         title: $dto.title,
@@ -55,7 +55,7 @@ export class EventsService {
       bannerUrl 
     });
     if (!result.records.length) {
-      throw new ForbiddenException('Only alumni and admins can create events, or user not found.');
+      throw new ForbiddenException('Only alumni, partners, and admins can create events, or user not found.');
     }
 
     return { message: 'Event created successfully.', eventId };

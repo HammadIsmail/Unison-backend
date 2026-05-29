@@ -115,7 +115,7 @@ export class AuthService {
 
     // ─── Register ────────────────────────────────────────────────────────────────
     async register(dto: RegisterDto, file: Express.Multer.File) {
-        if (!file) {
+        if (!file && dto.role !== 'partner') {
             throw new BadRequestException('Student card picture is required.');
         }
 
@@ -154,9 +154,12 @@ export class AuthService {
             throw new ConflictException('Username is already taken.');
         }
 
-        // Upload student card to Cloudinary
-        const uploadResult = await this.cloudinary.uploadFile(file);
-        const studentCardUrl = uploadResult.secure_url;
+        // Upload student card to Cloudinary (not required for partner)
+        let studentCardUrl: string | null = null;
+        if (file) {
+            const uploadResult = await this.cloudinary.uploadFile(file);
+            studentCardUrl = uploadResult.secure_url;
+        }
 
         const hashedPassword = await bcrypt.hash(dto.password, 10);
         const userId = uuidv4();
