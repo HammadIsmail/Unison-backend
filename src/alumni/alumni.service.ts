@@ -16,6 +16,7 @@ import { NotificationService } from '../notification/notification.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserAuth } from '../auth/schemas/user-auth.schema';
+import { UnifiedUpdateProfileDto } from '../profile-management/dto/profile-management.dto';
 
 @Injectable()
 export class AlumniService {
@@ -77,7 +78,7 @@ export class AlumniService {
     };
   }
 
-  async updateProfile(userId: string, dto: UpdateAlumniProfileDto, files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] }) {
+  async updateProfile(userId: string, dto: UnifiedUpdateProfileDto, files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] }) {
     if (files?.profile_picture?.length) {
       const file = files.profile_picture[0];
       try {
@@ -125,14 +126,14 @@ export class AlumniService {
     }
 
     const setQuery = Object.keys(dto)
-      .filter((k) => dto[k as keyof UpdateAlumniProfileDto] !== undefined)
+      .filter((k) => dto[k as keyof UnifiedUpdateProfileDto] !== undefined)
       .map((k) => `u.${k} = $${k}`)
       .join(', ');
 
     if (!setQuery) return { message: 'No fields to update.' };
 
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId, role: 'alumni'}) SET ${setQuery} RETURN u`,
+      `MATCH (u:User {id: $userId}) SET ${setQuery} RETURN u`,
       { userId, ...dto }
     );
 

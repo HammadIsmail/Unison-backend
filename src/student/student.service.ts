@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { UpdateStudentProfileDto } from './dto/student.dto';
+
 import { NotificationService } from '../notification/notification.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -51,67 +51,7 @@ export class StudentService {
     };
   }
 
-  async updateProfile(userId: string, dto: UpdateStudentProfileDto, files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] }) {
-    if (files?.profile_picture?.length) {
-      const file = files.profile_picture[0];
-      try {
-        const result = await this.neo4j.run(
-          `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
-          { userId }
-        );
-        const oldPic = result.records[0]?.get('oldPic');
 
-        const uploadResult = await this.cloudinaryService.uploadFile(file);
-        dto.profile_picture = uploadResult.secure_url;
-
-        if (oldPic) {
-          const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
-          if (publicId) {
-            await this.cloudinaryService.deleteImage(publicId);
-          }
-        }
-      } catch (err) {
-        console.error('[Cloudinary] Student profile picture update failed:', err);
-      }
-    }
-
-    if (files?.backDropImage?.length) {
-      const file = files.backDropImage[0];
-      try {
-        const result = await this.neo4j.run(
-          `MATCH (u:User {id: $userId}) RETURN u.backDropImage AS oldPic`,
-          { userId }
-        );
-        const oldPic = result.records[0]?.get('oldPic');
-
-        const uploadResult = await this.cloudinaryService.uploadFile(file);
-        dto.backDropImage = uploadResult.secure_url;
-
-        if (oldPic) {
-          const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
-          if (publicId) {
-            await this.cloudinaryService.deleteImage(publicId);
-          }
-        }
-      } catch (err) {
-        console.error('[Cloudinary] Student backdrop image update failed:', err);
-      }
-    }
-
-    const setQuery = Object.keys(dto)
-      .filter((k) => dto[k as keyof UpdateStudentProfileDto] !== undefined)
-      .map((k) => `u.${k} = $${k}`)
-      .join(', ');
-
-    if (!setQuery) return { message: 'No fields to update.' };
-
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId, role: 'student'}) SET ${setQuery} RETURN u`,
-      { userId, ...dto }
-    );
-
-    return { message: 'Profile updated successfully.' };
-  }
 
   // Skill management (add/update/delete) is unified under AlumniService.
   // Students use POST/PUT/DELETE /api/alumni/skills via @Roles('alumni','partner','student').

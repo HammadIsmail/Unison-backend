@@ -1,5 +1,5 @@
-import { Controller, Get, Put, Post, Delete, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Put, Post, Delete, Param, Body, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AlumniService } from '../alumni/alumni.service';
 import {
   CreateWorkExperienceDto,
@@ -9,7 +9,9 @@ import {
   CreateEducationDto,
   UpdateEducationDto,
 } from '../alumni/dto/alumni.dto';
+import { UnifiedUpdateProfileDto } from './dto/profile-management.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -21,6 +23,26 @@ import { GetUser } from '../common/decorators/get-user.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ProfileManagementController {
   constructor(private readonly alumniService: AlumniService) {}
+
+  // ── Core Profile Update (unified for alumni, partner, & student) ───────────
+  @Put('me')
+  @Roles('alumni', 'partner', 'student')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'profile_picture', maxCount: 1 },
+      { name: 'backDropImage', maxCount: 1 },
+    ]),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Update core profile information (display_name, bio, etc.)' })
+  @ApiResponse({ status: 200, type: SuccessResponseDto })
+  updateProfile(
+    @GetUser('sub') userId: string,
+    @Body() dto: UnifiedUpdateProfileDto,
+    @UploadedFiles() files?: { profile_picture?: Express.Multer.File[]; backDropImage?: Express.Multer.File[] },
+  ) {
+    return this.alumniService.updateProfile(userId, dto, files);
+  }
 
   // ── Work Experience (alumni & partner only) ────────────────────────────────
 

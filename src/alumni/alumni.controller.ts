@@ -1,8 +1,6 @@
-import { Controller, Get, Put, Delete, Body, UseGuards, UseInterceptors, UploadedFiles } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Delete, Body, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AlumniService } from './alumni.service';
-import { UpdateAlumniProfileDto } from './dto/alumni.dto';
 import { AlumniProfileResponseDto, NetworkUserResponseDto } from './dto/alumni-response.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -25,22 +23,6 @@ export class AlumniController {
     return this.alumniService.getProfile(userId);
   }
 
-  @Put('me')
-  @Roles('alumni', 'partner')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'profile_picture', maxCount: 1 },
-    { name: 'backDropImage', maxCount: 1 },
-  ]))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Update your own alumni profile' })
-  @ApiResponse({ status: 200, type: SuccessResponseDto })
-  updateMe(
-    @GetUser('sub') userId: string,
-    @Body() dto: UpdateAlumniProfileDto,
-    @UploadedFiles() files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] },
-  ) {
-    return this.alumniService.updateProfile(userId, dto, files);
-  }
 
   @Get('connections')
   @Roles('alumni', 'partner')

@@ -2,7 +2,7 @@ import { Controller, Get, Put, Post, Param, Body, UseGuards, UseInterceptors, Up
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { StudentService } from './student.service';
-import { UpdateStudentProfileDto, RequestUpgradeDto } from './dto/student.dto';
+import { RequestUpgradeDto } from './dto/student.dto';
 import { StudentProfileResponseDto } from './dto/student-response.dto';
 import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
@@ -27,22 +27,7 @@ export class StudentController {
     return this.studentService.getProfile(userId);
   }
 
-  @Put('me')
-  @Roles('student')
-  @UseInterceptors(FileFieldsInterceptor([
-    { name: 'profile_picture', maxCount: 1 },
-    { name: 'backDropImage', maxCount: 1 },
-  ]))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Update your own student profile' })
-  @ApiResponse({ status: 200, type: SuccessResponseDto })
-  updateMe(
-    @GetUser('sub') userId: string,
-    @Body() dto: UpdateStudentProfileDto,
-    @UploadedFiles() files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] },
-  ) {
-    return this.studentService.updateProfile(userId, dto, files);
-  }
+
 
   // NOTE: Skill management (POST/PUT/DELETE) has been unified under /api/alumni/skills
   // and is accessible to students via @Roles('alumni', 'partner', 'student').

@@ -756,23 +756,9 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner`.
 ---
 
 ### 2. Update My Profile
-`PUT /api/alumni/me`  
-**Summary**: Updates personal profile information.
-
-**Request**: `multipart/form-data`
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `display_name` | String | *Optional* | Name displayed on profile |
-| `bio` | String | *Optional* | Professional summary |
-| `linkedin_url` | String | *Optional*| LinkedIn profile link |
-| `phone` | String | *Optional* | Contact phone number |
-| `profile_picture`| File | *Optional* | Profile picture image file (binary) |
-| `backDropImage`| File | *Optional* | Backdrop cover image file (binary) |
-
-**Response (200)**:
-```json
-{ "message": "Profile updated successfully." }
-```
+> [!IMPORTANT]
+> `PUT /api/alumni/me` has been **removed**. Core profile updates are now unified under the Profile Management API.
+> Use `PUT /api/profile/me` instead.
 
 ---
 
@@ -852,6 +838,32 @@ Requires `Bearer JWT`. Base path: `/api/profile`.
 
 > [!NOTE]
 > These endpoints are named after their **function**, not a role. Skills accept `alumni`, `partner`, and `student` JWTs. Work-experience and education accept `alumni` and `partner` only.
+
+### Core Profile Update
+
+#### Update My Profile Information
+`PUT /api/profile/me`  
+**Role**: `alumni`, `partner`, `student`  
+**Summary**: Updates personal core profile information (unified for all roles).
+
+**Request**: `multipart/form-data`
+| Field | Type | Status | Description |
+| :--- | :--- | :--- | :--- |
+| `display_name` | String | *Optional* | Name displayed on profile *(alumni & student)* |
+| `bio` | String | *Optional* | Professional summary *(all roles)* |
+| `linkedin_url` | String | *Optional*| LinkedIn profile link *(alumni & partner)* |
+| `phone` | String | *Optional* | Contact phone number *(all roles)* |
+| `affiliation` | String | *Optional* | Company/Org affiliation *(partner only)* |
+| `job_title` | String | *Optional* | Current job title *(partner only)* |
+| `semester` | Number | *Optional* | Current semester *(student only)* |
+| `profile_picture`| File | *Optional* | Profile picture image file (binary) |
+| `backDropImage`| File | *Optional* | Backdrop cover image file (binary) |
+
+**Response (200)**:
+```json
+{ "message": "Profile updated successfully." }
+```
+
 
 ### Work Experience
 
@@ -1100,24 +1112,9 @@ Requires `Bearer JWT`. Role restriction: `partner` only.
 ---
 
 ### 2. Update My Profile
-`PUT /api/partner/me`  
-**Summary**: Updates partner profile information including optional image uploads.
-
-**Request**: `multipart/form-data`
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `bio` | String | *Optional* | Professional summary |
-| `affiliation` | String | *Optional* | Company or organisation name |
-| `job_title` | String | *Optional* | Your role at the company |
-| `phone` | String | *Optional* | Contact number |
-| `linkedin_url` | String | *Optional* | LinkedIn profile URL |
-| `profile_picture` | File | *Optional* | Profile picture (binary) |
-| `backDropImage` | File | *Optional* | Backdrop cover image (binary) |
-
-**Response (200)**:
-```json
-{ "message": "Profile updated successfully." }
-```
+> [!IMPORTANT]
+> `PUT /api/partner/me` has been **removed**. Core profile updates are now unified under the Profile Management API.
+> Use `PUT /api/profile/me` instead.
 
 ---
 
@@ -1465,18 +1462,9 @@ Requires `Bearer JWT`. Role restriction: `student`.
 ---
 
 ### 2. Update My Profile
-`PUT /api/student/me`  
-**Summary**: Updates personal profile information.
-
-**Request**: `multipart/form-data`
-| Field | Type | Status | Description |
-| :--- | :--- | :--- | :--- |
-| `display_name` | String | *Optional* | Preferred name |
-| `phone` | String | *Optional* | Contact phone number |
-| `bio` | String | *Optional* | Short personal bio |
-| `profile_picture`| File | *Optional* | Profile picture image file (binary) |
-| `backDropImage`| File | *Optional* | Backdrop cover image file (binary) |
-| `semester` | Number | *Optional* | Update current semester (1-8) |
+> [!IMPORTANT]
+> `PUT /api/student/me` has been **removed**. Core profile updates are now unified under the Profile Management API.
+> Use `PUT /api/profile/me` instead.
 
 ---
 

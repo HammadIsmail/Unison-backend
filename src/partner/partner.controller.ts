@@ -2,7 +2,6 @@ import { Controller, Get, Put, Delete, Body, UseGuards, UseInterceptors, Uploade
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PartnerService } from './partner.service';
-import { UpdatePartnerProfileDto } from './dto/partner.dto';
 import { PartnerProfileResponseDto } from './dto/partner-response.dto';
 import { NetworkUserResponseDto } from '../alumni/dto/alumni-response.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
@@ -26,25 +25,7 @@ export class PartnerController {
     return this.partnerService.getProfile(userId);
   }
 
-  @Put('me')
-  @Roles('partner')
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'profile_picture', maxCount: 1 },
-      { name: 'backDropImage', maxCount: 1 },
-    ]),
-  )
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Update your own partner profile' })
-  @ApiResponse({ status: 200, type: SuccessResponseDto })
-  updateMe(
-    @GetUser('sub') userId: string,
-    @Body() dto: UpdatePartnerProfileDto,
-    @UploadedFiles()
-    files?: { profile_picture?: Express.Multer.File[]; backDropImage?: Express.Multer.File[] },
-  ) {
-    return this.partnerService.updateProfile(userId, dto, files);
-  }
+
 
   @Get('connections')
   @Roles('partner')
