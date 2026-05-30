@@ -149,10 +149,25 @@ export class CreateEducationDto {
 }
 
 export class UpdateEducationDto {
+  @ApiPropertyOptional({ description: 'Updated university name', example: 'LUMS' })
+  @IsOptional()
+  @IsString()
+  university?: string;
+
   @ApiPropertyOptional({ description: 'Updated degree name', example: 'PhD in Computer Science' })
   @IsOptional()
   @IsString()
   degree?: string;
+
+  @ApiPropertyOptional({ description: 'Updated field of study', example: 'Software Engineering' })
+  @IsOptional()
+  @IsString()
+  field_of_study?: string;
+
+  @ApiPropertyOptional({ description: 'Updated start date', example: '2024-01-01' })
+  @IsOptional()
+  @IsDateString()
+  start_date?: string;
 
   @ApiPropertyOptional({ description: 'Updated end date', example: '2026-06-30' })
   @IsOptional()

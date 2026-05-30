@@ -1027,7 +1027,10 @@ Requires `Bearer JWT`. Base path: `/api/profile`.
 **Request Body**:
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
+| `university` | String | *Optional* | Updated institution name |
 | `degree` | String | *Optional* | Updated degree name |
+| `field_of_study`| String | *Optional* | Updated field of study |
+| `start_date` | Date | *Optional* | Updated start date (YYYY-MM-DD) |
 | `end_date` | Date | *Optional* | ISO date |
 | `is_current` | Boolean| *Optional* | Update enrollment status |
 
