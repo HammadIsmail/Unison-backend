@@ -1,0 +1,7629 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/auth/send-otp": {
+      "post": {
+        "operationId": "AuthController_sendOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited — retry_after_seconds tells the client how long to wait",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Send OTP to email for verification or forgot password",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "operationId": "AuthController_verifyOtp",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyOtpResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify OTP and receive a short-lived verified_token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register a new alumni or student account",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Account locked after 3 wrong passwords — retry_after_seconds tells the client how long to wait",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Login and receive a JWT token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reset password using verified_token from OTP step",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationController_getNotifications",
+        "parameters": [
+          {
+            "name": "read",
+            "required": false,
+            "in": "query",
+            "description": "Filter by read status (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all notifications for the current user",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationController_markAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a notification as read",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/all": {
+      "delete": {
+        "operationId": "NotificationController_clearAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Clear all notifications",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/{id}": {
+      "delete": {
+        "operationId": "NotificationController_deleteNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a specific notification",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/admin/pending-accounts": {
+      "get": {
+        "operationId": "AdminController_getPendingAccounts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PendingAccountResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all accounts pending approval",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/approve-account/{id}": {
+      "patch": {
+        "operationId": "AdminController_approveAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a pending account",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/reject-account/{id}": {
+      "patch": {
+        "operationId": "AdminController_rejectAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a pending account request",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/bulk/approve": {
+      "patch": {
+        "operationId": "AdminController_bulkApprove",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkActionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve multiple pending accounts at once",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/bulk/reject": {
+      "patch": {
+        "operationId": "AdminController_bulkReject",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkRejectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject multiple pending accounts at once",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/upgrade-requests": {
+      "get": {
+        "operationId": "AdminController_getPendingUpgrades",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UpgradeRequestResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all profile upgrade requests from students",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/approve-upgrade/{id}": {
+      "patch": {
+        "operationId": "AdminController_approveUpgrade",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Approve a student to alumni profile upgrade request",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/reject-upgrade/{id}": {
+      "patch": {
+        "operationId": "AdminController_rejectUpgrade",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectUpgradeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reject a student to alumni profile upgrade request",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/dashboard-stats": {
+      "get": {
+        "operationId": "AdminController_getDashboardStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardStatsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get overall dashboard statistics",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/all-alumni": {
+      "get": {
+        "operationId": "AdminController_getAllAlumni",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name",
+            "schema": {
+              "example": "Ahmed",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAlumniPaginationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all approved alumni with pagination",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/all-students": {
+      "get": {
+        "operationId": "AdminController_getAllStudents",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Search by name",
+            "schema": {
+              "example": "Ali",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStudentPaginationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all approved students with pagination",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/all-partners": {
+      "get": {
+        "operationId": "AdminController_getAllPartners",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Google",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all approved industry partners with pagination",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/remove-account/{id}": {
+      "delete": {
+        "operationId": "AdminController_removeAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "reason",
+            "required": false,
+            "in": "query",
+            "description": "Optional deletion reason for audit trail",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete an account (preserves all historical data)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/restore-account/{id}": {
+      "patch": {
+        "operationId": "AdminController_restoreAccount",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Restore a soft-deleted account — re-enables login",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/deleted-users": {
+      "get": {
+        "operationId": "AdminController_getDeletedUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all soft-deleted user accounts",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/request-email-change": {
+      "patch": {
+        "operationId": "AdminController_requestEmailChange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestEmailChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request an email change for the admin account (sends OTP to new email)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/verify-email-change": {
+      "patch": {
+        "operationId": "AdminController_verifyEmailChange",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailChangeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Verify OTP and update admin email address",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/recent-activity": {
+      "get": {
+        "operationId": "AdminController_getRecentActivity",
+        "parameters": [
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "ACCOUNT_APPROVED",
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "uuid-user-123",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get recent platform activities with filtering",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/advanced-analytics": {
+      "get": {
+        "operationId": "AdminController_getAdvancedAnalytics",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2024-01-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2024-03-31",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdvancedAnalyticsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get professional-grade analytics with date filtering",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/opportunities": {
+      "get": {
+        "operationId": "AdminController_getAllOpportunities",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Moderation: List all system opportunities",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/opportunities/{id}": {
+      "delete": {
+        "operationId": "AdminController_adminDeleteOpportunity",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Moderation: Delete any opportunity by ID",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/events": {
+      "get": {
+        "operationId": "AdminController_getAllEvents",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Moderation: List all system events",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/events/{id}": {
+      "delete": {
+        "operationId": "AdminController_adminDeleteEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Moderation: Delete any event by ID",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/export/{role}": {
+      "get": {
+        "operationId": "AdminController_exportToCsv",
+        "parameters": [
+          {
+            "name": "role",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Export user list to CSV",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/announcements": {
+      "post": {
+        "operationId": "AdminController_broadcastAnnouncement",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create and broadcast an event announcement to all network users",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "get": {
+        "operationId": "AdminController_getAnnouncements",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementPaginationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all past announcements (paginated)",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/announcements/{id}": {
+      "get": {
+        "operationId": "AdminController_getAnnouncementById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get complete details of a single announcement",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminController_deleteAnnouncement",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an announcement by ID",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/profile": {
+      "get": {
+        "operationId": "AdminController_getAdminProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current admin/moderator profile",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminController_updateAdminProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAdminProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update current admin/moderator profile",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/staff": {
+      "post": {
+        "operationId": "AdminController_createStaff",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new staff member (Admin or Moderator)",
+        "tags": [
+          "Admin"
+        ]
+      },
+      "get": {
+        "operationId": "AdminController_getStaffList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all staff members",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/admin/staff/{id}": {
+      "delete": {
+        "operationId": "AdminController_removeStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a staff member",
+        "tags": [
+          "Admin"
+        ]
+      }
+    },
+    "/alumni/me": {
+      "get": {
+        "operationId": "AlumniController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlumniProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your own alumni profile",
+        "tags": [
+          "Alumni"
+        ]
+      },
+      "delete": {
+        "operationId": "AlumniController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Permanently delete your alumni account",
+        "tags": [
+          "Alumni"
+        ]
+      }
+    },
+    "/alumni/connections": {
+      "get": {
+        "operationId": "AlumniController_getConnections",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NetworkUserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your accepted connections",
+        "tags": [
+          "Alumni"
+        ]
+      }
+    },
+    "/alumni/batch-mates": {
+      "get": {
+        "operationId": "AlumniController_getBatchMates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NetworkUserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find your batch mates",
+        "tags": [
+          "Alumni"
+        ]
+      }
+    },
+    "/student/me": {
+      "get": {
+        "operationId": "StudentController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your own student profile",
+        "tags": [
+          "Student"
+        ]
+      },
+      "delete": {
+        "operationId": "StudentController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Permanently delete your student account",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/student/connections": {
+      "get": {
+        "operationId": "StudentController_getConnections",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NetworkUserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your accepted professional connections",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/student/upgrade-request": {
+      "post": {
+        "operationId": "StudentController_requestUpgrade",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestUpgradeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Request to upgrade profile from Student to Alumni",
+        "tags": [
+          "Student"
+        ]
+      }
+    },
+    "/opportunities": {
+      "post": {
+        "operationId": "OpportunityController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateOpportunityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Post a new job or internship opportunity with optional images/videos (max 5)",
+        "tags": [
+          "Opportunities"
+        ]
+      },
+      "get": {
+        "operationId": "OpportunityController_findAll",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (default: 1)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page (default: 10)",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by type (job/internship)",
+            "schema": {
+              "example": "job",
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "required": false,
+            "in": "query",
+            "description": "Filter by required skill",
+            "schema": {
+              "example": "NestJS",
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_remote",
+            "required": false,
+            "in": "query",
+            "description": "Filter by remote status (true/false)",
+            "schema": {
+              "example": "true",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityPaginationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all opportunities with filters and pagination",
+        "tags": [
+          "Opportunities"
+        ]
+      }
+    },
+    "/opportunities/my-posts": {
+      "get": {
+        "operationId": "OpportunityController_findMyPosts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyOpportunityPostResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get opportunities posted by you",
+        "tags": [
+          "Opportunities"
+        ]
+      }
+    },
+    "/opportunities/{id}": {
+      "get": {
+        "operationId": "OpportunityController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDetailResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get details of a specific opportunity",
+        "tags": [
+          "Opportunities"
+        ]
+      },
+      "put": {
+        "operationId": "OpportunityController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOpportunityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an opportunity with optional images/videos",
+        "tags": [
+          "Opportunities"
+        ]
+      },
+      "delete": {
+        "operationId": "OpportunityController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an opportunity",
+        "tags": [
+          "Opportunities"
+        ]
+      }
+    },
+    "/search/users": {
+      "get": {
+        "operationId": "SearchController_searchUsers",
+        "parameters": [
+          {
+            "name": "display_name",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Ahmed",
+              "type": "string"
+            }
+          },
+          {
+            "name": "company",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Google",
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "TypeScript",
+              "type": "string"
+            }
+          },
+          {
+            "name": "batch_year",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2020",
+              "type": "string"
+            }
+          },
+          {
+            "name": "degree",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "BSCS",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchUserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search for all users (Students/Alumni) with multiple filters",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/search/opportunities": {
+      "get": {
+        "operationId": "SearchController_searchOpportunities",
+        "parameters": [
+          {
+            "name": "title",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Developer",
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "job",
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Node.js",
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "Remote",
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_remote",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "true",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchOpportunityResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search for opportunities with filters",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/search/user/{username}": {
+      "get": {
+        "operationId": "SearchController_findByUsername",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetailResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find a specific user by their exact username",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/search/suggestions": {
+      "get": {
+        "operationId": "SearchController_getSuggestions",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "example": "ahmed",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of matching users"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user suggestions for search-as-you-type (dropdown)",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/skills/all": {
+      "get": {
+        "operationId": "SkillController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of skill names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get list of all available skills in the system",
+        "tags": [
+          "Skills"
+        ]
+      }
+    },
+    "/skills/{skill_id}": {
+      "delete": {
+        "operationId": "SkillController_deleteSkill",
+        "parameters": [
+          {
+            "name": "skill_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a skill from your profile (shared for students and alumni)",
+        "tags": [
+          "Skills"
+        ]
+      }
+    },
+    "/network/centrality": {
+      "get": {
+        "operationId": "NetworkController_getCentrality",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CentralityResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get top alumni by centrality (count of accepted connections)",
+        "tags": [
+          "Network Science"
+        ]
+      }
+    },
+    "/network/shortest-path": {
+      "get": {
+        "operationId": "NetworkController_getShortestPath",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShortestPathResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find the shortest connection path through accepted connections only",
+        "tags": [
+          "Network Science"
+        ]
+      }
+    },
+    "/network/top-companies": {
+      "get": {
+        "operationId": "NetworkController_getTopCompanies",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopCompanyResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get companies with most alumni",
+        "tags": [
+          "Network Science"
+        ]
+      }
+    },
+    "/network/skill-trends": {
+      "get": {
+        "operationId": "NetworkController_getSkillTrends",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillTrendResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Analyze skill supply and demand",
+        "tags": [
+          "Network Science"
+        ]
+      }
+    },
+    "/network/batch-analysis": {
+      "get": {
+        "operationId": "NetworkController_getBatchAnalysis",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BatchAnalysisResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Engagement and success metrics by batch (based on accepted connections)",
+        "tags": [
+          "Network Science"
+        ]
+      }
+    },
+    "/connections/status/{target_id}": {
+      "get": {
+        "operationId": "ConnectionsController_getConnectionStatus",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get connection status with another user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/{target_id}": {
+      "delete": {
+        "operationId": "ConnectionsController_removeConnection",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove an existing connection or cancel a pending request",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/request/{target_id}": {
+      "post": {
+        "operationId": "ConnectionsController_sendRequest",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a connection request to another user",
+        "tags": [
+          "Connections"
+        ]
+      },
+      "delete": {
+        "operationId": "ConnectionsController_cancelRequest",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel a pending connection request you have sent",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/requests": {
+      "get": {
+        "operationId": "ConnectionsController_getPendingRequests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your pending incoming connection requests",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/requests/sent": {
+      "get": {
+        "operationId": "ConnectionsController_getSentPendingRequests",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get pending connection requests you have sent",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/requests/{sender_id}/respond": {
+      "patch": {
+        "operationId": "ConnectionsController_respondToRequest",
+        "parameters": [
+          {
+            "name": "sender_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondToConnectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Respond to an incoming connection request",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/follow/{target_id}": {
+      "post": {
+        "operationId": "ConnectionsController_followUser",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Follow another user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/unfollow/{target_id}": {
+      "delete": {
+        "operationId": "ConnectionsController_unfollowUser",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfollow a user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/{target_id}/followers": {
+      "get": {
+        "operationId": "ConnectionsController_getFollowers",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get followers of a user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/{target_id}/following": {
+      "get": {
+        "operationId": "ConnectionsController_getFollowing",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get users followed by a user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/block/{target_id}": {
+      "post": {
+        "operationId": "ConnectionsController_blockUser",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Block another user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/connections/unblock/{target_id}": {
+      "delete": {
+        "operationId": "ConnectionsController_unblockUser",
+        "parameters": [
+          {
+            "name": "target_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unblock a previously blocked user",
+        "tags": [
+          "Connections"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The Health Check is successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {},
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The Health Check is not successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        },
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "status"
+                        ],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/test-error": {
+      "get": {
+        "operationId": "HealthController_triggerError",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/profiles/suggestions": {
+      "get": {
+        "operationId": "ProfilesController_getSuggestions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SuggestionUserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user suggestions based on common attributes",
+        "tags": [
+          "Profiles"
+        ]
+      }
+    },
+    "/profiles/user/{id}": {
+      "get": {
+        "operationId": "ProfilesController_getUserProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfileResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a comprehensive public profile of any user",
+        "tags": [
+          "Profiles"
+        ]
+      }
+    },
+    "/chat/upload": {
+      "post": {
+        "operationId": "ChatController_uploadImage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageUploadResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload an image for chat (Max 5MB)",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/messages": {
+      "post": {
+        "operationId": "ChatController_sendMessage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Send a message to a connected user",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/conversations": {
+      "get": {
+        "operationId": "ChatController_getConversations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all chat conversations",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/conversations/{participantId}/messages": {
+      "get": {
+        "operationId": "ChatController_getMessages",
+        "parameters": [
+          {
+            "name": "participantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatMessageResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get chat history with a specific connected user",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/messages/{messageId}/read": {
+      "patch": {
+        "operationId": "ChatController_markAsRead",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "description": "The MongoDB ObjectId of the message",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a specific message as read",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/conversations/{participantId}/read": {
+      "patch": {
+        "operationId": "ChatController_markConversationAsRead",
+        "parameters": [
+          {
+            "name": "participantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark all messages in a conversation as read",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/messages/{messageId}": {
+      "patch": {
+        "operationId": "ChatController_editMessage",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatMessageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a message within 3 minutes",
+        "tags": [
+          "Chat"
+        ]
+      },
+      "delete": {
+        "operationId": "ChatController_deleteMessage",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a message within 3 minutes",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/chat/conversations/{conversationId}/clear": {
+      "delete": {
+        "operationId": "ChatController_clearChat",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Clear chat history for the current user",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/events": {
+      "post": {
+        "operationId": "EventsController_createEvent",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new event (Admin/Alumni only)",
+        "tags": [
+          "Events"
+        ]
+      },
+      "get": {
+        "operationId": "EventsController_getEvents",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "is_online",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List events with filters",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/{id}": {
+      "put": {
+        "operationId": "EventsController_updateEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an event",
+        "tags": [
+          "Events"
+        ]
+      },
+      "delete": {
+        "operationId": "EventsController_deleteEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel/Delete an event",
+        "tags": [
+          "Events"
+        ]
+      },
+      "get": {
+        "operationId": "EventsController_getEventDetails",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get event details",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/my-events": {
+      "get": {
+        "operationId": "EventsController_getMyEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get events I created or RSVP'd to",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/{id}/rsvp": {
+      "post": {
+        "operationId": "EventsController_rsvpToEvent",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RsvpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "RSVP to an event",
+        "tags": [
+          "Events"
+        ]
+      },
+      "delete": {
+        "operationId": "EventsController_cancelRsvp",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Cancel RSVP",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/{id}/attendees": {
+      "get": {
+        "operationId": "EventsController_getEventAttendees",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get list of attendees for an event",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/feed": {
+      "get": {
+        "description": "Returns a merged, chronologically sorted list of announcements (MongoDB), opportunities, and events (Neo4j). Use the optional `type` filter to scope results to a single content type — filtered requests skip the unneeded data source entirely, making them faster and returning a `total` count accurate for that type.",
+        "operationId": "FeedController_getFeed",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Page number (1-indexed)",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items per page",
+            "schema": {
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Filter by content type. Omit to receive all types merged. When set, only the relevant database is queried and `total` reflects that type only.",
+            "schema": {
+              "enum": [
+                "announcement",
+                "opportunity",
+                "event"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated feed items sorted newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — missing or invalid Bearer token"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get unified discovery feed",
+        "tags": [
+          "Feed"
+        ]
+      }
+    },
+    "/partner/me": {
+      "get": {
+        "operationId": "PartnerController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerProfileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your own partner profile",
+        "tags": [
+          "Partner"
+        ]
+      },
+      "delete": {
+        "operationId": "PartnerController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete your partner account",
+        "tags": [
+          "Partner"
+        ]
+      }
+    },
+    "/partner/connections": {
+      "get": {
+        "operationId": "PartnerController_getConnections",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NetworkUserResponseDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get your accepted professional connections",
+        "tags": [
+          "Partner"
+        ]
+      }
+    },
+    "/profile/me": {
+      "put": {
+        "operationId": "ProfileManagementController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UnifiedUpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update core profile information (display_name, bio, etc.)",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    },
+    "/profile/work-experience": {
+      "post": {
+        "operationId": "ProfileManagementController_addWorkExperience",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a new work experience record",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    },
+    "/profile/work-experience/{id}": {
+      "put": {
+        "operationId": "ProfileManagementController_updateWorkExperience",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkExperienceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing work experience record",
+        "tags": [
+          "Profile Management"
+        ]
+      },
+      "delete": {
+        "operationId": "ProfileManagementController_deleteWorkExperience",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a work experience record",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    },
+    "/profile/skills": {
+      "post": {
+        "operationId": "ProfileManagementController_addSkill",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSkillDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a skill to your profile",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    },
+    "/profile/skills/{id}": {
+      "put": {
+        "operationId": "ProfileManagementController_updateSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSkillDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a skill on your profile by skill ID",
+        "tags": [
+          "Profile Management"
+        ]
+      },
+      "delete": {
+        "operationId": "ProfileManagementController_deleteSkill",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a skill from your profile by skill ID",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    },
+    "/profile/education": {
+      "post": {
+        "operationId": "ProfileManagementController_addEducation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEducationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a new education record",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    },
+    "/profile/education/{id}": {
+      "put": {
+        "operationId": "ProfileManagementController_updateEducation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEducationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update an existing education record",
+        "tags": [
+          "Profile Management"
+        ]
+      },
+      "delete": {
+        "operationId": "ProfileManagementController_deleteEducation",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete an education record",
+        "tags": [
+          "Profile Management"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "UNISON API",
+    "description": "Alumni Network — CS Department, UET Faisalabad",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "SendOtpDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "email_verification",
+              "forgot_password"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "type"
+        ]
+      },
+      "OtpResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "OTP sent to your email."
+          },
+          "otp_expires_in": {
+            "type": "string",
+            "example": "10 minutes"
+          }
+        },
+        "required": [
+          "message",
+          "otp_expires_in"
+        ]
+      },
+      "RateLimitResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Please wait before requesting another OTP."
+          },
+          "retry_after_seconds": {
+            "type": "number",
+            "example": 47,
+            "description": "Seconds to wait before retrying"
+          }
+        },
+        "required": [
+          "message",
+          "retry_after_seconds"
+        ]
+      },
+      "VerifyOtpDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "otp": {
+            "type": "string",
+            "example": "482910"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "email_verification",
+              "forgot_password"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "otp",
+          "type"
+        ]
+      },
+      "VerifyOtpResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Operation successful."
+          },
+          "verified_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        },
+        "required": [
+          "message",
+          "verified_token"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "verified_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "username": {
+            "type": "string",
+            "example": "ahmed_h"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ahmed The Dev"
+          },
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "password": {
+            "type": "string",
+            "example": "StrongPassword123"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "alumni",
+              "student",
+              "partner"
+            ],
+            "example": "alumni"
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-101"
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "student_card": {
+            "type": "string",
+            "format": "binary",
+            "description": "Student card image file"
+          },
+          "graduation_year": {
+            "type": "number",
+            "description": "Alumni only",
+            "example": 2025
+          },
+          "semester": {
+            "type": "number",
+            "description": "Student only",
+            "example": 6
+          },
+          "batch": {
+            "type": "string",
+            "description": "Batch year (e.g., 2021)",
+            "example": "2021"
+          },
+          "affiliation": {
+            "type": "string",
+            "example": "Google"
+          },
+          "job_title": {
+            "type": "string",
+            "example": "Talent Acquisition"
+          }
+        },
+        "required": [
+          "verified_token",
+          "username",
+          "display_name",
+          "email",
+          "password",
+          "role",
+          "student_card"
+        ]
+      },
+      "SuccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Operation successful."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "password": {
+            "type": "string",
+            "example": "StrongPassword123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "UserProfileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "ahmed_h"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ahmed The Dev"
+          },
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni"
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-101"
+          },
+          "batch": {
+            "type": "string",
+            "example": "2021-2025"
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2025
+          },
+          "semester": {
+            "type": "number",
+            "example": 6
+          },
+          "phone": {
+            "type": "string",
+            "example": "+923001234567"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "role",
+          "degree",
+          "roll_number"
+        ]
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni"
+          },
+          "account_status": {
+            "type": "string",
+            "example": "approved"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/UserProfileDto"
+          }
+        },
+        "required": [
+          "token",
+          "role",
+          "account_status",
+          "profile"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "verified_token": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "new_password": {
+            "type": "string",
+            "example": "NewStrongPassword456"
+          }
+        },
+        "required": [
+          "verified_token",
+          "new_password"
+        ]
+      },
+      "NotificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-notification-123"
+          },
+          "message": {
+            "type": "string",
+            "example": "New connection request from Ahmed Hassan."
+          },
+          "type": {
+            "type": "string",
+            "example": "connection_request"
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2024-03-23T12:00:00Z"
+          },
+          "is_read": {
+            "type": "boolean",
+            "example": false
+          },
+          "sender_username": {
+            "type": "string",
+            "example": "ahmed_hassan"
+          },
+          "sender_display_name": {
+            "type": "string",
+            "example": "Ahmed Hassan"
+          },
+          "sender_profile_picture": {
+            "type": "string",
+            "example": "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+          },
+          "reference_link": {
+            "type": "string",
+            "example": "/opportunities/uuid-123"
+          },
+          "reference_id": {
+            "type": "string",
+            "example": "65f12345ab6789cd12345678"
+          }
+        },
+        "required": [
+          "id",
+          "message",
+          "type",
+          "created_at",
+          "is_read"
+        ]
+      },
+      "PendingAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "zain_a"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Zainab Ahmed"
+          },
+          "email": {
+            "type": "string",
+            "example": "zainab@uet.edu.pk"
+          },
+          "role": {
+            "type": "string",
+            "example": "student"
+          },
+          "registered_at": {
+            "type": "string",
+            "example": "2024-03-23T10:00:00Z"
+          },
+          "profile_picture": {
+            "type": "object",
+            "example": "https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg",
+            "nullable": true
+          },
+          "student_card_url": {
+            "type": "string",
+            "example": "https://cloudinary.com/student_card.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "role",
+          "registered_at",
+          "profile_picture",
+          "student_card_url"
+        ]
+      },
+      "RejectAccountDto": {
+        "type": "object",
+        "properties": {
+          "rejection_reason": {
+            "type": "string",
+            "description": "Reason for rejecting the account registration",
+            "example": "Invalid roll number provided."
+          }
+        },
+        "required": [
+          "rejection_reason"
+        ]
+      },
+      "BulkActionDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "example": [
+              "uuid-1",
+              "uuid-2"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
+      "BulkRejectDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "example": [
+              "uuid-1",
+              "uuid-2"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason": {
+            "type": "string",
+            "example": "Invalid documentation provided."
+          }
+        },
+        "required": [
+          "ids",
+          "reason"
+        ]
+      },
+      "UpgradeRequestResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "zain_a"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Zainab Ahmed"
+          },
+          "email": {
+            "type": "string",
+            "example": "zainab@uet.edu.pk"
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-110"
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2024
+          },
+          "upgrade_status": {
+            "type": "string",
+            "example": "pending"
+          },
+          "profile_picture": {
+            "type": "object",
+            "example": "https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "roll_number",
+          "graduation_year",
+          "upgrade_status",
+          "profile_picture"
+        ]
+      },
+      "RejectUpgradeDto": {
+        "type": "object",
+        "properties": {
+          "rejection_reason": {
+            "type": "string",
+            "description": "Reason for rejecting the profile upgrade",
+            "example": "Graduation year mismatch."
+          }
+        },
+        "required": [
+          "rejection_reason"
+        ]
+      },
+      "DashboardStatsResponseDto": {
+        "type": "object",
+        "properties": {
+          "total_alumni": {
+            "type": "number",
+            "example": 120
+          },
+          "total_students": {
+            "type": "number",
+            "example": 450
+          },
+          "pending_accounts": {
+            "type": "number",
+            "example": 15
+          },
+          "total_opportunities": {
+            "type": "number",
+            "example": 35
+          },
+          "total_companies": {
+            "type": "number",
+            "example": 45
+          },
+          "most_common_skills": {
+            "example": [
+              "Node.js",
+              "React",
+              "Python"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "total_alumni",
+          "total_students",
+          "pending_accounts",
+          "total_opportunities",
+          "total_companies",
+          "most_common_skills"
+        ]
+      },
+      "AdminAlumniListResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-alumni-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "hammad_i"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Hammad Ismail"
+          },
+          "email": {
+            "type": "string",
+            "example": "hammad@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+923001234567"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Software engineer with 5 years of experience."
+          },
+          "company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "role": {
+            "type": "string",
+            "example": "Software Engineer"
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2020
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "batch": {
+            "type": "string",
+            "example": "2016-2020"
+          },
+          "linkedin_url": {
+            "type": "string",
+            "example": "https://linkedin.com/in/hammad"
+          },
+          "profile_picture": {
+            "type": "object",
+            "example": "https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2024-03-23T10:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "company",
+          "role",
+          "graduation_year",
+          "degree",
+          "batch",
+          "profile_picture",
+          "created_at"
+        ]
+      },
+      "AdminAlumniPaginationResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 120
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminAlumniListResponseDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "data"
+        ]
+      },
+      "AdminStudentListResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-student-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "ali_k"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ali Khan"
+          },
+          "email": {
+            "type": "string",
+            "example": "ali@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+923451234567"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Passionate about web development."
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-110"
+          },
+          "semester": {
+            "type": "number",
+            "example": 6
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "batch": {
+            "type": "string",
+            "example": "2021-2025"
+          },
+          "profile_picture": {
+            "type": "object",
+            "example": "https://res.cloudinary.com/demo/image/upload/v123456789/profile.jpg",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2024-03-23T10:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "roll_number",
+          "semester",
+          "degree",
+          "batch",
+          "profile_picture",
+          "created_at"
+        ]
+      },
+      "AdminStudentPaginationResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 450
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStudentListResponseDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "data"
+        ]
+      },
+      "RequestEmailChangeDto": {
+        "type": "object",
+        "properties": {
+          "new_email": {
+            "type": "string",
+            "example": "new-email@admin.unison.pk"
+          }
+        },
+        "required": [
+          "new_email"
+        ]
+      },
+      "VerifyEmailChangeDto": {
+        "type": "object",
+        "properties": {
+          "new_email": {
+            "type": "string",
+            "example": "new-email@admin.unison.pk"
+          },
+          "otp": {
+            "type": "string",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "new_email",
+          "otp"
+        ]
+      },
+      "SkillGapDto": {
+        "type": "object",
+        "properties": {
+          "skill": {
+            "type": "string",
+            "example": "TypeScript"
+          },
+          "demand": {
+            "type": "number",
+            "example": 15
+          },
+          "supply": {
+            "type": "number",
+            "example": 5
+          },
+          "gap": {
+            "type": "number",
+            "example": 10
+          },
+          "priority": {
+            "type": "string",
+            "example": "High"
+          }
+        },
+        "required": [
+          "skill",
+          "demand",
+          "supply",
+          "gap",
+          "priority"
+        ]
+      },
+      "GrowthTrendDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2024-03"
+          },
+          "signups": {
+            "type": "number",
+            "example": 50
+          }
+        },
+        "required": [
+          "month",
+          "signups"
+        ]
+      },
+      "EngagementMetricsDto": {
+        "type": "object",
+        "properties": {
+          "messages_last_30_days": {
+            "type": "number",
+            "example": 1200
+          },
+          "active_conversations": {
+            "type": "number",
+            "example": 45
+          },
+          "connections_activity": {
+            "type": "number",
+            "example": 85
+          }
+        },
+        "required": [
+          "messages_last_30_days",
+          "active_conversations",
+          "connections_activity"
+        ]
+      },
+      "DepartmentalAnalysisDto": {
+        "type": "object",
+        "properties": {
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "student_count": {
+            "type": "number",
+            "example": 150
+          },
+          "top_skills": {
+            "example": [
+              "React",
+              "Node.js",
+              "Python"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "degree",
+          "student_count",
+          "top_skills"
+        ]
+      },
+      "AdvancedAnalyticsResponseDto": {
+        "type": "object",
+        "properties": {
+          "skill_gap": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillGapDto"
+            }
+          },
+          "growth_trends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrowthTrendDto"
+            }
+          },
+          "engagement_metrics": {
+            "$ref": "#/components/schemas/EngagementMetricsDto"
+          },
+          "departmental_analysis": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentalAnalysisDto"
+            }
+          },
+          "curriculum_alignment": {
+            "type": "object",
+            "example": {
+              "overall_alignment_score": 75
+            }
+          },
+          "mentorship_impact": {
+            "type": "object",
+            "example": {
+              "active_mentors": 25,
+              "mentored_students": 80,
+              "interaction_density": 200
+            }
+          }
+        },
+        "required": [
+          "skill_gap",
+          "growth_trends",
+          "engagement_metrics",
+          "departmental_analysis",
+          "curriculum_alignment",
+          "mentorship_impact"
+        ]
+      },
+      "CreateAnnouncementDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Annual Convocation 2025"
+          },
+          "description": {
+            "type": "string",
+            "example": "Join us for the Annual Convocation ceremony at UET Faisalabad."
+          },
+          "event_date": {
+            "type": "string",
+            "example": "2025-06-15T10:00:00Z"
+          }
+        },
+        "required": [
+          "title",
+          "description"
+        ]
+      },
+      "AnnouncementResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "663f1a2b3c4d5e6f78901234"
+          },
+          "title": {
+            "type": "string",
+            "example": "Annual Convocation 2025"
+          },
+          "description": {
+            "type": "string",
+            "example": "Join us for the Annual Convocation ceremony at UET Faisalabad."
+          },
+          "event_date": {
+            "type": "string",
+            "example": "2025-06-15T10:00:00Z"
+          },
+          "media_url": {
+            "type": "string",
+            "example": "https://res.cloudinary.com/demo/image/upload/v123/banner.jpg"
+          },
+          "media_type": {
+            "type": "string",
+            "example": "image",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "created_by_admin": {
+            "type": "object",
+            "example": {
+              "id": "admin-uuid-123",
+              "name": "UNISON Administration"
+            },
+            "description": "Details of the admin who created this announcement"
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2025-05-12T10:00:00Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "created_by_admin",
+          "created_at"
+        ]
+      },
+      "AnnouncementPaginationResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 50
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnouncementResponseDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "data"
+        ]
+      },
+      "UpdateAdminProfileDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "admin_user"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Admin Name"
+          },
+          "profile_picture": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
+      "CreateStaffDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "mod@unison.pk"
+          },
+          "password": {
+            "type": "string",
+            "example": "StrongPass123"
+          },
+          "username": {
+            "type": "string",
+            "example": "mod_ahmed"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ahmed Moderator"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "moderator"
+            ],
+            "example": "moderator"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "username",
+          "display_name",
+          "role"
+        ]
+      },
+      "WorkExperienceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-exp-123"
+          },
+          "company_name": {
+            "type": "string",
+            "example": "Google"
+          },
+          "role": {
+            "type": "string",
+            "example": "Senior Software Engineer"
+          },
+          "start_date": {
+            "type": "string",
+            "example": "2020-01-01"
+          },
+          "end_date": {
+            "type": "string",
+            "example": "2023-12-31"
+          },
+          "is_current": {
+            "type": "boolean",
+            "example": true
+          },
+          "employment_type": {
+            "type": "string",
+            "example": "full-time"
+          }
+        },
+        "required": [
+          "id",
+          "company_name",
+          "role",
+          "start_date",
+          "is_current",
+          "employment_type"
+        ]
+      },
+      "SkillDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-skill-123"
+          },
+          "name": {
+            "type": "string",
+            "example": "TypeScript"
+          },
+          "category": {
+            "type": "string",
+            "example": "Programming"
+          },
+          "proficiency_level": {
+            "type": "string",
+            "example": "expert"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "proficiency_level"
+        ]
+      },
+      "EducationResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-edu-123"
+          },
+          "university": {
+            "type": "string",
+            "example": "UET Lahore"
+          },
+          "degree": {
+            "type": "string",
+            "example": "Masters in Computer Science"
+          },
+          "field_of_study": {
+            "type": "string",
+            "example": "Artificial Intelligence"
+          },
+          "start_date": {
+            "type": "string",
+            "example": "2023-09-01"
+          },
+          "end_date": {
+            "type": "string",
+            "example": "2025-06-30"
+          },
+          "is_current": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "id",
+          "university",
+          "degree",
+          "start_date",
+          "is_current"
+        ]
+      },
+      "AlumniProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Ahmed Hassan"
+          },
+          "email": {
+            "type": "string",
+            "example": "ahmed@uet.edu.pk"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Experienced software engineer."
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2025
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "current_company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "role": {
+            "type": "string",
+            "example": "Senior Engineer"
+          },
+          "skills": {
+            "example": [
+              "TypeScript",
+              "NestJS"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "batch": {
+            "type": "string",
+            "example": "2021-2025"
+          },
+          "connections_count": {
+            "type": "number",
+            "example": 45
+          },
+          "linkedin_url": {
+            "type": "string",
+            "example": "https://linkedin.com/in/ahmed"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+923001234567"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://cloudinary.com/ahmed_profile.jpg"
+          },
+          "backDropImage": {
+            "type": "string",
+            "example": "https://cloudinary.com/ahmed_backdrop.jpg"
+          },
+          "work_experiences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkExperienceResponseDto"
+            }
+          },
+          "detailed_skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillDetailResponseDto"
+            }
+          },
+          "education": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EducationResponseDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "graduation_year",
+          "degree",
+          "skills",
+          "batch",
+          "connections_count",
+          "work_experiences",
+          "detailed_skills",
+          "education"
+        ]
+      },
+      "NetworkUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-123"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ali Khan"
+          },
+          "username": {
+            "type": "string",
+            "example": "alikhan"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://cloudinary.com/profile.jpg"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Experienced software engineer."
+          },
+          "backDropImage": {
+            "type": "string",
+            "example": "https://cloudinary.com/ahmed_backdrop.jpg"
+          },
+          "company": {
+            "type": "string",
+            "example": "Microsoft"
+          },
+          "role": {
+            "type": "string",
+            "example": "Product Manager"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "username"
+        ]
+      },
+      "StudentProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Ali Khan"
+          },
+          "email": {
+            "type": "string",
+            "example": "ali@uet.edu.pk"
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-110"
+          },
+          "semester": {
+            "type": "number",
+            "example": 6
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "skills": {
+            "example": [
+              "Python",
+              "Data Science"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "detailed_skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SkillDetailResponseDto"
+            }
+          },
+          "batch": {
+            "type": "string",
+            "example": "2021-2025"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Aspiring data scientist."
+          },
+          "phone": {
+            "type": "string",
+            "example": "+923451234567"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://cloudinary.com/ali_pro.jpg"
+          },
+          "backDropImage": {
+            "type": "string",
+            "example": "https://cloudinary.com/ali_backdrop.jpg"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "roll_number",
+          "semester",
+          "degree",
+          "skills",
+          "detailed_skills"
+        ]
+      },
+      "RequestUpgradeDto": {
+        "type": "object",
+        "properties": {
+          "graduation_year": {
+            "type": "number",
+            "description": "The year the student is graduating or has graduated",
+            "example": 2024
+          }
+        },
+        "required": [
+          "graduation_year"
+        ]
+      },
+      "CreateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the opportunity",
+            "example": "Full Stack Developer"
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of opportunity",
+            "enum": [
+              "job",
+              "internship",
+              "freelance",
+              "scholarship"
+            ],
+            "example": "job"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the opportunity",
+            "example": "We are looking for a skilled developer to join our team..."
+          },
+          "requirements": {
+            "type": "string",
+            "description": "Requirements for the opportunity",
+            "example": "3+ years of experience in Node.js, React, and MongoDB."
+          },
+          "location": {
+            "type": "string",
+            "description": "Location (e.g. Faisalabad, Remote)",
+            "example": "Faisalabad"
+          },
+          "is_remote": {
+            "type": "boolean",
+            "description": "Whether the opportunity is remote (accepts \"true\"/\"false\" strings)",
+            "example": true
+          },
+          "deadline": {
+            "type": "string",
+            "description": "Deadline for applications",
+            "example": "2023-12-31"
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Name of the posting company",
+            "example": "Arfa Software Technology Park"
+          },
+          "apply_link": {
+            "type": "string",
+            "description": "Direct link to apply",
+            "example": "https://careers.google.com"
+          },
+          "required_skills": {
+            "description": "List of required skills (accepts array or comma-separated string)",
+            "example": [
+              "Node.js",
+              "React"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "description": "Optional media files (images or videos, max 5). Exceeding 5 returns a 400 error."
+          }
+        },
+        "required": [
+          "title",
+          "type",
+          "description",
+          "requirements",
+          "location",
+          "is_remote",
+          "deadline",
+          "company_name",
+          "apply_link",
+          "required_skills"
+        ]
+      },
+      "CreateOpportunityResponseDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Opportunity broadcasted to network successfully."
+          },
+          "opportunity_id": {
+            "type": "string",
+            "example": "uuid-opp-123"
+          }
+        },
+        "required": [
+          "message",
+          "opportunity_id"
+        ]
+      },
+      "OpportunityPosterResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Hammad Ismail"
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni"
+          },
+          "username": {
+            "type": "string",
+            "example": "hammad"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "role",
+          "username"
+        ]
+      },
+      "OpportunityListResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-opp-123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Software Engineer"
+          },
+          "type": {
+            "type": "string",
+            "example": "full-time"
+          },
+          "description": {
+            "type": "string",
+            "example": "Deep dive into NestJS and Neo4j."
+          },
+          "company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "location": {
+            "type": "string",
+            "example": "Mountain View, CA"
+          },
+          "is_remote": {
+            "type": "boolean",
+            "example": true
+          },
+          "apply_link": {
+            "type": "string",
+            "example": "https://google.com/careers"
+          },
+          "posted_by": {
+            "$ref": "#/components/schemas/OpportunityPosterResponseDto"
+          },
+          "posted_at": {
+            "type": "string",
+            "example": "2024-03-23"
+          },
+          "deadline": {
+            "type": "string",
+            "example": "2024-04-01"
+          },
+          "media": {
+            "example": [
+              "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "description",
+          "company",
+          "location",
+          "is_remote",
+          "apply_link",
+          "posted_by",
+          "posted_at",
+          "deadline"
+        ]
+      },
+      "OpportunityPaginationResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "example": 100
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OpportunityListResponseDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "data"
+        ]
+      },
+      "MyOpportunityPostResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-opp-123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Software Engineer"
+          },
+          "company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "status": {
+            "type": "string",
+            "example": "open"
+          },
+          "posted_at": {
+            "type": "string",
+            "example": "2024-03-23"
+          },
+          "deadline": {
+            "type": "string",
+            "example": "2024-04-01"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "company",
+          "status",
+          "posted_at",
+          "deadline"
+        ]
+      },
+      "OpportunityCompanyResponseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Google"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "OpportunityDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-opp-123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Software Engineer"
+          },
+          "type": {
+            "type": "string",
+            "example": "full-time"
+          },
+          "description": {
+            "type": "string",
+            "example": "Deep dive into NestJS and Neo4j."
+          },
+          "requirements": {
+            "type": "string",
+            "example": "3+ years of experience in Node.js."
+          },
+          "location": {
+            "type": "string",
+            "example": "Mountain View, CA"
+          },
+          "is_remote": {
+            "type": "boolean",
+            "example": true
+          },
+          "apply_link": {
+            "type": "string",
+            "example": "https://google.com/careers"
+          },
+          "posted_at": {
+            "type": "string",
+            "example": "2024-03-23T10:30:00.000Z"
+          },
+          "deadline": {
+            "type": "string",
+            "example": "2024-04-01"
+          },
+          "company": {
+            "$ref": "#/components/schemas/OpportunityCompanyResponseDto"
+          },
+          "required_skills": {
+            "example": [
+              "Node.js",
+              "NestJS"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "posted_by": {
+            "$ref": "#/components/schemas/OpportunityPosterResponseDto"
+          },
+          "media": {
+            "example": [
+              "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "description",
+          "requirements",
+          "location",
+          "is_remote",
+          "apply_link",
+          "posted_at",
+          "deadline",
+          "company",
+          "required_skills",
+          "posted_by"
+        ]
+      },
+      "UpdateOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Updated title",
+            "example": "Senior Full Stack Developer"
+          },
+          "type": {
+            "type": "string",
+            "description": "Updated type",
+            "enum": [
+              "job",
+              "internship",
+              "freelance",
+              "scholarship"
+            ],
+            "example": "job"
+          },
+          "description": {
+            "type": "string",
+            "description": "Updated description",
+            "example": "We have updated the job description..."
+          },
+          "requirements": {
+            "type": "string",
+            "description": "Updated requirements",
+            "example": "5+ years of experience in Node.js, React, and AWS."
+          },
+          "location": {
+            "type": "string",
+            "description": "Updated location",
+            "example": "Lahore"
+          },
+          "is_remote": {
+            "type": "boolean",
+            "description": "Updated remote status",
+            "example": true
+          },
+          "company_name": {
+            "type": "string",
+            "description": "Updated company name",
+            "example": "Arfa Software Technology Park"
+          },
+          "apply_link": {
+            "type": "string",
+            "description": "Updated application link",
+            "example": "https://careers.new.com"
+          },
+          "deadline": {
+            "type": "string",
+            "description": "Updated deadline",
+            "example": "2024-01-01"
+          },
+          "status": {
+            "type": "string",
+            "description": "Updated status",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "example": "open"
+          },
+          "required_skills": {
+            "description": "Updated list of required skills",
+            "example": [
+              "Node.js",
+              "React"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "description": "Updated media files"
+          }
+        }
+      },
+      "SearchUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "ahmed_h"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ahmed The Dev"
+          },
+          "company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "job_role": {
+            "type": "string",
+            "example": "Software Engineer"
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni",
+            "description": "Platform role: alumni, student, or partner"
+          },
+          "skills": {
+            "example": [
+              "Node.js",
+              "Neo4j"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://cloudinary.com/ahmed_profile.jpg"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Experienced software engineer."
+          },
+          "backDropImage": {
+            "type": "string",
+            "example": "https://cloudinary.com/ahmed_backdrop.jpg"
+          },
+          "batch_year": {
+            "type": "string",
+            "example": "2021"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "role",
+          "skills"
+        ]
+      },
+      "SearchOpportunityResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-opp-123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Backend Developer"
+          },
+          "type": {
+            "type": "string",
+            "example": "job"
+          },
+          "company": {
+            "type": "string",
+            "example": "Startup X"
+          },
+          "location": {
+            "type": "string",
+            "example": "Lahore, Pakistan"
+          },
+          "apply_link": {
+            "type": "string",
+            "example": "https://startupx.com/apply"
+          },
+          "is_remote": {
+            "type": "boolean",
+            "example": true
+          },
+          "posted_by": {
+            "$ref": "#/components/schemas/OpportunityPosterResponseDto"
+          },
+          "posted_at": {
+            "type": "string",
+            "example": "2024-03-23"
+          },
+          "deadline": {
+            "type": "string",
+            "example": "2024-04-01"
+          },
+          "media": {
+            "example": [
+              "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "company",
+          "location",
+          "apply_link",
+          "is_remote",
+          "posted_by",
+          "posted_at",
+          "deadline"
+        ]
+      },
+      "UserDetailResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "ahmed_h"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Ahmed The Dev"
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni"
+          },
+          "degree": {
+            "type": "string",
+            "example": "BSCS"
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2024
+          },
+          "batch": {
+            "type": "string",
+            "example": "2020-2024"
+          },
+          "company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "job_role": {
+            "type": "string",
+            "example": "Software Engineer"
+          },
+          "skills": {
+            "example": [
+              "Node.js",
+              "Neo4j"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://cloudinary.com/ahmed_profile.jpg"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Passionate software engineer from UET Faisalabad."
+          },
+          "linkedin_url": {
+            "type": "string",
+            "example": "https://linkedin.com/in/ahmed"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "role",
+          "degree",
+          "graduation_year",
+          "skills"
+        ]
+      },
+      "CentralityResponseDto": {
+        "type": "object",
+        "properties": {
+          "alumni_id": {
+            "type": "string",
+            "example": "uuid-alumni-123"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Hammad Ismail"
+          },
+          "connections_count": {
+            "type": "number",
+            "example": 50
+          },
+          "centrality_score": {
+            "type": "number",
+            "example": 0.5
+          }
+        },
+        "required": [
+          "alumni_id",
+          "display_name",
+          "connections_count",
+          "centrality_score"
+        ]
+      },
+      "ShortestPathResponseDto": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "example": [
+              "Hammad Ismail",
+              "Ahmed Hassan",
+              "Ali Khan"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hops": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": [
+          "path",
+          "hops"
+        ]
+      },
+      "TopCompanyResponseDto": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "example": "Google"
+          },
+          "alumni_count": {
+            "type": "number",
+            "example": 25
+          }
+        },
+        "required": [
+          "company",
+          "alumni_count"
+        ]
+      },
+      "SkillTrendResponseDto": {
+        "type": "object",
+        "properties": {
+          "most_required_in_opportunities": {
+            "example": [
+              "TypeScript",
+              "Node.js",
+              "Python",
+              "NestJS",
+              "Neo4j"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "most_common_among_alumni": {
+            "example": [
+              "Python",
+              "Java",
+              "C++",
+              "SQL",
+              "JavaScript"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gap": {
+            "example": [
+              "Rust",
+              "Go",
+              "Kubernetes"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "most_required_in_opportunities",
+          "most_common_among_alumni",
+          "gap"
+        ]
+      },
+      "BatchAnalysisResponseDto": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "type": "string",
+            "example": "2021-2025"
+          },
+          "total_alumni": {
+            "type": "number",
+            "example": 100
+          },
+          "top_companies": {
+            "example": [
+              "Google",
+              "Microsoft"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "top_roles": {
+            "example": [
+              "Software Engineer",
+              "Product Manager"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "avg_connections": {
+            "type": "number",
+            "example": 15
+          }
+        },
+        "required": [
+          "batch",
+          "total_alumni",
+          "top_companies",
+          "top_roles",
+          "avg_connections"
+        ]
+      },
+      "ConnectionStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "connected",
+            "enum": [
+              "connected",
+              "pending",
+              "none"
+            ]
+          },
+          "is_sender": {
+            "type": "boolean",
+            "example": true,
+            "description": "True if the current user sent the pending request"
+          }
+        },
+        "required": [
+          "status",
+          "is_sender"
+        ]
+      },
+      "RespondToConnectionDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Action to take on the connection request",
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "example": "accept"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "SuggestionUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "hammad_i"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Hammad Ismail"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://url.com/pic.jpg"
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni"
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "batch": {
+            "type": "string",
+            "example": "2016-2020"
+          },
+          "mutual_connections": {
+            "type": "number",
+            "example": 3,
+            "description": "Number of mutual connections"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "role",
+          "mutual_connections"
+        ]
+      },
+      "ProfileWorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-exp-123"
+          },
+          "company_name": {
+            "type": "string",
+            "example": "Google"
+          },
+          "role": {
+            "type": "string",
+            "example": "Senior Software Engineer"
+          },
+          "start_date": {
+            "type": "string",
+            "example": "2023-01-01"
+          },
+          "end_date": {
+            "type": "string",
+            "example": "2023-12-31"
+          },
+          "is_current": {
+            "type": "boolean",
+            "example": true
+          },
+          "employment_type": {
+            "type": "string",
+            "example": "full-time"
+          }
+        },
+        "required": [
+          "id",
+          "company_name",
+          "role",
+          "start_date",
+          "is_current",
+          "employment_type"
+        ]
+      },
+      "ProfileSkillDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-skill-123"
+          },
+          "name": {
+            "type": "string",
+            "example": "TypeScript"
+          },
+          "category": {
+            "type": "string",
+            "example": "Programming"
+          },
+          "proficiency": {
+            "type": "string",
+            "example": "expert"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "proficiency"
+        ]
+      },
+      "ProfileOpportunityDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-opp-123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Backend Developer"
+          },
+          "type": {
+            "type": "string",
+            "example": "job"
+          },
+          "company": {
+            "type": "string",
+            "example": "Startup X"
+          },
+          "posted_at": {
+            "type": "string",
+            "example": "2024-03-23"
+          },
+          "deadline": {
+            "type": "string",
+            "example": "2024-04-01"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "type",
+          "company",
+          "posted_at",
+          "deadline"
+        ]
+      },
+      "PublicProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "uuid-user-123"
+          },
+          "username": {
+            "type": "string",
+            "example": "hammad_i"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "Hammad Ismail"
+          },
+          "role": {
+            "type": "string",
+            "example": "alumni"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://url.com/pic.jpg"
+          },
+          "backDropImage": {
+            "type": "string",
+            "example": "https://url.com/backdrop.jpg"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Software engineer at Google."
+          },
+          "degree": {
+            "type": "string",
+            "example": "BS Computer Science"
+          },
+          "batch": {
+            "type": "string",
+            "example": "2016-2020"
+          },
+          "graduation_year": {
+            "type": "number",
+            "example": 2020
+          },
+          "linkedin_url": {
+            "type": "string",
+            "example": "https://linkedin.com/in/hammad"
+          },
+          "semester": {
+            "type": "number",
+            "example": 6
+          },
+          "roll_number": {
+            "type": "string",
+            "example": "2021-CS-101"
+          },
+          "work_experience": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileWorkExperienceDto"
+            }
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileSkillDto"
+            }
+          },
+          "opportunities_posted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProfileOpportunityDto"
+            }
+          },
+          "connection_status": {
+            "type": "string",
+            "example": "connected",
+            "enum": [
+              "connected",
+              "pending",
+              "none"
+            ]
+          },
+          "is_connection_sender": {
+            "type": "boolean",
+            "example": true,
+            "description": "True if the REQUESTING user initiated the pending connection"
+          },
+          "followers_count": {
+            "type": "number",
+            "example": 120
+          },
+          "following_count": {
+            "type": "number",
+            "example": 45
+          },
+          "is_following": {
+            "type": "boolean",
+            "example": true
+          },
+          "opportunities_count": {
+            "type": "number",
+            "example": 12
+          },
+          "affiliation": {
+            "type": "string",
+            "example": "Google"
+          },
+          "job_title": {
+            "type": "string",
+            "example": "Technical Lead"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "role",
+          "degree",
+          "batch",
+          "work_experience",
+          "skills",
+          "opportunities_posted",
+          "connection_status",
+          "followers_count",
+          "following_count",
+          "is_following",
+          "opportunities_count"
+        ]
+      },
+      "ImageUploadResponseDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "publicId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "publicId"
+        ]
+      },
+      "SendMessageDto": {
+        "type": "object",
+        "properties": {
+          "receiverId": {
+            "type": "string",
+            "description": "The UUID of the receiver in Neo4j"
+          },
+          "content": {
+            "type": "string",
+            "description": "The content of the message"
+          },
+          "messageType": {
+            "type": "string",
+            "description": "Type of the message",
+            "enum": [
+              "text",
+              "image"
+            ],
+            "default": "text"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "URL of the image if messageType is image"
+          }
+        },
+        "required": [
+          "receiverId",
+          "content",
+          "messageType"
+        ]
+      },
+      "ChatMessageResponseDto": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "senderId": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "messageType": {
+            "type": "string",
+            "enum": [
+              "text",
+              "image"
+            ]
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_id",
+          "conversationId",
+          "senderId",
+          "content",
+          "messageType",
+          "isRead",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ConversationResponseDto": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "lastMessage": {
+            "$ref": "#/components/schemas/ChatMessageResponseDto"
+          },
+          "participantProfile": {
+            "type": "object",
+            "example": {
+              "id": "uuid",
+              "display_name": "Name",
+              "profile_picture": "url",
+              "username": "user"
+            }
+          }
+        },
+        "required": [
+          "_id",
+          "participants",
+          "updatedAt",
+          "participantProfile"
+        ]
+      },
+      "CreateEventDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Alumni Tech Meetup 2024"
+          },
+          "description": {
+            "type": "string",
+            "example": "A great place to meet and talk tech."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "reunion",
+              "webinar",
+              "workshop",
+              "networking",
+              "other"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2024-12-01T18:00:00Z"
+          },
+          "is_online": {
+            "type": "boolean",
+            "example": true
+          },
+          "location": {
+            "type": "string",
+            "example": "Google Meet"
+          },
+          "meeting_link": {
+            "type": "string",
+            "example": "https://meet.google.com/abc-defg-hij"
+          },
+          "max_attendees": {
+            "type": "number",
+            "example": 100
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "type",
+          "date",
+          "is_online"
+        ]
+      },
+      "UpdateEventDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Alumni Tech Meetup 2024 (Updated)"
+          },
+          "description": {
+            "type": "string",
+            "example": "A great place to meet and talk tech."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "reunion",
+              "webinar",
+              "workshop",
+              "networking",
+              "other"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2024-12-01T18:00:00Z"
+          },
+          "is_online": {
+            "type": "boolean",
+            "example": true
+          },
+          "location": {
+            "type": "string",
+            "example": "Google Meet"
+          },
+          "meeting_link": {
+            "type": "string",
+            "example": "https://meet.google.com/abc-defg-hij"
+          },
+          "max_attendees": {
+            "type": "number",
+            "example": 150
+          }
+        }
+      },
+      "RsvpDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "attending",
+              "maybe"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "FeedAuthorDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Author UUID"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Author display name"
+          },
+          "username": {
+            "type": "string",
+            "description": "Author @username"
+          },
+          "profile_picture": {
+            "type": "string",
+            "description": "Author profile picture URL"
+          },
+          "role": {
+            "type": "string",
+            "description": "Author role",
+            "enum": [
+              "admin",
+              "alumni",
+              "student",
+              "moderator"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "role"
+        ]
+      },
+      "FeedItemDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "announcement",
+              "opportunity",
+              "event"
+            ],
+            "description": "Content type of this feed item"
+          },
+          "id": {
+            "type": "string",
+            "description": "Item UUID (MongoDB ObjectId for announcements, Neo4j UUID for others)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Item title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Item description (may contain sanitized HTML)"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO 8601 creation timestamp"
+          },
+          "author": {
+            "description": "Author profile info",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FeedAuthorDto"
+              }
+            ]
+          },
+          "media_url": {
+            "type": "string",
+            "description": "Primary media URL (announcement media, opportunity media[0], event banner)"
+          },
+          "media_type": {
+            "type": "string",
+            "description": "[announcement] Media type",
+            "enum": [
+              "image",
+              "video"
+            ]
+          },
+          "company_name": {
+            "type": "string",
+            "description": "[opportunity] Company name"
+          },
+          "opportunity_type": {
+            "type": "string",
+            "description": "[opportunity] Opportunity type",
+            "enum": [
+              "job",
+              "internship",
+              "freelance",
+              "other"
+            ]
+          },
+          "location": {
+            "type": "string",
+            "description": "[opportunity | event] Location or venue"
+          },
+          "is_remote": {
+            "type": "boolean",
+            "description": "[opportunity] Whether the role is remote"
+          },
+          "apply_link": {
+            "type": "string",
+            "description": "[opportunity] Application link URL"
+          },
+          "deadline": {
+            "type": "string",
+            "description": "[opportunity] Application deadline (ISO 8601)"
+          },
+          "media": {
+            "description": "[opportunity] Additional media URLs",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "event_date": {
+            "type": "string",
+            "description": "[event] Event date (ISO 8601)"
+          },
+          "is_online": {
+            "type": "boolean",
+            "description": "[event] Whether the event is online"
+          },
+          "meeting_link": {
+            "type": "string",
+            "description": "[event] Meeting/stream link for online events"
+          },
+          "max_attendees": {
+            "type": "number",
+            "description": "[event] Maximum attendee capacity"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "[event] Event type",
+            "enum": [
+              "reunion",
+              "webinar",
+              "workshop",
+              "networking",
+              "other"
+            ]
+          },
+          "attendee_count": {
+            "type": "number",
+            "description": "[event] Number of users who RSVP'd as attending"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "title",
+          "description",
+          "created_at",
+          "author"
+        ]
+      },
+      "FeedResponseDto": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number",
+            "description": "Total items matching the query (respects type filter)",
+            "example": 150
+          },
+          "page": {
+            "type": "number",
+            "description": "Current page number",
+            "example": 1
+          },
+          "data": {
+            "description": "Feed items sorted newest first, sliced to the requested limit",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedItemDto"
+            }
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "data"
+        ]
+      },
+      "PartnerProfileResponseDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "google_hr"
+          },
+          "display_name": {
+            "type": "string",
+            "example": "John Smith"
+          },
+          "email": {
+            "type": "string",
+            "example": "john@google.com"
+          },
+          "bio": {
+            "type": "string",
+            "example": "Connecting talent with opportunity."
+          },
+          "affiliation": {
+            "type": "string",
+            "example": "Google"
+          },
+          "job_title": {
+            "type": "string",
+            "example": "Talent Acquisition Manager"
+          },
+          "phone": {
+            "type": "string",
+            "example": "+923001234567"
+          },
+          "linkedin_url": {
+            "type": "string",
+            "example": "https://linkedin.com/in/johnsmith"
+          },
+          "profile_picture": {
+            "type": "string",
+            "example": "https://cloudinary.com/profile.jpg"
+          },
+          "backDropImage": {
+            "type": "string",
+            "example": "https://cloudinary.com/backdrop.jpg"
+          },
+          "connections_count": {
+            "type": "number",
+            "example": 12
+          }
+        },
+        "required": [
+          "username",
+          "display_name",
+          "email",
+          "connections_count"
+        ]
+      },
+      "UnifiedUpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "display_name": {
+            "type": "string",
+            "example": "John Doe",
+            "description": "Applicable to alumni & student"
+          },
+          "bio": {
+            "type": "string",
+            "description": "A short bio",
+            "example": "Passionate tech professional."
+          },
+          "phone": {
+            "type": "string",
+            "description": "Phone number",
+            "example": "+923001234567"
+          },
+          "linkedin_url": {
+            "type": "string",
+            "description": "LinkedIn profile URL (Applicable to alumni & partner)",
+            "example": "https://linkedin.com/in/johndoe"
+          },
+          "affiliation": {
+            "type": "string",
+            "example": "Google",
+            "description": "Applicable to partner only"
+          },
+          "job_title": {
+            "type": "string",
+            "example": "Talent Acquisition Manager",
+            "description": "Applicable to partner only"
+          },
+          "semester": {
+            "type": "number",
+            "description": "Current semester of the student (Applicable to student only)",
+            "example": 4
+          },
+          "profile_picture": {
+            "type": "string",
+            "format": "binary",
+            "description": "Profile picture file"
+          },
+          "backDropImage": {
+            "type": "string",
+            "format": "binary",
+            "description": "Backdrop image file"
+          }
+        }
+      },
+      "CreateWorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "description": "Name of the company",
+            "example": "Google"
+          },
+          "role": {
+            "type": "string",
+            "description": "Job role or title",
+            "example": "Senior Software Engineer"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Start date of the work experience",
+            "example": "2023-01-01"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "End date of the work experience",
+            "example": "2023-12-31"
+          },
+          "is_current": {
+            "type": "boolean",
+            "description": "Whether this is the current job",
+            "example": true
+          },
+          "employment_type": {
+            "type": "string",
+            "description": "Employment type",
+            "enum": [
+              "full-time",
+              "part-time",
+              "freelance"
+            ]
+          }
+        },
+        "required": [
+          "company_name",
+          "role",
+          "start_date",
+          "is_current",
+          "employment_type"
+        ]
+      },
+      "UpdateWorkExperienceDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "description": "Updated job role or title",
+            "example": "Tech Lead"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Updated end date",
+            "example": "2024-01-01"
+          },
+          "is_current": {
+            "type": "boolean",
+            "description": "Whether this is now the current job",
+            "example": false
+          }
+        }
+      },
+      "AddSkillDto": {
+        "type": "object",
+        "properties": {
+          "skill_name": {
+            "type": "string",
+            "description": "Name of the skill",
+            "example": "TypeScript"
+          },
+          "category": {
+            "type": "string",
+            "description": "Skill category (e.g. Programming, Soft Skills)",
+            "example": "Programming"
+          },
+          "proficiency_level": {
+            "type": "string",
+            "description": "Proficiency level",
+            "enum": [
+              "beginner",
+              "intermediate",
+              "expert"
+            ]
+          },
+          "years_experience": {
+            "type": "number",
+            "description": "Years of experience in this skill",
+            "example": 3
+          }
+        },
+        "required": [
+          "skill_name",
+          "category",
+          "proficiency_level"
+        ]
+      },
+      "UpdateSkillDto": {
+        "type": "object",
+        "properties": {
+          "proficiency_level": {
+            "type": "string",
+            "description": "Updated proficiency level",
+            "enum": [
+              "beginner",
+              "intermediate",
+              "expert"
+            ],
+            "example": "expert"
+          },
+          "years_experience": {
+            "type": "number",
+            "description": "Updated years of experience in this skill",
+            "example": 5
+          }
+        }
+      },
+      "CreateEducationDto": {
+        "type": "object",
+        "properties": {
+          "university": {
+            "type": "string",
+            "description": "Name of the university",
+            "example": "UET Lahore"
+          },
+          "degree": {
+            "type": "string",
+            "description": "Degree name",
+            "example": "Masters in Computer Science"
+          },
+          "field_of_study": {
+            "type": "string",
+            "description": "Field of study",
+            "example": "Artificial Intelligence"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Start date of the education",
+            "example": "2023-09-01"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "End date of the education",
+            "example": "2025-06-30"
+          },
+          "is_current": {
+            "type": "boolean",
+            "description": "Whether this is the current education",
+            "example": true
+          }
+        },
+        "required": [
+          "university",
+          "degree",
+          "start_date",
+          "is_current"
+        ]
+      },
+      "UpdateEducationDto": {
+        "type": "object",
+        "properties": {
+          "university": {
+            "type": "string",
+            "description": "Updated university name",
+            "example": "LUMS"
+          },
+          "degree": {
+            "type": "string",
+            "description": "Updated degree name",
+            "example": "PhD in Computer Science"
+          },
+          "field_of_study": {
+            "type": "string",
+            "description": "Updated field of study",
+            "example": "Software Engineering"
+          },
+          "start_date": {
+            "type": "string",
+            "description": "Updated start date",
+            "example": "2024-01-01"
+          },
+          "end_date": {
+            "type": "string",
+            "description": "Updated end date",
+            "example": "2026-06-30"
+          },
+          "is_current": {
+            "type": "boolean",
+            "description": "Whether this is now the current education",
+            "example": false
+          }
+        }
+      }
+    }
+  }
+}
