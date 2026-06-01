@@ -23,6 +23,7 @@ import { GetUser } from '../common/decorators/get-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateEventDto, UpdateEventDto, RsvpDto } from './dto/events.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
+import { PostRateLimitGuard } from '../common/guards/post-rate-limit.guard';
 
 @ApiTags('Events')
 @ApiBearerAuth()
@@ -33,6 +34,7 @@ export class EventsController {
 
   @Post()
   @Roles('admin', 'alumni', 'partner')
+  @UseGuards(PostRateLimitGuard)
   @UseInterceptors(FileInterceptor('banner'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new event (Admin/Alumni only)' })

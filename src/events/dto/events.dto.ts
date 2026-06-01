@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsEnum, IsBoolean, IsOptional, IsNumber, Min, IsDateString, IsUrl } from 'class-validator';
+import { IsString, IsNotEmpty, IsEnum, IsBoolean, IsOptional, IsNumber, Min, IsDateString, IsUrl, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum EventType {
@@ -11,14 +11,16 @@ export enum EventType {
 }
 
 export class CreateEventDto {
-  @ApiProperty({ example: 'Alumni Tech Meetup 2024' })
+  @ApiProperty({ example: 'Alumni Tech Meetup 2024', maxLength: 300 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(300)
   title: string;
 
-  @ApiProperty({ example: 'A great place to meet and talk tech.' })
+  @ApiProperty({ example: 'A great place to meet and talk tech.', maxLength: 40000 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40000)
   description: string;
 
   @ApiProperty({ enum: EventType })
@@ -42,9 +44,10 @@ export class CreateEventDto {
   @IsString()
   location?: string;
 
-  @ApiPropertyOptional({ example: 'https://meet.google.com/abc-defg-hij' })
+  @ApiPropertyOptional({ example: 'https://meet.google.com/abc-defg-hij', maxLength: 2048 })
   @IsOptional()
   @IsUrl()
+  @MaxLength(2048)
   meeting_link?: string;
 
   @ApiPropertyOptional({ example: 100 })
@@ -60,14 +63,16 @@ export class CreateEventDto {
 }
 
 export class UpdateEventDto {
-  @ApiPropertyOptional({ example: 'Alumni Tech Meetup 2024 (Updated)' })
+  @ApiPropertyOptional({ example: 'Alumni Tech Meetup 2024 (Updated)', maxLength: 300 })
   @IsOptional()
   @IsString()
+  @MaxLength(300)
   title?: string;
 
-  @ApiPropertyOptional({ example: 'A great place to meet and talk tech.' })
+  @ApiPropertyOptional({ example: 'A great place to meet and talk tech.', maxLength: 40000 })
   @IsOptional()
   @IsString()
+  @MaxLength(40000)
   description?: string;
 
   @ApiPropertyOptional({ enum: EventType })
@@ -94,9 +99,10 @@ export class UpdateEventDto {
   @IsString()
   location?: string;
 
-  @ApiPropertyOptional({ example: 'https://meet.google.com/abc-defg-hij' })
+  @ApiPropertyOptional({ example: 'https://meet.google.com/abc-defg-hij', maxLength: 2048 })
   @IsOptional()
   @IsUrl()
+  @MaxLength(2048)
   meeting_link?: string;
 
   @ApiPropertyOptional({ example: 150 })

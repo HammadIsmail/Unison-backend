@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsInt, ValidateIf } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsDateString, IsEnum, IsNotEmpty, IsInt, ValidateIf, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateAlumniProfileDto {
@@ -7,14 +7,16 @@ export class UpdateAlumniProfileDto {
   @IsString()
   display_name?: string;
 
-  @ApiPropertyOptional({ description: 'A short bio of the alumni', example: 'Experienced software engineer specialized in NestJS and Neo4j.' })
+  @ApiPropertyOptional({ description: 'A short bio of the alumni', example: 'Experienced software engineer specialized in NestJS and Neo4j.', maxLength: 500 })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   bio?: string;
 
-  @ApiPropertyOptional({ description: 'LinkedIn profile URL', example: 'https://linkedin.com/in/ahmedhassan' })
+  @ApiPropertyOptional({ description: 'LinkedIn profile URL', example: 'https://linkedin.com/in/ahmedhassan', maxLength: 2048 })
   @IsOptional()
   @IsString()
+  @MaxLength(2048)
   linkedin_url?: string;
 
   @ApiPropertyOptional({ description: 'Phone number', example: '+923001234567' })
@@ -32,14 +34,16 @@ export class UpdateAlumniProfileDto {
 }
 
 export class CreateWorkExperienceDto {
-  @ApiProperty({ description: 'Name of the company', example: 'Google' })
+  @ApiProperty({ description: 'Name of the company', example: 'Google', maxLength: 30 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(30)
   company_name: string;
 
-  @ApiProperty({ description: 'Job role or title', example: 'Senior Software Engineer' })
+  @ApiProperty({ description: 'Job role or title', example: 'Senior Software Engineer', maxLength: 30 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(30)
   role: string;
 
   @ApiProperty({ description: 'Start date of the work experience', example: '2023-01-01' })
@@ -64,9 +68,10 @@ export class CreateWorkExperienceDto {
 }
 
 export class UpdateWorkExperienceDto {
-  @ApiPropertyOptional({ description: 'Updated job role or title', example: 'Tech Lead' })
+  @ApiPropertyOptional({ description: 'Updated job role or title', example: 'Tech Lead', maxLength: 30 })
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   role?: string;
 
   @ApiPropertyOptional({ description: 'Updated end date', example: '2024-01-01' })
@@ -83,14 +88,16 @@ export class UpdateWorkExperienceDto {
 
 
 export class AddSkillDto {
-  @ApiProperty({ description: 'Name of the skill', example: 'TypeScript' })
+  @ApiProperty({ description: 'Name of the skill', example: 'TypeScript', maxLength: 50 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(50)
   skill_name: string;
 
-  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Programming' })
+  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Programming', maxLength: 50 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(50)
   category: string;
 
   @ApiProperty({ description: 'Proficiency level', enum: ['beginner', 'intermediate', 'expert'] })
@@ -117,19 +124,22 @@ export class UpdateSkillDto {
 }
 
 export class CreateEducationDto {
-  @ApiProperty({ description: 'Name of the university', example: 'UET Lahore' })
+  @ApiProperty({ description: 'Name of the university', example: 'UET Lahore', maxLength: 100 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(100)
   university: string;
 
-  @ApiProperty({ description: 'Degree name', example: 'Masters in Computer Science' })
+  @ApiProperty({ description: 'Degree name', example: 'Masters in Computer Science', maxLength: 100 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(100)
   degree: string;
 
-  @ApiPropertyOptional({ description: 'Field of study', example: 'Artificial Intelligence' })
+  @ApiPropertyOptional({ description: 'Field of study', example: 'Artificial Intelligence', maxLength: 100 })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   field_of_study?: string;
 
   @ApiProperty({ description: 'Start date of the education', example: '2023-09-01' })
@@ -149,19 +159,22 @@ export class CreateEducationDto {
 }
 
 export class UpdateEducationDto {
-  @ApiPropertyOptional({ description: 'Updated university name', example: 'LUMS' })
+  @ApiPropertyOptional({ description: 'Updated university name', example: 'LUMS', maxLength: 100 })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   university?: string;
 
-  @ApiPropertyOptional({ description: 'Updated degree name', example: 'PhD in Computer Science' })
+  @ApiPropertyOptional({ description: 'Updated degree name', example: 'PhD in Computer Science', maxLength: 100 })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   degree?: string;
 
-  @ApiPropertyOptional({ description: 'Updated field of study', example: 'Software Engineering' })
+  @ApiPropertyOptional({ description: 'Updated field of study', example: 'Software Engineering', maxLength: 100 })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   field_of_study?: string;
 
   @ApiPropertyOptional({ description: 'Updated start date', example: '2024-01-01' })

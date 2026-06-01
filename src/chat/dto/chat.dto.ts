@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsMongoId, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsMongoId, IsOptional, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendMessageDto {
@@ -7,9 +7,10 @@ export class SendMessageDto {
   @IsNotEmpty()
   receiverId: string;
 
-  @ApiProperty({ description: 'The content of the message' })
+  @ApiProperty({ description: 'The content of the message', maxLength: 5000 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(5000)
   content: string;
 
   @ApiProperty({ description: 'Type of the message', enum: ['text', 'image'], default: 'text' })

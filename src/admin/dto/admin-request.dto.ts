@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsString, IsNotEmpty, IsOptional, IsDateString, IsEmail, IsEnum, MinLength } from 'class-validator';
+import { IsArray, IsString, IsNotEmpty, IsOptional, IsDateString, IsEmail, IsEnum, MinLength, MaxLength } from 'class-validator';
 
 export class BulkActionDto {
   @ApiProperty({ type: [String], example: ['uuid-1', 'uuid-2'] })
@@ -45,14 +45,16 @@ export class AnalyticsFilterDto {
 }
 
 export class CreateAnnouncementDto {
-  @ApiProperty({ example: 'Annual Convocation 2025' })
+  @ApiProperty({ example: 'Annual Convocation 2025', maxLength: 300 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(300)
   title: string;
 
-  @ApiProperty({ example: 'Join us for the Annual Convocation ceremony at UET Faisalabad.' })
+  @ApiProperty({ example: 'Join us for the Annual Convocation ceremony at UET Faisalabad.', maxLength: 40000 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(40000)
   description: string;
 
   @ApiPropertyOptional({ example: '2025-06-15T10:00:00Z' })
@@ -82,9 +84,10 @@ export class CreateStaffDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'StrongPass123' })
+  @ApiProperty({ example: 'StrongPass123', maxLength: 50 })
   @IsString()
   @MinLength(8)
+  @MaxLength(50)
   password: string;
 
   @ApiProperty({ example: 'mod_ahmed' })

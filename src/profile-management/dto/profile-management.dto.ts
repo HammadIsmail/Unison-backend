@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -8,9 +8,10 @@ export class UnifiedUpdateProfileDto {
   @IsString()
   display_name?: string;
 
-  @ApiPropertyOptional({ description: 'A short bio', example: 'Passionate tech professional.' })
+  @ApiPropertyOptional({ description: 'A short bio', example: 'Passionate tech professional.', maxLength: 500 })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   bio?: string;
 
   @ApiPropertyOptional({ description: 'Phone number', example: '+923001234567' })
@@ -18,19 +19,22 @@ export class UnifiedUpdateProfileDto {
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'LinkedIn profile URL (Applicable to alumni & partner)', example: 'https://linkedin.com/in/johndoe' })
+  @ApiPropertyOptional({ description: 'LinkedIn profile URL (Applicable to alumni & partner)', example: 'https://linkedin.com/in/johndoe', maxLength: 2048 })
   @IsOptional()
   @IsString()
+  @MaxLength(2048)
   linkedin_url?: string;
 
-  @ApiPropertyOptional({ example: 'Google', description: 'Applicable to partner only' })
+  @ApiPropertyOptional({ example: 'Google', description: 'Applicable to partner only', maxLength: 30 })
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   affiliation?: string;
 
-  @ApiPropertyOptional({ example: 'Talent Acquisition Manager', description: 'Applicable to partner only' })
+  @ApiPropertyOptional({ example: 'Talent Acquisition Manager', description: 'Applicable to partner only', maxLength: 30 })
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   job_title?: string;
 
   @ApiPropertyOptional({ description: 'Current semester of the student (Applicable to student only)', example: 4 })

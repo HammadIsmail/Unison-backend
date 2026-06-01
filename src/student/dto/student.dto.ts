@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsNotEmpty, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsNotEmpty, IsInt, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -13,9 +13,10 @@ export class UpdateStudentProfileDto {
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'A short bio of the student', example: 'Fascinated by AI and machine learning. Looking for internships.' })
+  @ApiPropertyOptional({ description: 'A short bio of the student', example: 'Fascinated by AI and machine learning. Looking for internships.', maxLength: 500 })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   bio?: string;
 
   @ApiPropertyOptional({ type: 'string', format: 'binary', description: 'Profile picture file' })
@@ -34,14 +35,16 @@ export class UpdateStudentProfileDto {
 }
 
 export class AddStudentSkillDto {
-  @ApiProperty({ description: 'Name of the skill', example: 'Python' })
+  @ApiProperty({ description: 'Name of the skill', example: 'Python', maxLength: 50 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(50)
   skill_name: string;
 
-  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Data Science' })
+  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Data Science', maxLength: 50 })
   @IsNotEmpty()
   @IsString()
+  @MaxLength(50)
   category: string;
 
   @ApiProperty({ description: 'Proficiency level', enum: ['beginner', 'intermediate', 'expert'], example: 'beginner' })

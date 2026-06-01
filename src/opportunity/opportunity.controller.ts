@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { PostRateLimitGuard } from '../common/guards/post-rate-limit.guard';
 
 @ApiTags('Opportunities')
 @ApiBearerAuth()
@@ -24,6 +25,7 @@ export class OpportunityController {
 
   @Post()
   @Roles('alumni', 'admin', 'partner')
+  @UseGuards(PostRateLimitGuard)
   @UseInterceptors(FilesInterceptor('media', 10))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Post a new job or internship opportunity with optional images/videos (max 5)' })

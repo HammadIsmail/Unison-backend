@@ -6,6 +6,7 @@ import {
     IsOptional,
     IsString,
     MinLength,
+    MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -42,23 +43,26 @@ export class RegisterDto {
     verified_token: string;
 
 
-    @ApiProperty({ example: 'ahmed_h' })
+    @ApiProperty({ example: 'ahmed_h', maxLength: 20 })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(20)
     username: string;
 
-    @ApiProperty({ example: 'Ahmed The Dev' })
+    @ApiProperty({ example: 'Ahmed The Dev', maxLength: 25 })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(25)
     display_name: string;
 
     @ApiProperty({ example: 'ahmed@uet.edu.pk' })
     @IsEmail()
     email: string;
 
-    @ApiProperty({ example: 'StrongPassword123' })
+    @ApiProperty({ example: 'StrongPassword123', maxLength: 50 })
     @IsString()
     @MinLength(8)
+    @MaxLength(50)
     password: string;
 
     @ApiProperty({ enum: ['alumni', 'student', 'partner'], example: 'alumni' })
@@ -112,9 +116,10 @@ export class LoginDto {
     @IsEmail()
     email: string;
 
-    @ApiProperty({ example: 'StrongPassword123' })
+    @ApiProperty({ example: 'StrongPassword123', maxLength: 50 })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(50)
     password: string;
 }
 
@@ -124,8 +129,9 @@ export class ResetPasswordDto {
     @IsNotEmpty()
     verified_token: string;
 
-    @ApiProperty({ example: 'NewStrongPassword456' })
+    @ApiProperty({ example: 'NewStrongPassword456', maxLength: 50 })
     @IsString()
     @MinLength(8)
+    @MaxLength(50)
     new_password: string;
 }

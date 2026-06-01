@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsBoolean, IsDateString, IsArray, IsEnum, IsOptional, IsUrl } from 'class-validator';
+import { IsString, IsNotEmpty, IsBoolean, IsDateString, IsArray, IsEnum, IsOptional, IsUrl, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
@@ -15,9 +15,10 @@ export enum OpportunityStatus {
 }
 
 export class CreateOpportunityDto {
-  @ApiProperty({ description: 'Title of the opportunity', example: 'Full Stack Developer' })
+  @ApiProperty({ description: 'Title of the opportunity', example: 'Full Stack Developer', maxLength: 300 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(300)
   title: string;
 
   @ApiProperty({ description: 'Type of opportunity', enum: OpportunityType, example: OpportunityType.JOB })
@@ -25,14 +26,16 @@ export class CreateOpportunityDto {
   @IsNotEmpty()
   type: OpportunityType;
 
-  @ApiProperty({ description: 'Detailed description of the opportunity', example: 'We are looking for a skilled developer to join our team...' })
+  @ApiProperty({ description: 'Detailed description of the opportunity', example: 'We are looking for a skilled developer to join our team...', maxLength: 40000 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40000)
   description: string;
 
-  @ApiProperty({ description: 'Requirements for the opportunity', example: '3+ years of experience in Node.js, React, and MongoDB.' })
+  @ApiProperty({ description: 'Requirements for the opportunity', example: '3+ years of experience in Node.js, React, and MongoDB.', maxLength: 40000 })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40000)
   requirements: string;
 
   @ApiProperty({ description: 'Location (e.g. Faisalabad, Remote)', example: 'Faisalabad' })
@@ -56,9 +59,10 @@ export class CreateOpportunityDto {
   @IsNotEmpty()
   company_name: string;
 
-  @ApiProperty({ description: 'Direct link to apply', example: 'https://careers.google.com' })
+  @ApiProperty({ description: 'Direct link to apply', example: 'https://careers.google.com', maxLength: 2048 })
   @IsUrl()
   @IsNotEmpty()
+  @MaxLength(2048)
   apply_link: string;
 
   @ApiProperty({ description: 'List of required skills (accepts array or comma-separated string)', type: [String], example: ['Node.js', 'React'] })
@@ -78,10 +82,11 @@ export class CreateOpportunityDto {
 }
 
 export class UpdateOpportunityDto {
-  @ApiPropertyOptional({ description: 'Updated title', example: 'Senior Full Stack Developer' })
+  @ApiPropertyOptional({ description: 'Updated title', example: 'Senior Full Stack Developer', maxLength: 300 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(300)
   title?: string;
 
   @ApiPropertyOptional({ description: 'Updated type', enum: OpportunityType, example: OpportunityType.JOB })
@@ -90,16 +95,18 @@ export class UpdateOpportunityDto {
   @IsNotEmpty()
   type?: OpportunityType;
 
-  @ApiPropertyOptional({ description: 'Updated description', example: 'We have updated the job description...' })
+  @ApiPropertyOptional({ description: 'Updated description', example: 'We have updated the job description...', maxLength: 40000 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40000)
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Updated requirements', example: '5+ years of experience in Node.js, React, and AWS.' })
+  @ApiPropertyOptional({ description: 'Updated requirements', example: '5+ years of experience in Node.js, React, and AWS.', maxLength: 40000 })
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(40000)
   requirements?: string;
 
   @ApiPropertyOptional({ description: 'Updated location', example: 'Lahore' })
@@ -121,10 +128,11 @@ export class UpdateOpportunityDto {
   @IsNotEmpty()
   company_name?: string;
 
-  @ApiPropertyOptional({ description: 'Updated application link', example: 'https://careers.new.com' })
+  @ApiPropertyOptional({ description: 'Updated application link', example: 'https://careers.new.com', maxLength: 2048 })
   @IsOptional()
   @IsUrl()
   @IsNotEmpty()
+  @MaxLength(2048)
   apply_link?: string;
 
   @ApiPropertyOptional({ description: 'Updated deadline', example: '2024-01-01' })
