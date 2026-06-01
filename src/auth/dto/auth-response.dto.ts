@@ -62,6 +62,9 @@ export class UserProfileDto {
 
     @ApiPropertyOptional({ example: '+923001234567' })
     phone?: string;
+
+    @ApiProperty({ example: 5 })
+    posts_count: number;
 }
 
 export class LoginResponseDto {

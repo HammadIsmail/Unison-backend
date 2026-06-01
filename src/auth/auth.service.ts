@@ -352,11 +352,15 @@ export class AuthService {
 
         // Fetch profile from Neo4j
         const result = await this.neo4j.run(
-            'MATCH (u:User {id: $userId}) RETURN u',
+            `MATCH (u:User {id: $userId}) 
+             OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+             WHERE o.is_deleted IS NULL OR o.is_deleted = false
+             RETURN u, count(DISTINCT o) AS posts_count`,
             { userId: auth.userId },
         );
 
         const user = result.records[0]?.get('u')?.properties;
+        const posts_count = result.records[0]?.get('posts_count')?.toNumber() || 0;
 
         // Build response profile
         const profile: any = {
@@ -371,6 +375,7 @@ export class AuthService {
             profile.profile_picture = user.profile_picture || null;
             profile.bio = user.bio || null;
             profile.account_status = user.account_status;
+            profile.posts_count = posts_count;
 
             if (auth.role !== 'admin') {
                 profile.degree = user.degree;

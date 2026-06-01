@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Neo4jService } from '../neo4j/neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,10 +38,13 @@ export class AlumniService {
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
        OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       WHERE o.is_deleted IS NULL OR o.is_deleted = false
        RETURN u, collect(DISTINCT w) AS experiences, 
               collect(DISTINCT e) AS education,
               collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, 
-              count(DISTINCT c) AS connections_count`,
+              count(DISTINCT c) AS connections_count,
+              count(DISTINCT o) AS posts_count`,
       { id }
     );
 
@@ -55,6 +58,7 @@ export class AlumniService {
     const education = record.get('education').map((node: any) => node.properties);
     const skills = record.get('skills').filter((s: any) => s.id !== null);
     const connections_count = record.get('connections_count').toNumber();
+    const posts_count = record.get('posts_count').toNumber();
 
     return {
       username: user.username,
@@ -68,6 +72,7 @@ export class AlumniService {
       skills: skills.map((s: any) => s.name),
       batch: user.batch,
       connections_count,
+      posts_count,
       linkedin_url: user.linkedin_url || null,
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
@@ -220,6 +225,15 @@ export class AlumniService {
   // ── Unified Skill Methods (accessible by alumni, partner, student) ──────────
 
   async addSkill(userId: string, dto: AddSkillDto) {
+    const countResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId})-[:HAS_SKILL]->(s:Skill) RETURN count(s) AS skillCount`,
+      { userId }
+    );
+    const skillCount = countResult.records[0]?.get('skillCount').toNumber() || 0;
+    if (skillCount >= 50) {
+      throw new BadRequestException('You can only add up to 50 skills.');
+    }
+
     const skillId = uuidv4();
     await this.neo4j.run(
       `MATCH (u:User {id: $userId})

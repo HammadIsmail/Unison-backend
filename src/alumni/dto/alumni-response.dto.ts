@@ -92,6 +92,9 @@ export class AlumniProfileResponseDto {
     @ApiProperty({ example: 45 })
     connections_count: number;
 
+    @ApiProperty({ example: 5 })
+    posts_count: number;
+
     @ApiPropertyOptional({ example: 'https://linkedin.com/in/ahmed' })
     linkedin_url?: string;
 
