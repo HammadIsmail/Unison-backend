@@ -90,15 +90,48 @@ export class AuthService {
             throw new NotFoundException('No OTP was sent to this email for this purpose.');
         }
 
+        // ── Check lockout ─────────────────────────────────────────────────────
+        if (record.locked_until && record.locked_until > new Date()) {
+            const secondsLeft = Math.ceil((record.locked_until.getTime() - Date.now()) / 1000);
+            throw new HttpException(
+                {
+                    message: 'Too many failed OTP attempts. Please try again later.',
+                    retry_after_seconds: secondsLeft,
+                },
+                HttpStatus.TOO_MANY_REQUESTS,
+            );
+        }
+
         if (record.expires_at < new Date()) {
             throw new BadRequestException('OTP has expired. Please request a new one.');
         }
+
         if (record.otp !== dto.otp) {
+            const attempts = (record.attempts || 0) + 1;
+            if (attempts >= 3) {
+                record.locked_until = new Date(Date.now() + 300 * 1000);
+                record.attempts = 0;
+                await record.save();
+
+                const secondsLeft = Math.ceil((record.locked_until.getTime() - Date.now()) / 1000);
+                throw new HttpException(
+                    {
+                        message: 'Too many failed OTP attempts. Please try again later.',
+                        retry_after_seconds: secondsLeft,
+                    },
+                    HttpStatus.TOO_MANY_REQUESTS,
+                );
+            }
+
+            record.attempts = attempts;
+            await record.save();
             throw new BadRequestException('Invalid OTP.');
         }
 
         // Mark as verified
         record.verified = true;
+        record.attempts = 0;
+        record.locked_until = null;
         await record.save();
 
         // Issue short-lived verified_token

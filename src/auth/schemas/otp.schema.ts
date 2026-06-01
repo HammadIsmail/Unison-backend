@@ -20,6 +20,12 @@ export class OTPRecord extends Document {
 
   @Prop({ type: Boolean, default: false })
   verified: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  attempts: number;
+
+  @Prop({ type: Date, default: null })
+  locked_until: Date | null;
 }
 
 export const OTPSchema = SchemaFactory.createForClass(OTPRecord);
