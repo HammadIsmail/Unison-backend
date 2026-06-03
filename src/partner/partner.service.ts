@@ -25,7 +25,9 @@ export class PartnerService {
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
        OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
        WHERE o.is_deleted IS NULL OR o.is_deleted = false
-       RETURN u, count(DISTINCT c) AS connections_count, count(DISTINCT o) AS posts_count`,
+       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
+       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+       RETURN u, count(DISTINCT c) AS connections_count, count(DISTINCT o) AS posts_count, count(DISTINCT f_in) AS followerCount, count(DISTINCT f_out) AS followingCount`,
       { id },
     );
 
@@ -37,6 +39,8 @@ export class PartnerService {
     const user = record.get('u').properties;
     const connections_count = record.get('connections_count').toNumber();
     const posts_count = record.get('posts_count').toNumber();
+    const followerCount = record.get('followerCount').toNumber();
+    const followingCount = record.get('followingCount').toNumber();
 
     return {
       username: user.username,
@@ -51,6 +55,8 @@ export class PartnerService {
       backDropImage: user.backDropImage || null,
       connections_count,
       posts_count,
+      followerCount,
+      followingCount,
     };
   }
 

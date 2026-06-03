@@ -37,5 +37,11 @@ export class StudentProfileResponseDto {
 
     @ApiPropertyOptional({ example: 'https://cloudinary.com/ali_backdrop.jpg' })
     backDropImage?: string;
+
+    @ApiProperty({ example: 120 })
+    followerCount: number;
+
+    @ApiProperty({ example: 80 })
+    followingCount: number;
 }
 

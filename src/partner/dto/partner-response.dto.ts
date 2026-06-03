@@ -36,4 +36,10 @@ export class PartnerProfileResponseDto {
 
   @ApiProperty({ example: 3 })
   posts_count: number;
+
+  @ApiProperty({ example: 120 })
+  followerCount: number;
+
+  @ApiProperty({ example: 80 })
+  followingCount: number;
 }

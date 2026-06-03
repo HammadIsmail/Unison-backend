@@ -22,7 +22,9 @@ export class StudentService {
       `MATCH (u:User {id: $id, role: 'student'})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
-       RETURN u, collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills`,
+       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
+       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+       RETURN u, collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, count(DISTINCT f_in) AS followerCount, count(DISTINCT f_out) AS followingCount`,
       { id }
     );
 
@@ -33,6 +35,8 @@ export class StudentService {
     const record = result.records[0];
     const user = record.get('u').properties;
     const skills = record.get('skills').filter((s: any) => s.id !== null);
+    const followerCount = record.get('followerCount').toNumber();
+    const followingCount = record.get('followingCount').toNumber();
 
     return {
       username: user.username,
@@ -48,6 +52,8 @@ export class StudentService {
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
       backDropImage: user.backDropImage || null,
+      followerCount,
+      followingCount,
     };
   }
 

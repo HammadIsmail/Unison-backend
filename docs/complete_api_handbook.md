@@ -745,6 +745,8 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner`.
   "batch": "2021-2025",
   "connections_count": 45,
   "posts_count": 5,
+  "followerCount": 120,
+  "followingCount": 80,
   "linkedin_url": "https://linkedin.com/in/ahmed",
   "phone": "+923001234567",
   "profile_picture": "https://cloudinary.com/ahmed_profile.jpg",
@@ -1111,7 +1113,9 @@ Requires `Bearer JWT`. Role restriction: `partner` only.
   "profile_picture": "https://cloudinary.com/profile.jpg",
   "backDropImage": "https://cloudinary.com/backdrop.jpg",
   "connections_count": 12,
-  "posts_count": 3
+  "posts_count": 3,
+  "followerCount": 120,
+  "followingCount": 80
 }
 ```
 
@@ -1461,7 +1465,9 @@ Requires `Bearer JWT`. Role restriction: `student`.
   "bio": "Aspiring data scientist.",
   "phone": "+923451234567",
   "profile_picture": "https://cloudinary.com/ali_pro.jpg",
-  "backDropImage": "https://cloudinary.com/ali_backdrop.jpg"
+  "backDropImage": "https://cloudinary.com/ali_backdrop.jpg",
+  "followerCount": 120,
+  "followingCount": 80
 }
 ```
 

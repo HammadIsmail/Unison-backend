@@ -40,11 +40,15 @@ export class AlumniService {
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
        OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
        WHERE o.is_deleted IS NULL OR o.is_deleted = false
+       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
+       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
        RETURN u, collect(DISTINCT w) AS experiences, 
               collect(DISTINCT e) AS education,
               collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, 
               count(DISTINCT c) AS connections_count,
-              count(DISTINCT o) AS posts_count`,
+              count(DISTINCT o) AS posts_count,
+              count(DISTINCT f_in) AS followerCount,
+              count(DISTINCT f_out) AS followingCount`,
       { id }
     );
 
@@ -59,6 +63,8 @@ export class AlumniService {
     const skills = record.get('skills').filter((s: any) => s.id !== null);
     const connections_count = record.get('connections_count').toNumber();
     const posts_count = record.get('posts_count').toNumber();
+    const followerCount = record.get('followerCount').toNumber();
+    const followingCount = record.get('followingCount').toNumber();
 
     return {
       username: user.username,
@@ -73,6 +79,8 @@ export class AlumniService {
       batch: user.batch,
       connections_count,
       posts_count,
+      followerCount,
+      followingCount,
       linkedin_url: user.linkedin_url || null,
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
