@@ -320,4 +320,23 @@ export class ConnectionsService {
     );
     return result.records[0]?.get('blocked') || false;
   }
+
+  async getBlockedUsers(userId: string) {
+    const result = await this.neo4j.run(
+      `MATCH (me:User {id: $userId})-[r:BLOCKED]->(u:User)
+       WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
+       RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
+              u.profile_picture AS profile_picture, u.role AS role, r.created_at AS blocked_at`,
+      { userId }
+    );
+
+    return result.records.map((r) => ({
+      id: r.get('id'),
+      display_name: r.get('display_name'),
+      username: r.get('username'),
+      profile_picture: r.get('profile_picture'),
+      role: r.get('role'),
+      blocked_at: r.get('blocked_at'),
+    }));
+  }
 }

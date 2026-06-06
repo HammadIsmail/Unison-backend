@@ -1356,6 +1356,26 @@ Shared relationship management for all users. Requires `Bearer JWT`.
 
 ---
 
+### 14. Get Blocked Users
+`GET /api/connections/blocked`  
+**Summary**: Retrieve a list of users that the current user has blocked.
+
+**Response (200)**:
+```json
+[
+  {
+    "id": "uuid-user-789",
+    "display_name": "Toxic User",
+    "username": "toxic_u",
+    "profile_picture": "https://cloudinary.com/toxic.jpg",
+    "role": "alumni",
+    "blocked_at": "2024-03-24T10:00:00Z"
+  }
+]
+```
+
+---
+
 ## 🎭 Profiles
 Comprehensive views for discovery and professional networking. Requires `Bearer JWT`.
 
@@ -1365,7 +1385,7 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
 
 **Includes**:
 - **Personal**: Bio, Picture, Degree, Batch.
-- **Academic**: Roll Number, Semester (Students).
+- **Academic**: Roll Number, Semester (Students), Education History (University, Degree, etc.).
 - **Professional**: Full Work History (Alumni).
 - **Contributions**: Opportunities posted by the user.
 - **Social**: Current connection status with the user.
@@ -1394,6 +1414,17 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
       "employment_type": "full-time"
     }
   ],
+  "education": [
+    {
+      "id": "uuid-edu-123",
+      "university": "FAST NUCES",
+      "degree": "Bachelors",
+      "field_of_study": "Computer Science",
+      "start_date": "2016-08-01",
+      "end_date": "2020-06-01",
+      "is_current": false
+    }
+  ],
   "skills": [
     {
       "id": "uuid-skill-123",
@@ -1417,6 +1448,7 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
   "followers_count": 120,
   "following_count": 45,
   "is_following": true,
+  "is_blocked": false,
   "is_online": true,
   "last_seen": "2024-03-23T10:00:00Z"
 }

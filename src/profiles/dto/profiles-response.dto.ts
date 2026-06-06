@@ -1,5 +1,28 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export class ProfileEducationDto {
+  @ApiProperty({ example: 'uuid-edu-123' })
+  id: string;
+
+  @ApiProperty({ example: 'FAST NUCES' })
+  university: string;
+
+  @ApiProperty({ example: 'Bachelors' })
+  degree: string;
+
+  @ApiProperty({ example: 'Computer Science' })
+  field_of_study: string;
+
+  @ApiProperty({ example: '2016-08-01' })
+  start_date: string;
+
+  @ApiPropertyOptional({ example: '2020-06-01' })
+  end_date?: string;
+
+  @ApiProperty({ example: false })
+  is_current: boolean;
+}
+
 export class ProfileWorkExperienceDto {
   @ApiProperty({ example: 'uuid-exp-123' })
   id: string;
@@ -102,6 +125,9 @@ export class PublicProfileResponseDto {
   @ApiProperty({ type: [ProfileWorkExperienceDto] })
   work_experience: ProfileWorkExperienceDto[];
 
+  @ApiProperty({ type: [ProfileEducationDto] })
+  education: ProfileEducationDto[];
+
   @ApiProperty({ type: [ProfileSkillDto] })
   skills: ProfileSkillDto[];
 
@@ -122,6 +148,9 @@ export class PublicProfileResponseDto {
 
   @ApiProperty({ example: true })
   is_following: boolean;
+
+  @ApiProperty({ example: false })
+  is_blocked: boolean;
 
   @ApiProperty({ example: 12 })
   opportunities_count: number;

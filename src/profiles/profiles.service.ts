@@ -23,9 +23,21 @@ export class ProfilesService {
         employment_type: w.employment_type
       }) AS work_exp
       
+      // 1.5 Fetch Education
+      OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education)
+      WITH u, work_exp, collect(DISTINCT {
+        id: e.id,
+        university: e.university,
+        degree: e.degree,
+        field_of_study: e.field_of_study,
+        start_date: e.start_date,
+        end_date: e.end_date,
+        is_current: e.is_current
+      }) AS education
+      
       // 2. Fetch Skills
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
-      WITH u, work_exp, collect(DISTINCT {
+      WITH u, work_exp, education, collect(DISTINCT {
         id: s.id,
         name: s.name,
         category: s.category,
@@ -35,7 +47,7 @@ export class ProfilesService {
       // 3. Fetch Posted Opportunities (exclude soft-deleted)
       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
       WHERE o.is_deleted IS NULL OR o.is_deleted = false
-      WITH u, work_exp, skills, collect(DISTINCT {
+      WITH u, work_exp, education, skills, collect(DISTINCT {
         id: o.id,
         title: o.title,
         type: o.type,
@@ -53,15 +65,16 @@ export class ProfilesService {
       OPTIONAL MATCH (u)-[:POSTED]->(total_opps:Opportunity)
       WHERE total_opps.is_deleted IS NULL OR total_opps.is_deleted = false
       
-      WITH u, work_exp, skills, opps, 
+      WITH u, work_exp, education, skills, opps, 
            r.status AS conn_status, 
            startNode(r) = me AS is_sender,
            count(DISTINCT f_in) AS followers_count,
            count(DISTINCT f_out) AS following_count,
            EXISTS((:User {id: $currentUserId})-[:FOLLOWS]->(u)) AS is_following,
+           EXISTS((:User {id: $currentUserId})-[:BLOCKED]->(u)) AS is_blocked,
            count(DISTINCT total_opps) AS opps_count
       
-      RETURN u, work_exp, skills, opps, conn_status, is_sender, followers_count, following_count, is_following, opps_count
+      RETURN u, work_exp, education, skills, opps, conn_status, is_sender, followers_count, following_count, is_following, is_blocked, opps_count
     `;
 
     const result = await this.neo4j.run(query, { targetId, currentUserId });
@@ -75,6 +88,7 @@ export class ProfilesService {
     // Cleanup collections: Neo4j OPTIONAL MATCH returns [{id: null}] if no match, 
     // we need to filter them out based on a required property like id or name.
     const workExperience = record.get('work_exp').filter(e => e.id !== null);
+    const education = record.get('education').filter(e => e.id !== null);
     const skills = record.get('skills').filter(s => s.id !== null);
     const opportunities = record.get('opps')
       .filter(o => o.id !== null)
@@ -100,6 +114,7 @@ export class ProfilesService {
       is_online: user.is_online || false,
       last_seen: user.last_seen || null,
       work_experience: workExperience,
+      education: education,
       skills: skills,
       opportunities_posted: opportunities,
       connection_status: record.get('conn_status') || 'none',
@@ -107,6 +122,7 @@ export class ProfilesService {
       followers_count: record.get('followers_count').toNumber(),
       following_count: record.get('following_count').toNumber(),
       is_following: record.get('is_following'),
+      is_blocked: record.get('is_blocked'),
       opportunities_count: record.get('opps_count').toNumber(),
       affiliation: user.affiliation || null,
       job_title: user.job_title || null

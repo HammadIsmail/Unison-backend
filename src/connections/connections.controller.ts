@@ -133,4 +133,11 @@ export class ConnectionsController {
   ) {
     return this.connectionsService.unblockUser(userId, targetId);
   }
+
+  @Get('blocked')
+  @ApiOperation({ summary: 'Get a list of users blocked by the current user' })
+  @ApiResponse({ status: 200 })
+  getBlockedUsers(@GetUser('sub') userId: string) {
+    return this.connectionsService.getBlockedUsers(userId);
+  }
 }
