@@ -13,7 +13,8 @@ import { Neo4jService } from '../neo4j/neo4j.service';
 @Injectable()
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: ['https://unison-lovat.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
+    credentials: true,
   },
 })
 export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
