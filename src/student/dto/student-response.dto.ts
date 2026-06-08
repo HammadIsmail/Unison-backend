@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { SkillDetailResponseDto } from '../../alumni/dto/alumni-response.dto';
+import { SkillDetailResponseDto, EducationResponseDto } from '../../alumni/dto/alumni-response.dto';
 
 export class StudentProfileResponseDto {
     @ApiProperty({ example: 'Ali Khan' })
@@ -43,5 +43,11 @@ export class StudentProfileResponseDto {
 
     @ApiProperty({ example: 80 })
     followingCount: number;
+
+    @ApiProperty({ example: 50 })
+    connections_count: number;
+
+    @ApiPropertyOptional({ type: [EducationResponseDto] })
+    education?: EducationResponseDto[];
 }
 

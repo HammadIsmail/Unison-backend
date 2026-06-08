@@ -104,10 +104,10 @@ export class ProfileManagementController {
     return this.alumniService.deleteSkill(userId, skillId);
   }
 
-  // ── Education (alumni & partner only) ─────────────────────────────────────
+  // ── Education (alumni, partner & student) ─────────────────────────────────────
 
   @Post('education')
-  @Roles('alumni', 'partner')
+  @Roles('alumni', 'partner', 'student')
   @ApiOperation({ summary: 'Add a new education record' })
   @ApiResponse({ status: 201, type: SuccessResponseDto })
   addEducation(@GetUser('sub') userId: string, @Body() dto: CreateEducationDto) {
@@ -115,7 +115,7 @@ export class ProfileManagementController {
   }
 
   @Put('education/:id')
-  @Roles('alumni', 'partner')
+  @Roles('alumni', 'partner', 'student')
   @ApiOperation({ summary: 'Update an existing education record' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   updateEducation(
@@ -127,7 +127,7 @@ export class ProfileManagementController {
   }
 
   @Delete('education/:id')
-  @Roles('alumni', 'partner')
+  @Roles('alumni', 'partner', 'student')
   @ApiOperation({ summary: 'Delete an education record' })
   @ApiResponse({ status: 200, type: SuccessResponseDto })
   deleteEducation(@GetUser('sub') userId: string, @Param('id') eduId: string) {

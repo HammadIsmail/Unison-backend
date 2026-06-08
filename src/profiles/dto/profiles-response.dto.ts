@@ -155,6 +155,9 @@ export class PublicProfileResponseDto {
   @ApiProperty({ example: 12 })
   opportunities_count: number;
 
+  @ApiProperty({ example: 48 })
+  connections_count: number;
+
   @ApiPropertyOptional({ example: 'Google' })
   affiliation?: string;
 

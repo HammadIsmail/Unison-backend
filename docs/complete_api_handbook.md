@@ -841,7 +841,7 @@ Requires `Bearer JWT`. Role restriction: `alumni` **or** `partner`.
 Requires `Bearer JWT`. Base path: `/api/profile`.
 
 > [!NOTE]
-> These endpoints are named after their **function**, not a role. Skills accept `alumni`, `partner`, and `student` JWTs. Work-experience and education accept `alumni` and `partner` only.
+> These endpoints are named after their **function**, not a role. Skills and education accept `alumni`, `partner`, and `student` JWTs. Work-experience accepts `alumni` and `partner` only.
 
 ### Core Profile Update
 
@@ -1003,7 +1003,7 @@ Requires `Bearer JWT`. Base path: `/api/profile`.
 
 #### 7. Add Education
 `POST /api/profile/education`  
-**Role**: `alumni`, `partner`  
+**Role**: `alumni`, `partner`, `student`  
 **Summary**: Records a new degree or academic achievement.
 
 **Request Body**:
@@ -1025,7 +1025,7 @@ Requires `Bearer JWT`. Base path: `/api/profile`.
 
 #### 8. Update Education
 `PUT /api/profile/education/:id`  
-**Role**: `alumni`, `partner`  
+**Role**: `alumni`, `partner`, `student`  
 **Summary**: Modifies an existing education record. `:id` is the education UUID.
 
 **Request Body**:
@@ -1052,7 +1052,7 @@ Requires `Bearer JWT`. Base path: `/api/profile`.
 
 #### 9. Delete Education
 `DELETE /api/profile/education/:id`  
-**Role**: `alumni`, `partner`  
+**Role**: `alumni`, `partner`, `student`  
 **Summary**: Removes an education record. `:id` is the education UUID.
 
 **Response (200)**:
@@ -1449,6 +1449,8 @@ Comprehensive views for discovery and professional networking. Requires `Bearer 
   "following_count": 45,
   "is_following": true,
   "is_blocked": false,
+  "connections_count": 48,
+  "opportunities_count": 12,
   "is_online": true,
   "last_seen": "2024-03-23T10:00:00Z"
 }
@@ -1488,6 +1490,7 @@ Requires `Bearer JWT`. Role restriction: `student`.
 **Response (200)**:
 ```json
 {
+  "username": "ali_khan",
   "display_name": "Ali Khan",
   "email": "ali@uet.edu.pk",
   "roll_number": "2021-CS-110",
@@ -1499,7 +1502,28 @@ Requires `Bearer JWT`. Role restriction: `student`.
   "profile_picture": "https://cloudinary.com/ali_pro.jpg",
   "backDropImage": "https://cloudinary.com/ali_backdrop.jpg",
   "followerCount": 120,
-  "followingCount": 80
+  "followingCount": 80,
+  "connections_count": 48,
+  "skills": ["Python", "Data Science"],
+  "detailed_skills": [
+    {
+      "id": "uuid-skill-123",
+      "name": "Python",
+      "category": "Programming",
+      "proficiency_level": "intermediate"
+    }
+  ],
+  "education": [
+    {
+      "id": "uuid-edu-123",
+      "university": "FAST NUCES",
+      "degree": "BS Computer Science",
+      "field_of_study": "Computer Science",
+      "start_date": "2021-09-01",
+      "end_date": null,
+      "is_current": true
+    }
+  ]
 }
 ```
 

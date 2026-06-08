@@ -65,6 +65,10 @@ export class ProfilesService {
       OPTIONAL MATCH (u)-[:POSTED]->(total_opps:Opportunity)
       WHERE total_opps.is_deleted IS NULL OR total_opps.is_deleted = false
       
+      // 6. Count Total Connections
+      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(conn:User)
+      WHERE conn.is_deleted IS NULL OR conn.is_deleted = false
+      
       WITH u, work_exp, education, skills, opps, 
            r.status AS conn_status, 
            startNode(r) = me AS is_sender,
@@ -72,9 +76,10 @@ export class ProfilesService {
            count(DISTINCT f_out) AS following_count,
            EXISTS((:User {id: $currentUserId})-[:FOLLOWS]->(u)) AS is_following,
            EXISTS((:User {id: $currentUserId})-[:BLOCKED]->(u)) AS is_blocked,
-           count(DISTINCT total_opps) AS opps_count
+           count(DISTINCT total_opps) AS opps_count,
+           count(DISTINCT conn) AS connections_count
       
-      RETURN u, work_exp, education, skills, opps, conn_status, is_sender, followers_count, following_count, is_following, is_blocked, opps_count
+      RETURN u, work_exp, education, skills, opps, conn_status, is_sender, followers_count, following_count, is_following, is_blocked, opps_count, connections_count
     `;
 
     const result = await this.neo4j.run(query, { targetId, currentUserId });
@@ -124,6 +129,7 @@ export class ProfilesService {
       is_following: record.get('is_following'),
       is_blocked: record.get('is_blocked'),
       opportunities_count: record.get('opps_count').toNumber(),
+      connections_count: record.get('connections_count').toNumber(),
       affiliation: user.affiliation || null,
       job_title: user.job_title || null
     };

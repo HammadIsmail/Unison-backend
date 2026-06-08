@@ -21,10 +21,13 @@ export class StudentService {
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id, role: 'student'})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
+       OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education)
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
+       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       WHERE c.is_deleted IS NULL OR c.is_deleted = false
        OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
        OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
-       RETURN u, collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, count(DISTINCT f_in) AS followerCount, count(DISTINCT f_out) AS followingCount`,
+       RETURN u, collect(DISTINCT e) AS education, collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, count(DISTINCT c) AS connections_count, count(DISTINCT f_in) AS followerCount, count(DISTINCT f_out) AS followingCount`,
       { id }
     );
 
@@ -34,7 +37,9 @@ export class StudentService {
 
     const record = result.records[0];
     const user = record.get('u').properties;
+    const education = record.get('education').map((node: any) => node.properties);
     const skills = record.get('skills').filter((s: any) => s.id !== null);
+    const connections_count = record.get('connections_count').toNumber();
     const followerCount = record.get('followerCount').toNumber();
     const followingCount = record.get('followingCount').toNumber();
 
@@ -52,8 +57,10 @@ export class StudentService {
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
       backDropImage: user.backDropImage || null,
+      connections_count,
       followerCount,
       followingCount,
+      education: education,
     };
   }
 
