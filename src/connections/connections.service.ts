@@ -286,10 +286,7 @@ export class ConnectionsService {
     await this.neo4j.run(
       `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
        MERGE (u)-[r:BLOCKED]->(t)
-       ON CREATE SET r.created_at = datetime()
-       WITH u, t, r
-       MATCH (u)-[c:CONNECTED_TO]-(t)
-       DELETE c`,
+       ON CREATE SET r.created_at = datetime()`,
       { userId, targetId }
     );
 
