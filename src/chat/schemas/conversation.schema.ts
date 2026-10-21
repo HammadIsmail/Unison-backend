@@ -4,6 +4,9 @@ import { Message } from './message.schema';
 
 @Schema({ timestamps: true })
 export class Conversation extends Document {
+  @Prop({ type: String, required: true, index: true })
+  tenantId: string;
+
   @Prop({ type: [String], required: true })
   participants: string[];
 
@@ -15,3 +18,5 @@ export class Conversation extends Document {
 }
 
 export const ConversationSchema = SchemaFactory.createForClass(Conversation);
+ConversationSchema.index({ tenantId: 1, participants: 1 });
+

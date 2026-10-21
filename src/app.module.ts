@@ -1,6 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { ClsModule, ClsService } from 'nestjs-cls';
 import { Neo4jModule } from './neo4j/neo4j.module';
 import { MailModule } from './common/mail/mail.module';
 import { AuthModule } from './auth/auth.module';
@@ -31,9 +32,18 @@ import { FeedModule } from './feed/feed.module';
 import { PartnerModule } from './partner/partner.module';
 import { ProfileManagementModule } from './profile-management/profile-management.module';
 import { ObserveModule } from './observe';
+import { TenantsModule } from './tenants/tenants.module';
+import { SuperAdminModule } from './super-admin/super-admin.module';
+import { AppGraphqlModule } from './graphql/app-graphql.module';
+import { createTenantScopePlugin } from './common/plugins/tenant-scope.plugin';
+import { TenantContextGuard } from './common/guards/tenant-context.guard';
 
 @Module({
   imports: [
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
     ObserveModule.forRoot({
       appKey: process.env.OBSERVE_APP_KEY,
       appSecret: process.env.OBSERVE_APP_SECRET,
@@ -43,6 +53,7 @@ import { ObserveModule } from './observe';
       isGlobal: true,
       validationSchema: Joi.object({
         PORT: Joi.number().default(5000),
+        MONGODB_URI: Joi.string().required(),
         NEO4J_URI: Joi.string().required(),
         NEO4J_USERNAME: Joi.string().required(),
         NEO4J_PASSWORD: Joi.string().required(),
@@ -65,6 +76,11 @@ import { ObserveModule } from './observe';
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
         SENTRY_DSN: Joi.string().required(),
+        DEFAULT_TENANT_SLUG: Joi.string().default('uet-lahore'),
+        DEFAULT_TENANT_NAME: Joi.string().default('University of Engineering and Technology, Lahore'),
+        SUPER_ADMIN_EMAIL: Joi.string().default('superadmin@unison.local'),
+        SUPER_ADMIN_PASSWORD: Joi.string().default('SuperSecurePass123!'),
+        TENANT_CACHE_TTL_SECONDS: Joi.number().default(60),
       }),
     }),
     BullModule.forRootAsync({
@@ -100,12 +116,26 @@ import { ObserveModule } from './observe';
         level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
       },
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
-    MongooseModule.forRoot(process.env.MONGODB_URI as string),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule, ClsModule],
+      useFactory: (config: ConfigService, cls: ClsService) => ({
+        uri: config.get<string>('MONGODB_URI'),
+        connectionFactory: (connection) => {
+          connection.plugin(createTenantScopePlugin(cls));
+          return connection;
+        },
+      }),
+      inject: [ConfigService, ClsService],
+    }),
     Neo4jModule,
+    TenantsModule,
+    SuperAdminModule,
     MailModule,
     AuthModule,
     AdminModule,
@@ -126,6 +156,7 @@ import { ObserveModule } from './observe';
     FeedModule,
     PartnerModule,
     ProfileManagementModule,
+    AppGraphqlModule,
   ],
   controllers: [AppController],
   providers: [
@@ -134,6 +165,10 @@ import { ObserveModule } from './observe';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TenantContextGuard,
     },
   ],
 })

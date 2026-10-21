@@ -6,6 +6,8 @@ import { Neo4jModule } from '../neo4j/neo4j.module';
 @Module({
   imports: [Neo4jModule],
   controllers: [SearchController],
-  providers: [SearchService]
+  providers: [SearchService],
+  exports: [SearchService],
 })
 export class SearchModule {}
+

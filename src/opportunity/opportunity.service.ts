@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { CreateOpportunityDto, UpdateOpportunityDto, OpportunityStatus } from './dto/opportunity.dto';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
@@ -11,7 +11,7 @@ import sanitizeHtml from 'sanitize-html';
 @Injectable()
 export class OpportunityService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     private readonly cloudinary: CloudinaryService,
     private readonly activity: ActivityService,
     private readonly notification: NotificationService,
@@ -22,19 +22,18 @@ export class OpportunityService {
 
     let mediaUrls: string[] = [];
     if (files && files.length > 0) {
-      const uploadPromises = files.map(file => this.cloudinary.uploadFile(file));
+      const uploadPromises = files.map((file) => this.cloudinary.uploadFile(file));
       const results = await Promise.all(uploadPromises);
-      mediaUrls = results.map(res => res.secure_url);
+      mediaUrls = results.map((res) => res.secure_url);
     }
 
     const now = new Date().toISOString();
 
-    // Create Opportunity node and connect to the user who posted it
-    // We also link required skills
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
        CREATE (o:Opportunity {
          id: $opportunityId,
+         tenantId: $tenantId,
          title: $dto.title,
          type: $dto.type,
          description: $dto.description,
@@ -74,20 +73,23 @@ export class OpportunityService {
     );
 
     // Fetch poster details
-    const userResult = await this.neo4j.run(`MATCH (u:User {id: $userId}) RETURN u.username AS username, u.profile_picture AS pic`, { userId });
+    const userResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.username AS username, u.profile_picture AS pic`,
+      { userId }
+    );
     const posterUsername = userResult.records[0]?.get('username') || null;
     const posterPic = userResult.records[0]?.get('pic') || null;
 
-    // Notify the entire network (all approved students and alumni)
+    // Notify only this university's approved students and alumni
     const broadcastQuery = `
-      MATCH (u:User)
+      MATCH (u:User {tenantId: $tenantId})
       WHERE u.account_status = 'approved' AND (u.role = 'student' OR u.role = 'alumni') AND u.id <> $userId
-      AND ${ACTIVE_USER('u')}
+        AND (u.is_deleted IS NULL OR u.is_deleted = false)
       RETURN u.id AS userId
     `;
     const networkResult = await this.neo4j.run(broadcastQuery, { userId });
 
-    const notificationPromises = networkResult.records.map(r =>
+    const notificationPromises = networkResult.records.map((r) =>
       this.notification.createNotification(
         r.get('userId'),
         `New opportunity at ${dto.company_name}: ${dto.title}`,
@@ -101,7 +103,6 @@ export class OpportunityService {
       )
     );
 
-    // Using allSettled to ensure failure for one user doesn't block the response
     await Promise.allSettled(notificationPromises);
 
     return { message: 'Opportunity broadcasted to network successfully.', opportunity_id: opportunityId };
@@ -110,7 +111,7 @@ export class OpportunityService {
   async findAll(page: number = 1, limit: number = 10, type?: string, skill?: string, is_remote?: string) {
     const skip = (page - 1) * limit;
 
-    let matchClause = `MATCH (o:Opportunity)<-[:POSTED]-(u:User)`;
+    let matchClause = `MATCH (o:Opportunity {tenantId: $tenantId})<-[:POSTED]-(u:User {tenantId: $tenantId})`;
     let whereClauses: string[] = [];
 
     if (type) whereClauses.push(`o.type = $type`);
@@ -169,7 +170,7 @@ export class OpportunityService {
 
   async findOne(id: string) {
     const result = await this.neo4j.run(
-      `MATCH (o:Opportunity {id: $id})<-[:POSTED]-(u:User)
+      `MATCH (o:Opportunity {id: $id, tenantId: $tenantId})<-[:POSTED]-(u:User {tenantId: $tenantId})
        WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
        OPTIONAL MATCH (o)-[:REQUIRES_SKILL]->(s:Skill)
        RETURN o, u.id AS poster_id, u.display_name AS poster_name, u.username AS poster_username, 
@@ -196,7 +197,6 @@ export class OpportunityService {
       media: opp.media,
       company: {
         name: opp.company_name,
-        // Assume industry/website can be extracted later; docs had generic company objects
       },
       required_skills: r.get('required_skills'),
       posted_by: {
@@ -211,7 +211,7 @@ export class OpportunityService {
 
   async findMyPosts(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:POSTED]->(o:Opportunity)
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
        WHERE o.is_deleted IS NULL OR o.is_deleted = false
        RETURN o.id AS id, o.title AS title, o.company_name AS company, 
               o.status AS status, o.posted_at AS posted_at, o.deadline AS deadline
@@ -230,8 +230,11 @@ export class OpportunityService {
   }
 
   async update(userId: string, userRole: string, id: string, dto: UpdateOpportunityDto, files?: Express.Multer.File[]) {
-    // Determine target poster
-    const oppResult = await this.neo4j.run(`MATCH (u:User)-[:POSTED]->(o:Opportunity {id: $id}) RETURN u.id AS poster_id, o.media AS currentMedia`, { id });
+    const oppResult = await this.neo4j.run(
+      `MATCH (u:User {tenantId: $tenantId})-[:POSTED]->(o:Opportunity {id: $id, tenantId: $tenantId}) 
+       RETURN u.id AS poster_id, o.media AS currentMedia`,
+      { id }
+    );
     if (!oppResult.records.length) throw new NotFoundException('Opportunity not found.');
 
     const posterId = oppResult.records[0].get('poster_id');
@@ -243,19 +246,17 @@ export class OpportunityService {
 
     let mediaUrls = [...currentMedia];
 
-    // If existing media URLs are provided in the DTO, use them (allows removing specific images)
-    // Note: in multipart/form-data, if 'media' is sent as strings, they will be in dto.media
     if (dto.media && Array.isArray(dto.media)) {
-      mediaUrls = dto.media.filter(m => typeof m === 'string');
+      mediaUrls = dto.media.filter((m) => typeof m === 'string');
     } else if (typeof dto.media === 'string') {
       mediaUrls = [dto.media];
     }
 
     if (files && files.length > 0) {
-      const uploadPromises = files.map(file => this.cloudinary.uploadFile(file));
+      const uploadPromises = files.map((file) => this.cloudinary.uploadFile(file));
       const results = await Promise.all(uploadPromises);
-      const newMediaUrls = results.map(res => res.secure_url);
-      mediaUrls = [...mediaUrls, ...newMediaUrls].slice(0, 5); // Keep max 5
+      const newMediaUrls = results.map((res) => res.secure_url);
+      mediaUrls = [...mediaUrls, ...newMediaUrls].slice(0, 5);
     }
 
     const { required_skills, media, ...updateData } = dto;
@@ -264,7 +265,6 @@ export class OpportunityService {
       .filter((k) => updateData[k as keyof typeof updateData] !== undefined)
       .map((k) => `o.${k} = $${k}`);
 
-    // Always update media if files were provided or dto.media was provided
     if (files?.length || dto.media) {
       setClauses.push(`o.media = $mediaUrls`);
     }
@@ -276,14 +276,19 @@ export class OpportunityService {
       if (sanitizedData.description) sanitizedData.description = sanitizeHtml(sanitizedData.description);
       if (sanitizedData.requirements) sanitizedData.requirements = sanitizeHtml(sanitizedData.requirements);
       
-      await this.neo4j.run(`MATCH (o:Opportunity {id: $id}) SET ${setQuery} RETURN o`, { id, ...sanitizedData, mediaUrls });
+      await this.neo4j.run(
+        `MATCH (o:Opportunity {id: $id, tenantId: $tenantId}) SET ${setQuery} RETURN o`,
+        { id, ...sanitizedData, mediaUrls }
+      );
     }
 
     if (required_skills) {
-      // Refresh skills: delete old and add new
-      await this.neo4j.run(`MATCH (o:Opportunity {id: $id})-[r:REQUIRES_SKILL]->() DELETE r`, { id });
       await this.neo4j.run(
-        `MATCH (o:Opportunity {id: $id})
+        `MATCH (o:Opportunity {id: $id, tenantId: $tenantId})-[r:REQUIRES_SKILL]->() DELETE r`,
+        { id }
+      );
+      await this.neo4j.run(
+        `MATCH (o:Opportunity {id: $id, tenantId: $tenantId})
          WITH o
          UNWIND $required_skills AS skillName
          MERGE (s:Skill {name: toLower(skillName)})
@@ -297,7 +302,10 @@ export class OpportunityService {
   }
 
   async remove(userId: string, userRole: string, id: string) {
-    const oppResult = await this.neo4j.run(`MATCH (u:User)-[:POSTED]->(o:Opportunity {id: $id}) RETURN u.id AS poster_id`, { id });
+    const oppResult = await this.neo4j.run(
+      `MATCH (u:User {tenantId: $tenantId})-[:POSTED]->(o:Opportunity {id: $id, tenantId: $tenantId}) RETURN u.id AS poster_id`,
+      { id }
+    );
     if (!oppResult.records.length) throw new NotFoundException('Opportunity not found.');
 
     const posterId = oppResult.records[0].get('poster_id');
@@ -306,7 +314,7 @@ export class OpportunityService {
     }
 
     await this.neo4j.run(
-      `MATCH (o:Opportunity {id: $id}) 
+      `MATCH (o:Opportunity {id: $id, tenantId: $tenantId}) 
        SET o.is_deleted = true, o.deleted_at = datetime()`, 
       { id }
     );

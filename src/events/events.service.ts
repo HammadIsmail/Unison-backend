@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { NotificationService } from '../notification/notification.service';
 import { CreateEventDto, UpdateEventDto, RsvpDto } from './dto/events.dto';
@@ -10,7 +10,7 @@ import sanitizeHtml from 'sanitize-html';
 @Injectable()
 export class EventsService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly notification: NotificationService,
   ) {}
@@ -25,10 +25,11 @@ export class EventsService {
     }
 
     const query = `
-      MATCH (u:User {id: $userId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId})
       WHERE ${ACTIVE_USER('u')} AND u.role IN ['admin', 'alumni', 'partner']
       CREATE (e:Event {
         id: $eventId,
+        tenantId: $tenantId,
         title: $dto.title,
         description: $dto.description,
         type: $dto.type,
@@ -65,9 +66,8 @@ export class EventsService {
     let bannerUrl = null;
     let oldBannerUrl = null;
 
-    // Check ownership or admin status
     const checkQuery = `
-      MATCH (u:User {id: $userId}), (e:Event {id: $eventId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId}), (e:Event {id: $eventId, tenantId: $tenantId})
       WHERE (u)-[:CREATED_EVENT]->(e) OR u.role = 'admin'
       RETURN e.banner_url AS old_banner
     `;
@@ -100,7 +100,7 @@ export class EventsService {
     if (updates.length === 0) return { message: 'No fields to update.' };
 
     const updateQuery = `
-      MATCH (e:Event {id: $eventId})
+      MATCH (e:Event {id: $eventId, tenantId: $tenantId})
       SET ${updates.join(', ')}
       RETURN e
     `;
@@ -110,9 +110,9 @@ export class EventsService {
 
     await this.neo4j.run(updateQuery, { eventId, dto: resultDto, bannerUrl });
 
-    // Notify attendees of update
+    // Notify attendees of update (same tenant)
     const notifyQuery = `
-      MATCH (a:User)-[:RSVP]->(e:Event {id: $eventId})
+      MATCH (a:User {tenantId: $tenantId})-[r:RSVP]->(e:Event {id: $eventId, tenantId: $tenantId})
       RETURN a.id AS attendeeId, e.title AS title
     `;
     const notifyResult = await this.neo4j.run(notifyQuery, { eventId });
@@ -134,9 +134,8 @@ export class EventsService {
   }
 
   async deleteEvent(userId: string, eventId: string) {
-    // Check ownership or admin status
     const checkQuery = `
-      MATCH (u:User {id: $userId}), (e:Event {id: $eventId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId}), (e:Event {id: $eventId, tenantId: $tenantId})
       WHERE (u)-[:CREATED_EVENT]->(e) OR u.role = 'admin'
       RETURN e.title AS title, e.banner_url AS banner_url
     `;
@@ -150,7 +149,7 @@ export class EventsService {
 
     // Notify attendees of cancellation before deletion
     const notifyQuery = `
-      MATCH (a:User)-[:RSVP]->(e:Event {id: $eventId})
+      MATCH (a:User {tenantId: $tenantId})-[r:RSVP]->(e:Event {id: $eventId, tenantId: $tenantId})
       RETURN a.id AS attendeeId
     `;
     const notifyResult = await this.neo4j.run(notifyQuery, { eventId });
@@ -167,7 +166,7 @@ export class EventsService {
     }
 
     const deleteQuery = `
-      MATCH (e:Event {id: $eventId})
+      MATCH (e:Event {id: $eventId, tenantId: $tenantId})
       SET e.is_deleted = true
     `;
     await this.neo4j.run(deleteQuery, { eventId });
@@ -184,7 +183,7 @@ export class EventsService {
     const limit = query.limit || 20;
     const offset = query.offset || 0;
     
-    let matchQuery = `MATCH (e:Event)<-[:CREATED_EVENT]-(host:User) WHERE (e.is_deleted IS NULL OR e.is_deleted = false)`;
+    let matchQuery = `MATCH (e:Event {tenantId: $tenantId})<-[:CREATED_EVENT]-(host:User {tenantId: $tenantId}) WHERE (e.is_deleted IS NULL OR e.is_deleted = false)`;
     
     if (query.type) matchQuery += ` AND e.type = $type`;
     if (query.is_online !== undefined) matchQuery += ` AND e.is_online = $is_online_bool`;
@@ -196,7 +195,7 @@ export class EventsService {
     }
 
     matchQuery += `
-      OPTIONAL MATCH (a:User)-[r:RSVP {status: 'attending'}]->(e)
+      OPTIONAL MATCH (a:User {tenantId: $tenantId})-[r:RSVP {status: 'attending'}]->(e)
       WITH e, host, count(r) AS attendee_count
       RETURN e.id AS id, e.title AS title, e.type AS type, e.date AS date, 
              e.is_online AS is_online, e.location AS location, e.banner_url AS banner_url,
@@ -215,7 +214,7 @@ export class EventsService {
 
     const result = await this.neo4j.run(matchQuery, params);
 
-    return result.records.map(r => ({
+    return result.records.map((r) => ({
       id: r.get('id'),
       title: r.get('title'),
       type: r.get('type'),
@@ -235,10 +234,10 @@ export class EventsService {
 
   async getEventDetails(userId: string, eventId: string) {
     const query = `
-      MATCH (e:Event {id: $eventId})<-[:CREATED_EVENT]-(host:User)
+      MATCH (e:Event {id: $eventId, tenantId: $tenantId})<-[:CREATED_EVENT]-(host:User {tenantId: $tenantId})
       WHERE (e.is_deleted IS NULL OR e.is_deleted = false)
-      OPTIONAL MATCH (a:User)-[r:RSVP {status: 'attending'}]->(e)
-      OPTIONAL MATCH (me:User {id: $userId})-[my_rsvp:RSVP]->(e)
+      OPTIONAL MATCH (a:User {tenantId: $tenantId})-[r:RSVP {status: 'attending'}]->(e)
+      OPTIONAL MATCH (me:User {id: $userId, tenantId: $tenantId})-[my_rsvp:RSVP]->(e)
       WITH e, host, count(r) AS attendee_count, my_rsvp.status AS my_rsvp_status
       RETURN e, host.id AS host_id, host.display_name AS host_name, host.username AS host_username, host.profile_picture AS host_pic, host.role AS host_role,
              attendee_count, my_rsvp_status
@@ -275,11 +274,10 @@ export class EventsService {
   }
 
   async rsvpToEvent(userId: string, eventId: string, dto: RsvpDto) {
-    // Check if event exists and max attendees
     const checkQuery = `
-      MATCH (e:Event {id: $eventId})<-[:CREATED_EVENT]-(host:User)
+      MATCH (e:Event {id: $eventId, tenantId: $tenantId})<-[:CREATED_EVENT]-(host:User {tenantId: $tenantId})
       WHERE (e.is_deleted IS NULL OR e.is_deleted = false) AND e.date >= datetime()
-      OPTIONAL MATCH (a:User)-[r:RSVP {status: 'attending'}]->(e)
+      OPTIONAL MATCH (a:User {tenantId: $tenantId})-[r:RSVP {status: 'attending'}]->(e)
       RETURN e.max_attendees AS max, count(r) AS current_attendees, host.id AS host_id, e.title AS title
     `;
     const checkResult = await this.neo4j.run(checkQuery, { eventId });
@@ -290,13 +288,14 @@ export class EventsService {
     const hostId = checkResult.records[0].get('host_id');
     const title = checkResult.records[0].get('title');
 
-    // Fetch user for notification
-    const userResult = await this.neo4j.run(`MATCH (u:User {id: $userId}) RETURN u.display_name AS name, u.profile_picture AS pic`, { userId });
+    const userResult = await this.neo4j.run(
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name, u.profile_picture AS pic`,
+      { userId }
+    );
     const userName = userResult.records[0]?.get('name') || 'Someone';
     const userPic = userResult.records[0]?.get('pic') || null;
 
-    // Check if user is already RSVP'd to know if we are updating or creating
-    const existingRsvpQuery = `MATCH (u:User {id: $userId})-[r:RSVP]->(e:Event {id: $eventId}) RETURN r.status AS status`;
+    const existingRsvpQuery = `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:RSVP]->(e:Event {id: $eventId, tenantId: $tenantId}) RETURN r.status AS status`;
     const existingRsvpResult = await this.neo4j.run(existingRsvpQuery, { userId, eventId });
     const existingStatus = existingRsvpResult.records.length ? existingRsvpResult.records[0].get('status') : null;
 
@@ -305,13 +304,12 @@ export class EventsService {
     }
 
     const rsvpQuery = `
-      MATCH (u:User {id: $userId}), (e:Event {id: $eventId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId}), (e:Event {id: $eventId, tenantId: $tenantId})
       MERGE (u)-[r:RSVP]->(e)
       SET r.status = $status, r.created_at = datetime()
     `;
     await this.neo4j.run(rsvpQuery, { userId, eventId, status: dto.status });
 
-    // Notify host if it's a new attending RSVP
     if (dto.status === 'attending' && existingStatus !== 'attending' && userId !== hostId) {
       await this.notification.createNotification(
         hostId,
@@ -330,7 +328,7 @@ export class EventsService {
 
   async cancelRsvp(userId: string, eventId: string) {
     const query = `
-      MATCH (u:User {id: $userId})-[r:RSVP]->(e:Event {id: $eventId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:RSVP]->(e:Event {id: $eventId, tenantId: $tenantId})
       DELETE r
       RETURN count(r) AS cnt
     `;
@@ -343,7 +341,7 @@ export class EventsService {
 
   async getEventAttendees(eventId: string) {
     const query = `
-      MATCH (a:User)-[r:RSVP {status: 'attending'}]->(e:Event {id: $eventId})
+      MATCH (a:User {tenantId: $tenantId})-[r:RSVP {status: 'attending'}]->(e:Event {id: $eventId, tenantId: $tenantId})
       WHERE ${ACTIVE_USER('a')} AND a.role <> 'admin'
       RETURN a.id AS id, a.display_name AS display_name, a.username AS username,
              a.profile_picture AS profile_picture, a.role AS role, a.bio AS bio
@@ -363,9 +361,9 @@ export class EventsService {
 
   async getMyEvents(userId: string) {
     const query = `
-      MATCH (e:Event)<-[:CREATED_EVENT|RSVP]-(u:User {id: $userId})
+      MATCH (e:Event {tenantId: $tenantId})<-[:CREATED_EVENT|RSVP]-(u:User {id: $userId, tenantId: $tenantId})
       WHERE (e.is_deleted IS NULL OR e.is_deleted = false)
-      OPTIONAL MATCH (e)<-[:CREATED_EVENT]-(host:User)
+      OPTIONAL MATCH (e)<-[:CREATED_EVENT]-(host:User {tenantId: $tenantId})
       WITH e, host
       ORDER BY e.date ASC
       RETURN DISTINCT e.id AS id, e.title AS title, e.type AS type, e.date AS date, 
@@ -374,7 +372,7 @@ export class EventsService {
     `;
     const result = await this.neo4j.run(query, { userId });
 
-    return result.records.map(r => ({
+    return result.records.map((r) => ({
       id: r.get('id'),
       title: r.get('title'),
       type: r.get('type'),

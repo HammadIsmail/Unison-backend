@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { Announcement } from '../admin/schemas/announcement.schema';
 import { FeedItemDto } from './dto/feed-response.dto';
 
 @Injectable()
 export class FeedService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     @InjectModel(Announcement.name)
     private readonly announcementModel: Model<Announcement>,
   ) {}
@@ -37,13 +37,13 @@ export class FeedService {
 
   private async getOpportunitiesFeed(page: number, limit: number, skip: number) {
     const countResult = await this.neo4j.run(
-      `MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false RETURN count(o) AS total`,
+      `MATCH (o:Opportunity {tenantId: $tenantId}) WHERE o.is_deleted IS NULL OR o.is_deleted = false RETURN count(o) AS total`,
     );
     const total = countResult.records[0]?.get('total')?.toNumber() ?? 0;
 
     const result = await this.neo4j.run(
       `
-      MATCH (o:Opportunity)<-[:POSTED]-(u:User)
+      MATCH (o:Opportunity {tenantId: $tenantId})<-[:POSTED]-(u:User {tenantId: $tenantId})
       WHERE o.is_deleted IS NULL OR o.is_deleted = false
       RETURN 'opportunity' AS type, o.id AS id, o.title AS title, o.description AS description,
              o.posted_at AS created_at, o.company_name AS company_name, o.type AS opportunity_type,
@@ -66,15 +66,15 @@ export class FeedService {
 
   private async getEventsFeed(page: number, limit: number, skip: number) {
     const countResult = await this.neo4j.run(
-      `MATCH (e:Event) WHERE e.is_deleted IS NULL OR e.is_deleted = false RETURN count(e) AS total`,
+      `MATCH (e:Event {tenantId: $tenantId}) WHERE e.is_deleted IS NULL OR e.is_deleted = false RETURN count(e) AS total`,
     );
     const total = countResult.records[0]?.get('total')?.toNumber() ?? 0;
 
     const result = await this.neo4j.run(
       `
-      MATCH (e:Event)<-[:CREATED_EVENT]-(u:User)
+      MATCH (e:Event {tenantId: $tenantId})<-[:CREATED_EVENT]-(u:User {tenantId: $tenantId})
       WHERE e.is_deleted IS NULL OR e.is_deleted = false
-      OPTIONAL MATCH (att:User)-[r:RSVP {status: 'attending'}]->(e)
+      OPTIONAL MATCH (att:User {tenantId: $tenantId})-[r:RSVP {status: 'attending'}]->(e)
       WITH e, u, count(r) AS attendee_count
       RETURN 'event' AS type, e.id AS id, e.title AS title, e.description AS description,
              e.created_at AS created_at, null AS company_name, null AS opportunity_type,
@@ -100,11 +100,11 @@ export class FeedService {
       this.announcementModel.countDocuments(),
       this.neo4j.run(`
         CALL {
-          MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false
+          MATCH (o:Opportunity {tenantId: $tenantId}) WHERE o.is_deleted IS NULL OR o.is_deleted = false
           RETURN count(o) AS oppCount
         }
         CALL {
-          MATCH (e:Event) WHERE e.is_deleted IS NULL OR e.is_deleted = false
+          MATCH (e:Event {tenantId: $tenantId}) WHERE e.is_deleted IS NULL OR e.is_deleted = false
           RETURN count(e) AS eventCount
         }
         RETURN oppCount + eventCount AS total
@@ -125,7 +125,7 @@ export class FeedService {
       this.neo4j.run(
         `
         CALL {
-          MATCH (o:Opportunity)<-[:POSTED]-(u:User)
+          MATCH (o:Opportunity {tenantId: $tenantId})<-[:POSTED]-(u:User {tenantId: $tenantId})
           WHERE o.is_deleted IS NULL OR o.is_deleted = false
           RETURN 'opportunity' AS type, o.id AS id, o.title AS title, o.description AS description,
                  o.posted_at AS created_at, o.company_name AS company_name, o.type AS opportunity_type,
@@ -138,9 +138,9 @@ export class FeedService {
 
           UNION ALL
 
-          MATCH (e:Event)<-[:CREATED_EVENT]-(u:User)
+          MATCH (e:Event {tenantId: $tenantId})<-[:CREATED_EVENT]-(u:User {tenantId: $tenantId})
           WHERE e.is_deleted IS NULL OR e.is_deleted = false
-          OPTIONAL MATCH (att:User)-[r:RSVP {status: 'attending'}]->(e)
+          OPTIONAL MATCH (att:User {tenantId: $tenantId})-[r:RSVP {status: 'attending'}]->(e)
           WITH e, u, count(r) AS attendee_count
           RETURN 'event' AS type, e.id AS id, e.title AS title, e.description AS description,
                  e.created_at AS created_at, null AS company_name, null AS opportunity_type,
@@ -179,7 +179,7 @@ export class FeedService {
 
     const adminIds = announcements.map((a) => a.created_by_admin);
     const adminProfilesResult = await this.neo4j.run(
-      `MATCH (u:User) WHERE u.id IN $adminIds
+      `MATCH (u:User {tenantId: $tenantId}) WHERE u.id IN $adminIds
        RETURN u.id AS id, u.display_name AS name, u.username AS username,
               u.profile_picture AS pic, u.role AS role`,
       { adminIds },

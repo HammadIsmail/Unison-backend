@@ -8,6 +8,8 @@ import { NotificationModule } from '../notification/notification.module';
 @Module({
   imports: [Neo4jModule, CloudinaryModule, NotificationModule],
   providers: [EventsService],
-  controllers: [EventsController]
+  controllers: [EventsController],
+  exports: [EventsService],
 })
 export class EventsModule {}
+

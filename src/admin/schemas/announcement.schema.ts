@@ -5,8 +5,12 @@ import { Document } from 'mongoose';
 export class Announcement extends Document {
   created_at: Date;
 
+  @Prop({ type: String, required: true, index: true })
+  tenantId: string;
+
   @Prop({ type: String, required: true })
   title: string;
+
 
   @Prop({ type: String, required: true })
   description: string;

@@ -8,6 +8,8 @@ import { NotificationModule } from '../notification/notification.module';
 @Module({
   imports: [Neo4jModule, CloudinaryModule, NotificationModule],
   controllers: [OpportunityController],
-  providers: [OpportunityService]
+  providers: [OpportunityService],
+  exports: [OpportunityService],
 })
 export class OpportunityModule {}
+

@@ -1,18 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
-import { ACTIVE_USER } from '../common/utils/neo4j-filters';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly neo4j: Neo4jService) {}
+  constructor(private readonly neo4j: TenantNeo4jService) {}
 
   async getUserPublicProfile(targetId: string, currentUserId: string) {
     const query = `
-      MATCH (u:User {id: $targetId, account_status: 'approved'})
-      WHERE ${ACTIVE_USER('u')}
+      MATCH (u:User {id: $targetId, account_status: 'approved', tenantId: $tenantId})
+      WHERE u.is_deleted IS NULL OR u.is_deleted = false
       
       // 1. Fetch Work Experience
-      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
+      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId})
       WITH u, collect(DISTINCT {
         id: w.id,
         company_name: w.company_name,
@@ -24,7 +23,7 @@ export class ProfilesService {
       }) AS work_exp
       
       // 1.5 Fetch Education
-      OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education)
+      OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education {tenantId: $tenantId})
       WITH u, work_exp, collect(DISTINCT {
         id: e.id,
         university: e.university,
@@ -44,8 +43,8 @@ export class ProfilesService {
         proficiency: s.proficiency_level
       }) AS skills
       
-      // 3. Fetch Posted Opportunities (exclude soft-deleted)
-      OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+      // 3. Fetch Posted Opportunities
+      OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
       WHERE o.is_deleted IS NULL OR o.is_deleted = false
       WITH u, work_exp, education, skills, collect(DISTINCT {
         id: o.id,
@@ -57,16 +56,16 @@ export class ProfilesService {
       }) AS opps
       
       // 4. Check Connection Status and Followers (Social Context)
-      OPTIONAL MATCH (me:User {id: $currentUserId})-[r:CONNECTED_TO]-(u)
-      OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
-      OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+      OPTIONAL MATCH (me:User {id: $currentUserId, tenantId: $tenantId})-[r:CONNECTED_TO]-(u)
+      OPTIONAL MATCH (f_in:User {tenantId: $tenantId})-[:FOLLOWS]->(u)
+      OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User {tenantId: $tenantId})
       
-      // 5. Count Total Opportunities (for display stats)
-      OPTIONAL MATCH (u)-[:POSTED]->(total_opps:Opportunity)
+      // 5. Count Total Opportunities
+      OPTIONAL MATCH (u)-[:POSTED]->(total_opps:Opportunity {tenantId: $tenantId})
       WHERE total_opps.is_deleted IS NULL OR total_opps.is_deleted = false
       
       // 6. Count Total Connections
-      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(conn:User)
+      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(conn:User {tenantId: $tenantId})
       WHERE conn.is_deleted IS NULL OR conn.is_deleted = false
       
       WITH u, work_exp, education, skills, opps, 
@@ -74,8 +73,8 @@ export class ProfilesService {
            startNode(r) = me AS is_sender,
            count(DISTINCT f_in) AS followers_count,
            count(DISTINCT f_out) AS following_count,
-           EXISTS((:User {id: $currentUserId})-[:FOLLOWS]->(u)) AS is_following,
-           EXISTS((:User {id: $currentUserId})-[:BLOCKED]->(u)) AS is_blocked,
+           EXISTS((:User {id: $currentUserId, tenantId: $tenantId})-[:FOLLOWS]->(u)) AS is_following,
+           EXISTS((:User {id: $currentUserId, tenantId: $tenantId})-[:BLOCKED]->(u)) AS is_blocked,
            count(DISTINCT total_opps) AS opps_count,
            count(DISTINCT conn) AS connections_count
       
@@ -90,32 +89,37 @@ export class ProfilesService {
     const record = result.records[0];
     const user = record.get('u').properties;
     
-    // Cleanup collections: Neo4j OPTIONAL MATCH returns [{id: null}] if no match, 
-    // we need to filter them out based on a required property like id or name.
-    const workExperience = record.get('work_exp').filter(e => e.id !== null);
-    const education = record.get('education').filter(e => e.id !== null);
-    const skills = record.get('skills').filter(s => s.id !== null);
+    const workExperience = record.get('work_exp').filter((e: any) => e.id !== null);
+    const education = record.get('education').filter((e: any) => e.id !== null);
+    const skills = record.get('skills').filter((s: any) => s.id !== null);
     const opportunities = record.get('opps')
-      .filter(o => o.id !== null)
-      .map(o => ({
-        ...o,
-        posted_at: o.posted_at ? new Date(o.posted_at.toString()).toISOString() : null
+      .filter((o: any) => o.id !== null)
+      .map((o: any) => ({
+        id: o.id,
+        title: o.title,
+        type: o.type,
+        company: o.company,
+        posted_at: o.posted_at,
+        deadline: o.deadline,
       }));
 
     return {
       id: user.id,
       username: user.username,
       display_name: user.display_name,
+      email: user.email,
+      bio: user.bio || null,
       role: user.role,
+      degree: user.degree || null,
+      graduation_year: typeof user.graduation_year?.toNumber === 'function' ? user.graduation_year.toNumber() : user.graduation_year,
+      batch: user.batch || null,
+      semester: typeof user.semester?.toNumber === 'function' ? user.semester.toNumber() : user.semester,
+      roll_number: user.roll_number || null,
       profile_picture: user.profile_picture || null,
       backDropImage: user.backDropImage || null,
-      bio: user.bio || null,
-      degree: user.degree || 'N/A',
-      batch: user.batch || 'N/A',
-      graduation_year: user.graduation_year ? (typeof user.graduation_year.toNumber === 'function' ? user.graduation_year.toNumber() : user.graduation_year) : null,
       linkedin_url: user.linkedin_url || null,
-      semester: user.semester ? (typeof user.semester.toNumber === 'function' ? user.semester.toNumber() : user.semester) : null,
-      roll_number: user.roll_number || null,
+      github_url: user.github_url || null,
+      portfolio_url: user.portfolio_url || null,
       is_online: user.is_online || false,
       last_seen: user.last_seen || null,
       work_experience: workExperience,
@@ -131,23 +135,23 @@ export class ProfilesService {
       opportunities_count: record.get('opps_count').toNumber(),
       connections_count: record.get('connections_count').toNumber(),
       affiliation: user.affiliation || null,
-      job_title: user.job_title || null
+      job_title: user.job_title || null,
     };
   }
 
   async getSuggestions(userId: string) {
     const query = `
-      MATCH (u:User {id: $userId})
-      MATCH (other:User) WHERE other.id <> $userId 
+      MATCH (u:User {id: $userId, tenantId: $tenantId})
+      MATCH (other:User {tenantId: $tenantId}) WHERE other.id <> $userId 
         AND other.account_status = 'approved'
-        AND ${ACTIVE_USER('other')}
+        AND (other.is_deleted IS NULL OR other.is_deleted = false)
         AND NOT other.role IN ['admin', 'moderator']
         AND NOT (u)-[:CONNECTED_TO]-(other)
-      OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(other)
-      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
-      OPTIONAL MATCH (other)-[:HAS_EXPERIENCE]->(ow:WorkExperience) WHERE toLower(w.company_name) = toLower(ow.company_name)
-      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(mutual:User)-[:CONNECTED_TO {status: 'accepted'}]-(other)
-      WHERE mutual.account_status = 'approved' AND ${ACTIVE_USER('mutual')}
+      OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)<-[:HAS_SKILL]-(other {tenantId: $tenantId})
+      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId})
+      OPTIONAL MATCH (other)-[:HAS_EXPERIENCE]->(ow:WorkExperience {tenantId: $tenantId}) WHERE toLower(w.company_name) = toLower(ow.company_name)
+      OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(mutual:User {tenantId: $tenantId})-[:CONNECTED_TO {status: 'accepted'}]-(other)
+      WHERE mutual.account_status = 'approved' AND (mutual.is_deleted IS NULL OR mutual.is_deleted = false)
       WITH u, other, count(DISTINCT s) AS commonSkills, count(DISTINCT w) AS commonCompany, count(DISTINCT mutual) AS mutualConnections
       WITH u, other, commonSkills, commonCompany, mutualConnections,
            CASE WHEN u.batch = other.batch AND u.batch IS NOT NULL THEN 1 ELSE 0 END AS sameBatch,
@@ -165,7 +169,7 @@ export class ProfilesService {
 
     const result = await this.neo4j.run(query, { userId });
 
-    return result.records.map(record => ({
+    return result.records.map((record) => ({
       id: record.get('id'),
       display_name: record.get('display_name'),
       username: record.get('username'),

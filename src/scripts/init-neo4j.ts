@@ -56,6 +56,14 @@ async function initNeo4j() {
         console.log('Creating uniqueness constraint on Skill(name)...');
         await session.run(`CREATE CONSTRAINT skill_name_unique IF NOT EXISTS FOR (s:Skill) REQUIRE s.name IS UNIQUE`);
 
+        console.log('--- Setting up Tenant Indices ---');
+        await session.run(`CREATE INDEX user_tenant_idx IF NOT EXISTS FOR (u:User) ON (u.tenantId)`);
+        await session.run(`CREATE INDEX opp_tenant_idx IF NOT EXISTS FOR (o:Opportunity) ON (o.tenantId)`);
+        await session.run(`CREATE INDEX event_tenant_idx IF NOT EXISTS FOR (e:Event) ON (e.tenantId)`);
+        await session.run(`CREATE INDEX exp_tenant_idx IF NOT EXISTS FOR (w:WorkExperience) ON (w.tenantId)`);
+        await session.run(`CREATE INDEX edu_tenant_idx IF NOT EXISTS FOR (ed:Education) ON (ed.tenantId)`);
+
+
         console.log('--- Setting up Full-Text Indices ---');
         
         // Full-text index for User search

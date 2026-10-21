@@ -1,16 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { ActivityService, ActivityType } from '../common/activity/activity.service';
+import { ActivityService } from '../common/activity/activity.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserAuth } from '../auth/schemas/user-auth.schema';
 
-
 @Injectable()
 export class PartnerService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     private readonly cloudinary: CloudinaryService,
     private readonly activity: ActivityService,
     @InjectModel(UserAuth.name)
@@ -19,14 +18,14 @@ export class PartnerService {
 
   async getProfile(id: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, role: 'partner'})
+      `MATCH (u:User {id: $id, role: 'partner', tenantId: $tenantId})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
-       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
        WHERE o.is_deleted IS NULL OR o.is_deleted = false
-       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
-       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+       OPTIONAL MATCH (f_in:User {tenantId: $tenantId})-[:FOLLOWS]->(u)
+       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User {tenantId: $tenantId})
        RETURN u, count(DISTINCT c) AS connections_count, count(DISTINCT o) AS posts_count, count(DISTINCT f_in) AS followerCount, count(DISTINCT f_out) AS followingCount`,
       { id },
     );
@@ -60,13 +59,11 @@ export class PartnerService {
     };
   }
 
-
-
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
        WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
-       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username,
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage,
               w.company_name AS company, w.role AS role`,
@@ -89,7 +86,7 @@ export class PartnerService {
     const now = new Date().toISOString();
 
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
        SET u.is_deleted = true, u.deleted_at = $now`,
       { userId, now },
     );

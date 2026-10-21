@@ -30,5 +30,7 @@ import { Announcement, AnnouncementSchema } from './schemas/announcement.schema'
   ],
   controllers: [AdminController],
   providers: [AdminService],
+  exports: [AdminService],
 })
 export class AdminModule { }
+

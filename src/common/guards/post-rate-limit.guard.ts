@@ -1,9 +1,9 @@
 import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { Neo4jService } from '../../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../../neo4j/tenant-neo4j.service';
 
 @Injectable()
 export class PostRateLimitGuard implements CanActivate {
-  constructor(private readonly neo4j: Neo4jService) {}
+  constructor(private readonly neo4j: TenantNeo4jService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -16,7 +16,7 @@ export class PostRateLimitGuard implements CanActivate {
 
     // 1. Check if user is currently locked
     const lockCheckQuery = `
-      MATCH (u:User {id: $userId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId})
       RETURN u.posting_locked_until AS locked_until
     `;
     const lockRes = await this.neo4j.run(lockCheckQuery, { userId });
@@ -24,7 +24,6 @@ export class PostRateLimitGuard implements CanActivate {
     if (lockRes.records.length > 0) {
       const lockedUntilStr = lockRes.records[0].get('locked_until');
       if (lockedUntilStr) {
-        // Handle both Neo4j DateTime object and standard string
         const dateStr = typeof lockedUntilStr === 'string' ? lockedUntilStr : lockedUntilStr.toString();
         const lockedUntil = new Date(dateStr);
         
@@ -42,21 +41,19 @@ export class PostRateLimitGuard implements CanActivate {
     }
 
     // 2. Count recent posts (last 10 minutes)
-    // Opportunities use string ISO for posted_at
-    // Events use Neo4j datetime for created_at
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     
     const countQuery = `
-      MATCH (u:User {id: $userId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId})
       CALL {
         WITH u
-        MATCH (u)-[:POSTED]->(o:Opportunity)
+        MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
         WHERE o.posted_at >= $tenMinutesAgo
         RETURN count(o) AS opps
       }
       CALL {
         WITH u
-        MATCH (u)-[:CREATED_EVENT]->(e:Event)
+        MATCH (u)-[:CREATED_EVENT]->(e:Event {tenantId: $tenantId})
         WHERE e.created_at >= datetime($tenMinutesAgo)
         RETURN count(e) AS evts
       }
@@ -66,19 +63,15 @@ export class PostRateLimitGuard implements CanActivate {
     const countRes = await this.neo4j.run(countQuery, { userId, tenMinutesAgo });
     
     if (countRes.records.length > 0) {
-      // safely extract number
       const totalRecentVal = countRes.records[0].get('total_recent');
       const totalRecent = typeof totalRecentVal.toNumber === 'function' ? totalRecentVal.toNumber() : Number(totalRecentVal);
       
-      // If they already have 5, then THIS request is their 6th, meaning they posted 5+ times before this request.
-      // Wait, "have posted 5+ posts within 10 minutes". This means if totalRecent >= 5, block them.
       if (totalRecent >= 5) {
-        // 3. Lock user for 5 minutes
         const lockDurationMinutes = 5;
         const lockedUntil = new Date(Date.now() + lockDurationMinutes * 60 * 1000).toISOString();
         
         await this.neo4j.run(`
-          MATCH (u:User {id: $userId})
+          MATCH (u:User {id: $userId, tenantId: $tenantId})
           SET u.posting_locked_until = $lockedUntil
         `, { userId, lockedUntil });
         

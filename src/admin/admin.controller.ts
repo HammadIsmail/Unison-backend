@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Put, Param, Body, Query, UseGuards, Req, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
 import type { Response } from 'express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -14,8 +14,9 @@ import {
   AdvancedAnalyticsResponseDto,
   AnnouncementResponseDto,
   AnnouncementPaginationResponseDto,
+  TenantSettingsResponseDto,
 } from './dto/admin-response.dto';
-import { UpdateAdminProfileDto, CreateStaffDto } from './dto/admin-request.dto';
+import { UpdateAdminProfileDto, CreateStaffDto, UpdateTenantSettingsDto } from './dto/admin-request.dto';
 import { SuccessResponseDto } from '../common/dto/response.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -379,4 +380,21 @@ export class AdminController {
     const adminId = req.user.sub;
     return this.adminService.removeStaff(adminId, id);
   }
+
+  @Get('tenant')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Get current tenant settings' })
+  @ApiResponse({ status: 200, type: TenantSettingsResponseDto })
+  getCurrentTenantSettings() {
+    return this.adminService.getCurrentTenantSettings();
+  }
+
+  @Put('tenant')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Update current tenant settings' })
+  @ApiResponse({ status: 200, type: TenantSettingsResponseDto })
+  updateCurrentTenantSettings(@Body() dto: UpdateTenantSettingsDto) {
+    return this.adminService.updateCurrentTenantSettings(dto);
+  }
 }
+

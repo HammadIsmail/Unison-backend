@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -21,7 +21,7 @@ import { UnifiedUpdateProfileDto } from '../profile-management/dto/profile-manag
 @Injectable()
 export class AlumniService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly activity: ActivityService,
     private readonly notification: NotificationService,
@@ -31,17 +31,17 @@ export class AlumniService {
 
   async getProfile(id: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, role: 'alumni'})
+      `MATCH (u:User {id: $id, role: 'alumni', tenantId: $tenantId})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience)
-       OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education)
+       OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId})
+       OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education {tenantId: $tenantId})
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
-       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
-       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
        WHERE o.is_deleted IS NULL OR o.is_deleted = false
-       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
-       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+       OPTIONAL MATCH (f_in:User {tenantId: $tenantId})-[:FOLLOWS]->(u)
+       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User {tenantId: $tenantId})
        RETURN u, collect(DISTINCT w) AS experiences, 
               collect(DISTINCT e) AS education,
               collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, 
@@ -96,7 +96,7 @@ export class AlumniService {
       const file = files.profile_picture[0];
       try {
         const result = await this.neo4j.run(
-          `MATCH (u:User {id: $userId}) RETURN u.profile_picture AS oldPic`,
+          `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.profile_picture AS oldPic`,
           { userId }
         );
         const oldPic = result.records[0]?.get('oldPic');
@@ -119,7 +119,7 @@ export class AlumniService {
       const file = files.backDropImage[0];
       try {
         const result = await this.neo4j.run(
-          `MATCH (u:User {id: $userId}) RETURN u.backDropImage AS oldPic`,
+          `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.backDropImage AS oldPic`,
           { userId }
         );
         const oldPic = result.records[0]?.get('oldPic');
@@ -146,12 +146,12 @@ export class AlumniService {
     if (!setQuery) return { message: 'No fields to update.' };
 
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) SET ${setQuery} RETURN u`,
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) SET ${setQuery} RETURN u`,
       { userId, ...dto }
     );
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) RETURN u.display_name AS name`,
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name`,
       { userId }
     );
     const name = result.records[0]?.get('name') || 'User';
@@ -168,9 +168,10 @@ export class AlumniService {
   async addWorkExperience(userId: string, dto: CreateWorkExperienceDto) {
     const expId = uuidv4();
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
        CREATE (w:WorkExperience {
          id: $expId,
+         tenantId: $tenantId,
          company_name: $dto.company_name,
          role: $dto.role,
          start_date: $dto.start_date,
@@ -183,7 +184,7 @@ export class AlumniService {
     );
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) RETURN u.display_name AS name`,
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name`,
       { userId }
     );
     const name = result.records[0]?.get('name') || 'User';
@@ -206,7 +207,7 @@ export class AlumniService {
     if (!setQuery) return { message: 'No fields to update.' };
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId, tenantId: $tenantId})
        SET ${setQuery} RETURN w`,
       { userId, expId, ...dto }
     );
@@ -218,7 +219,7 @@ export class AlumniService {
 
   async deleteWorkExperience(userId: string, expId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId, tenantId: $tenantId})
        DETACH DELETE w RETURN count(w) AS cnt`,
       { userId, expId }
     );
@@ -234,7 +235,7 @@ export class AlumniService {
 
   async addSkill(userId: string, dto: AddSkillDto) {
     const countResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:HAS_SKILL]->(s:Skill) RETURN count(s) AS skillCount`,
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_SKILL]->(s:Skill) RETURN count(s) AS skillCount`,
       { userId }
     );
     const skillCount = countResult.records[0]?.get('skillCount').toNumber() || 0;
@@ -244,7 +245,7 @@ export class AlumniService {
 
     const skillId = uuidv4();
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
        MERGE (s:Skill {name: toLower($dto.skill_name)})
        ON CREATE SET s.id = $skillId, s.category = $dto.category
        MERGE (u)-[r:HAS_SKILL]->(s)
@@ -263,7 +264,7 @@ export class AlumniService {
     if (!updates.length) return { message: 'No fields to update.' };
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
        SET ${updates.join(', ')}
        RETURN r`,
       { userId, skillId, ...dto }
@@ -278,7 +279,7 @@ export class AlumniService {
 
   async deleteSkill(userId: string, skillId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
        DELETE r
        RETURN count(r) AS cnt`,
       { userId, skillId }
@@ -296,9 +297,10 @@ export class AlumniService {
   async addEducation(userId: string, dto: CreateEducationDto) {
     const eduId = uuidv4();
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
        CREATE (e:Education {
          id: $eduId,
+         tenantId: $tenantId,
          university: $dto.university,
          degree: $dto.degree,
          field_of_study: $dto.field_of_study,
@@ -311,7 +313,7 @@ export class AlumniService {
     );
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) RETURN u.display_name AS name`,
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name`,
       { userId }
     );
     const name = result.records[0]?.get('name') || 'User';
@@ -334,7 +336,7 @@ export class AlumniService {
     if (!setQuery) return { message: 'No fields to update.' };
 
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:HAS_EDUCATION]->(e:Education {id: $eduId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EDUCATION]->(e:Education {id: $eduId, tenantId: $tenantId})
        SET ${setQuery} RETURN e`,
       { userId, eduId, ...dto }
     );
@@ -346,7 +348,7 @@ export class AlumniService {
 
   async deleteEducation(userId: string, eduId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:HAS_EDUCATION]->(e:Education {id: $eduId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EDUCATION]->(e:Education {id: $eduId, tenantId: $tenantId})
        DETACH DELETE e RETURN count(e) AS cnt`,
       { userId, eduId }
     );
@@ -358,12 +360,11 @@ export class AlumniService {
     return { message: 'Education removed successfully.' };
   }
 
-
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
        WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
-       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
               w.company_name AS company, w.role AS role`,
@@ -384,7 +385,7 @@ export class AlumniService {
 
   async getBatchMates(userId: string) {
     const userResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) RETURN u.batch AS batch`,
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.batch AS batch`,
       { userId }
     );
     if (!userResult.records.length) throw new NotFoundException('User not found.');
@@ -393,9 +394,9 @@ export class AlumniService {
     if (!batch) return [];
 
     const result = await this.neo4j.run(
-      `MATCH (c:User {batch: $batch, role: 'alumni'})
+      `MATCH (c:User {batch: $batch, role: 'alumni', tenantId: $tenantId})
        WHERE c.id <> $userId AND c.account_status = 'approved' AND (c.is_deleted IS NULL OR c.is_deleted = false)
-       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
               w.company_name AS company, w.role AS role`,
@@ -417,10 +418,10 @@ export class AlumniService {
   async deleteAccount(userId: string) {
     const now = new Date().toISOString();
 
-    // 1. Soft Delete in Neo4j
+    // 1. Soft Delete in Neo4j with tenantId filter
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
-       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
+       OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
        SET u.is_deleted = true, u.deleted_at = $now, o.is_deleted = true`,
       { userId, now }
     );

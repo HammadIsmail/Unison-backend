@@ -104,3 +104,27 @@ export class CreateStaffDto {
   @IsEnum(['admin', 'moderator'])
   role: 'admin' | 'moderator';
 }
+
+export class UpdateTenantSettingsDto {
+  @ApiPropertyOptional({ example: 'UET Lahore Main Campus' })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiPropertyOptional({ example: 'https://example.com/logo.png' })
+  @IsOptional()
+  @IsString()
+  logo_url?: string;
+
+  @ApiPropertyOptional({ example: 'contact@uet.edu.pk' })
+  @IsOptional()
+  @IsEmail()
+  contact_email?: string;
+
+  @ApiPropertyOptional({ example: ['uet.edu.pk', 'student.uet.edu.pk'], type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowed_email_domains?: string[];
+}
+

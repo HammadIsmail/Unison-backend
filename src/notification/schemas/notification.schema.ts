@@ -6,7 +6,11 @@ export class Notification extends Document {
   created_at: Date;
 
   @Prop({ type: String, required: true, index: true })
+  tenantId: string;
+
+  @Prop({ type: String, required: true, index: true })
   recipientId: string;
+
 
   @Prop({ type: String, required: true })
   message: string;
@@ -34,3 +38,5 @@ export class Notification extends Document {
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
+NotificationSchema.index({ tenantId: 1, recipientId: 1 });
+
