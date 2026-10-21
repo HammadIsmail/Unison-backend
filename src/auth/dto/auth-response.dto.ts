@@ -3,7 +3,6 @@ import { SuccessResponseDto } from '../../common/dto/response.dto';
 
 export { SuccessResponseDto };
 
-
 export class OtpResponseDto {
     @ApiProperty({ example: 'OTP sent to your email.' })
     message: string;
@@ -28,10 +27,26 @@ export class VerifyOtpResponseDto {
     verified_token: string;
 }
 
+export class TenantSummaryDto {
+    @ApiProperty({ example: 'uuid-tenant-1' })
+    id: string;
+
+    @ApiProperty({ example: 'uet-faisalabad' })
+    slug: string;
+
+    @ApiProperty({ example: 'UET Lahore (Faisalabad Campus)' })
+    name: string;
+
+    @ApiPropertyOptional({ example: null, nullable: true })
+    logo_url?: string | null;
+}
+
 export class UserProfileDto {
     @ApiProperty({ example: 'uuid-user-123' })
     id: string;
 
+    @ApiPropertyOptional({ example: 'uuid-tenant-1' })
+    tenant_id?: string;
 
     @ApiProperty({ example: 'ahmed_h' })
     username: string;
@@ -45,11 +60,11 @@ export class UserProfileDto {
     @ApiProperty({ example: 'alumni' })
     role: string;
 
-    @ApiProperty({ example: 'BS Computer Science' })
-    degree: string;
+    @ApiPropertyOptional({ example: 'BS Computer Science' })
+    degree?: string;
 
-    @ApiProperty({ example: '2021-CS-101' })
-    roll_number: string;
+    @ApiPropertyOptional({ example: '2021-CS-101' })
+    roll_number?: string;
 
     @ApiPropertyOptional({ example: '2021-2025' })
     batch?: string;
@@ -63,8 +78,8 @@ export class UserProfileDto {
     @ApiPropertyOptional({ example: '+923001234567' })
     phone?: string;
 
-    @ApiProperty({ example: 5 })
-    posts_count: number;
+    @ApiPropertyOptional({ example: 5 })
+    posts_count?: number;
 }
 
 export class LoginResponseDto {
@@ -79,4 +94,7 @@ export class LoginResponseDto {
 
     @ApiProperty({ type: UserProfileDto })
     profile: UserProfileDto;
+
+    @ApiPropertyOptional({ type: TenantSummaryDto, nullable: true })
+    tenant?: TenantSummaryDto | null;
 }

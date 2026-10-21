@@ -18,8 +18,18 @@ export class ConstraintsSeed implements OnModuleInit {
          FOR (u:User) REQUIRE u.username IS UNIQUE`
       );
       console.log('✅ Unique constraint on User.username applied.');
+
+      // Create tenantId indexes
+      const tenantLabels = ['User', 'Opportunity', 'Event', 'WorkExperience', 'Education'];
+      for (const label of tenantLabels) {
+        await this.neo4j.run(
+          `CREATE INDEX ${label.toLowerCase()}_tenant_idx IF NOT EXISTS FOR (n:${label}) ON (n.tenantId)`
+        );
+      }
+      console.log('✅ Tenant indexes applied.');
     } catch (error) {
       console.error('❌ Error applying constraints:', error);
     }
+
   }
 }

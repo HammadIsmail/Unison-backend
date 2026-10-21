@@ -1,20 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 
 @Injectable()
 export class SearchService {
-  constructor(private readonly neo4j: Neo4jService) { }
+  constructor(private readonly neo4j: TenantNeo4jService) { }
 
   private prepareLuceneQuery(q: string): string {
     if (!q) return '';
-    // Basic fuzzy search for main search
-    return q.trim().split(/\s+/).map(word => `${word}~`).join(' AND ');
+    return q.trim().split(/\s+/).map((word) => `${word.replace(/[+\-!(){}\[\]^"~*?:\\]/g, '\\$&')}~`).join(' AND ');
   }
 
   private prepareSuggestionQuery(q: string): string {
     if (!q) return '';
-    // Prefix search with OR for more inclusive suggestions
-    return q.trim().split(/\s+/).map(word => `${word}*`).join(' OR ');
+    return q.trim().split(/\s+/).map((word) => `${word.replace(/[+\-!(){}\[\]^"~*?:\\]/g, '\\$&')}*`).join(' OR ');
   }
 
   async searchUsers(currentUserId: string, display_name?: string, company?: string, skill?: string, batch_year?: string, degree?: string) {
@@ -23,14 +21,22 @@ export class SearchService {
 
     if (display_name) {
       const luceneQ = this.prepareLuceneQuery(display_name);
+      params.luceneQ = luceneQ;
       query = `
-        CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-        WHERE u.id <> $currentUserId AND NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        CALL db.index.fulltext.queryNodes("user_search_index", $luceneQ, { limit: 500 }) YIELD node AS u, score
+        WHERE u.tenantId = $tenantId 
+          AND u.id <> $currentUserId 
+          AND NOT u.role IN ['admin', 'moderator'] 
+          AND u.account_status = 'approved' 
+          AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     } else {
       query = `
-        MATCH (u:User)
-        WHERE u.id <> $currentUserId AND NOT u.role IN ['admin', 'moderator'] AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false)
+        MATCH (u:User {tenantId: $tenantId})
+        WHERE u.id <> $currentUserId 
+          AND NOT u.role IN ['admin', 'moderator'] 
+          AND u.account_status = 'approved' 
+          AND (u.is_deleted IS NULL OR u.is_deleted = false)
       `;
     }
 
@@ -44,9 +50,9 @@ export class SearchService {
     }
 
     if (company) {
-      query += ` MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true}) WHERE toLower(w.company_name) CONTAINS toLower($company)`;
+      query += ` MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true}) WHERE toLower(w.company_name) CONTAINS toLower($company)`;
     } else {
-      query += ` OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})`;
+      query += ` OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})`;
     }
 
     query += `
@@ -81,14 +87,15 @@ export class SearchService {
 
     if (title) {
       const luceneQ = this.prepareLuceneQuery(title);
+      params.luceneQ = luceneQ;
       query = `
-        CALL db.index.fulltext.queryNodes("opportunity_search_index", "${luceneQ}") YIELD node AS o, score
-        MATCH (o)<-[:POSTED]-(u:User)
-        WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
+        CALL db.index.fulltext.queryNodes("opportunity_search_index", $luceneQ, { limit: 500 }) YIELD node AS o, score
+        MATCH (o)<-[:POSTED]-(u:User {tenantId: $tenantId})
+        WHERE o.tenantId = $tenantId AND (o.is_deleted IS NULL OR o.is_deleted = false)
       `;
     } else {
       query = `
-        MATCH (o:Opportunity)<-[:POSTED]-(u:User)
+        MATCH (o:Opportunity {tenantId: $tenantId})<-[:POSTED]-(u:User {tenantId: $tenantId})
         WHERE (o.is_deleted IS NULL OR o.is_deleted = false)
       `;
     }
@@ -136,9 +143,9 @@ export class SearchService {
 
   async findByUsername(username: string) {
     const query = `
-      MATCH (u:User {username: $username, account_status: 'approved'})
+      MATCH (u:User {username: $username, account_status: 'approved', tenantId: $tenantId})
       WHERE (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
-      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+      OPTIONAL MATCH (u)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
       OPTIONAL MATCH (u)-[:HAS_SKILL]->(s:Skill)
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture,
              u.bio AS bio, u.role AS role, u.degree AS degree, u.graduation_year AS graduation_year, u.batch AS batch,
@@ -170,14 +177,18 @@ export class SearchService {
   async getSuggestions(q: string, currentUserId: string) {
     const luceneQ = this.prepareSuggestionQuery(q);
     const query = `
-      CALL db.index.fulltext.queryNodes("user_search_index", "${luceneQ}") YIELD node AS u, score
-      WHERE u.id <> $currentUserId AND u.account_status = 'approved' AND (u.is_deleted IS NULL OR u.is_deleted = false) AND NOT u.role IN ['admin', 'moderator']
+      CALL db.index.fulltext.queryNodes("user_search_index", $luceneQ, { limit: 100 }) YIELD node AS u, score
+      WHERE u.tenantId = $tenantId 
+        AND u.id <> $currentUserId 
+        AND u.account_status = 'approved' 
+        AND (u.is_deleted IS NULL OR u.is_deleted = false) 
+        AND NOT u.role IN ['admin', 'moderator']
       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.profile_picture AS profile_picture, u.role AS role
       ORDER BY score DESC
       LIMIT 10
     `;
-    const result = await this.neo4j.run(query, { currentUserId });
-    return result.records.map(record => ({
+    const result = await this.neo4j.run(query, { currentUserId, luceneQ });
+    return result.records.map((record) => ({
       id: record.get('id'),
       username: record.get('username'),
       display_name: record.get('display_name'),

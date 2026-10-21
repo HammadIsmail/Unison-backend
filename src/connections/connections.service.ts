@@ -1,18 +1,18 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { NotificationService } from '../notification/notification.service';
 import { ACTIVE_USER } from '../common/utils/neo4j-filters';
 
 @Injectable()
 export class ConnectionsService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     private readonly notification: NotificationService,
   ) {}
 
   async getConnectionStatus(userId: string, targetId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u1:User {id: $userId}), (u2:User {id: $targetId})
+      `MATCH (u1:User {id: $userId, tenantId: $tenantId}), (u2:User {id: $targetId, tenantId: $tenantId})
        WHERE ${ACTIVE_USER('u1')} AND ${ACTIVE_USER('u2')}
        OPTIONAL MATCH (u1)-[r:CONNECTED_TO]-(u2)
        RETURN 
@@ -41,7 +41,7 @@ export class ConnectionsService {
 
   async removeConnection(userId: string, targetId: string) {
     const query = `
-      MATCH (u:User {id: $userId})-[r:CONNECTED_TO]-(t:User {id: $targetId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO]-(t:User {id: $targetId, tenantId: $tenantId})
       DELETE r
       RETURN count(r) AS cnt
     `;
@@ -56,7 +56,8 @@ export class ConnectionsService {
     if (userId === targetId) throw new ForbiddenException('Cannot connect with yourself.');
 
     const userResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) 
+       WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.role AS role, u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
       { userId }
     );
@@ -65,13 +66,15 @@ export class ConnectionsService {
     const sender = userResult.records[0].toObject();
 
     const targetResult = await this.neo4j.run(
-      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND NOT t.role IN ['admin', 'moderator'] RETURN t.role AS role`,
+      `MATCH (t:User {id: $targetId, tenantId: $tenantId}) 
+       WHERE ${ACTIVE_USER('t')} AND NOT t.role IN ['admin', 'moderator'] 
+       RETURN t.role AS role`,
       { targetId }
     );
     if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
 
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}), (t:User {id: $targetId, tenantId: $tenantId})
        MERGE (u)-[r:CONNECTED_TO]->(t)
        ON CREATE SET r.status = 'pending', r.created_at = datetime()`,
       { userId, targetId }
@@ -94,7 +97,7 @@ export class ConnectionsService {
 
   async getPendingRequests(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User)-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
+      `MATCH (u:User {tenantId: $tenantId})-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId, tenantId: $tenantId})
        WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, r.created_at AS created_at`,
@@ -112,7 +115,7 @@ export class ConnectionsService {
 
   async getSentPendingRequests(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (me:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(u:User)
+      `MATCH (me:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'pending'}]->(u:User {tenantId: $tenantId})
        WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, r.created_at AS created_at`,
@@ -130,7 +133,7 @@ export class ConnectionsService {
 
   async cancelRequest(userId: string, targetId: string) {
     const query = `
-      MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'pending'}]->(t:User {id: $targetId})
+      MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'pending'}]->(t:User {id: $targetId, tenantId: $tenantId})
       DELETE r
       RETURN count(r) AS cnt
     `;
@@ -144,7 +147,7 @@ export class ConnectionsService {
   async respondToRequest(userId: string, senderId: string, action: 'accept' | 'reject') {
     if (action === 'accept') {
       const result = await this.neo4j.run(
-        `MATCH (u:User {id: $senderId})-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
+        `MATCH (u:User {id: $senderId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId, tenantId: $tenantId})
          SET r.status = 'accepted', r.accepted_at = datetime()
          MERGE (u)-[f1:FOLLOWS]->(me)
          ON CREATE SET f1.created_at = datetime()
@@ -156,7 +159,7 @@ export class ConnectionsService {
       if (!result.records.length) throw new NotFoundException('Connection request not found.');
 
       const userResult = await this.neo4j.run(
-        `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')}
+        `MATCH (u:User {id: $userId, tenantId: $tenantId}) WHERE ${ACTIVE_USER('u')}
          RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
         { userId }
       );
@@ -177,7 +180,7 @@ export class ConnectionsService {
       return { message: 'Connection request accepted.' };
     } else {
       const result = await this.neo4j.run(
-        `MATCH (u:User {id: $senderId})-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId})
+        `MATCH (u:User {id: $senderId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'pending'}]->(me:User {id: $userId, tenantId: $tenantId})
          DELETE r RETURN count(r) AS cnt`,
         { userId, senderId }
       );
@@ -191,20 +194,22 @@ export class ConnectionsService {
     if (userId === targetId) throw new ForbiddenException('Cannot follow yourself.');
 
     const targetResult = await this.neo4j.run(
-      `MATCH (t:User {id: $targetId}) WHERE ${ACTIVE_USER('t')} AND NOT t.role IN ['admin', 'moderator'] RETURN t.id`,
+      `MATCH (t:User {id: $targetId, tenantId: $tenantId}) 
+       WHERE ${ACTIVE_USER('t')} AND NOT t.role IN ['admin', 'moderator'] 
+       RETURN t.id`,
       { targetId }
     );
     if (!targetResult.records.length) throw new NotFoundException('Target user not found.');
 
     const userResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId}) WHERE ${ACTIVE_USER('u')}
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}) WHERE ${ACTIVE_USER('u')}
        RETURN u.username AS username, u.display_name AS name, u.profile_picture AS pic`,
       { userId }
     );
     const follower = userResult.records[0]?.toObject();
 
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}), (t:User {id: $targetId, tenantId: $tenantId})
        MERGE (u)-[r:FOLLOWS]->(t)
        ON CREATE SET r.created_at = datetime()`,
       { userId, targetId }
@@ -229,7 +234,7 @@ export class ConnectionsService {
 
   async unfollowUser(userId: string, targetId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:FOLLOWS]->(t:User {id: $targetId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:FOLLOWS]->(t:User {id: $targetId, tenantId: $tenantId})
        DELETE r
        RETURN count(r) AS cnt`,
       { userId, targetId }
@@ -244,7 +249,7 @@ export class ConnectionsService {
 
   async getFollowers(targetId: string) {
     const result = await this.neo4j.run(
-      `MATCH (f:User)-[:FOLLOWS]->(u:User {id: $targetId})
+      `MATCH (f:User {tenantId: $tenantId})-[r:FOLLOWS]->(u:User {id: $targetId, tenantId: $tenantId})
        WHERE ${ACTIVE_USER('f')} AND NOT f.role IN ['admin', 'moderator']
        RETURN f.id AS id, f.display_name AS display_name, f.username AS username,
               f.profile_picture AS profile_picture, f.role AS role, f.bio AS bio`,
@@ -263,7 +268,7 @@ export class ConnectionsService {
 
   async getFollowing(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[:FOLLOWS]->(f:User)
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:FOLLOWS]->(f:User {tenantId: $tenantId})
        WHERE ${ACTIVE_USER('f')} AND NOT f.role IN ['admin', 'moderator']
        RETURN f.id AS id, f.display_name AS display_name, f.username AS username,
               f.profile_picture AS profile_picture, f.role AS role, f.bio AS bio`,
@@ -283,8 +288,14 @@ export class ConnectionsService {
   async blockUser(userId: string, targetId: string) {
     if (userId === targetId) throw new ForbiddenException('Cannot block yourself.');
 
+    const targetCheck = await this.neo4j.run(
+      `MATCH (t:User {id: $targetId, tenantId: $tenantId}) RETURN t.id`,
+      { targetId }
+    );
+    if (!targetCheck.records.length) throw new NotFoundException('Target user not found.');
+
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId}), (t:User {id: $targetId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId}), (t:User {id: $targetId, tenantId: $tenantId})
        MERGE (u)-[r:BLOCKED]->(t)
        ON CREATE SET r.created_at = datetime()`,
       { userId, targetId }
@@ -295,7 +306,7 @@ export class ConnectionsService {
 
   async unblockUser(userId: string, targetId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:BLOCKED]->(t:User {id: $targetId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:BLOCKED]->(t:User {id: $targetId, tenantId: $tenantId})
        DELETE r
        RETURN count(r) AS cnt`,
       { userId, targetId }
@@ -310,8 +321,8 @@ export class ConnectionsService {
 
   async isBlocked(userId: string, targetId: string): Promise<boolean> {
     const result = await this.neo4j.run(
-      `MATCH (u1:User {id: $userId})
-       MATCH (u2:User {id: $targetId})
+      `MATCH (u1:User {id: $userId, tenantId: $tenantId})
+       MATCH (u2:User {id: $targetId, tenantId: $tenantId})
        RETURN EXISTS((u1)-[:BLOCKED]-(u2)) AS blocked`,
       { userId, targetId }
     );
@@ -320,7 +331,7 @@ export class ConnectionsService {
 
   async getBlockedUsers(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (me:User {id: $userId})-[r:BLOCKED]->(u:User)
+      `MATCH (me:User {id: $userId, tenantId: $tenantId})-[r:BLOCKED]->(u:User {tenantId: $tenantId})
        WHERE ${ACTIVE_USER('u')} AND NOT u.role IN ['admin', 'moderator']
        RETURN u.id AS id, u.display_name AS display_name, u.username AS username,
               u.profile_picture AS profile_picture, u.role AS role, r.created_at AS blocked_at`,

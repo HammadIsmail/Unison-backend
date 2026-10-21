@@ -42,6 +42,12 @@ export class RegisterDto {
     @IsNotEmpty()
     verified_token: string;
 
+    @ApiProperty({ example: 'uuid-tenant-1', description: 'Tenant UUID of the university' })
+    @IsString()
+    @IsNotEmpty()
+    tenant_id: string;
+
+
 
     @ApiProperty({ example: 'ahmed_h', maxLength: 20 })
     @IsString()
@@ -81,7 +87,8 @@ export class RegisterDto {
 
     @ApiProperty({ type: 'string', format: 'binary', description: 'Student card image file', required: true })
     @IsOptional()
-    student_card: any;
+    student_card?: any;
+
 
     @ApiPropertyOptional({ description: 'Alumni only', example: 2025 })
     @IsOptional()

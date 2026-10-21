@@ -4,8 +4,12 @@ import { Conversation } from './conversation.schema';
 
 @Schema({ timestamps: true })
 export class Message extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Conversation', required: true })
+  @Prop({ type: String, required: true, index: true })
+  tenantId: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Conversation', required: true, index: true })
   conversationId: Conversation;
+
 
   @Prop({ type: String, required: true })
   senderId: string;

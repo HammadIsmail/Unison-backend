@@ -18,8 +18,11 @@ export class UserAuth extends Document {
   @Prop({ type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' })
   account_status: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String, enum: ['alumni', 'student', 'partner', 'admin', 'super_admin'], required: true })
   role: string;
+
+  @Prop({ type: String, required: false, index: true, default: null })
+  tenantId: string | null;
 
   @Prop({ type: String })
   rejection_reason: string;

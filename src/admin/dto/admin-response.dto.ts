@@ -286,3 +286,27 @@ export class AnnouncementPaginationResponseDto {
     @ApiProperty({ type: [AnnouncementResponseDto] })
     data: AnnouncementResponseDto[];
 }
+
+export class TenantSettingsResponseDto {
+    @ApiProperty({ example: 'uuid-tenant-123' })
+    id: string;
+
+    @ApiProperty({ example: 'uet-lahore' })
+    slug: string;
+
+    @ApiProperty({ example: 'University of Engineering and Technology' })
+    name: string;
+
+    @ApiProperty({ example: 'https://example.com/logo.png', nullable: true })
+    logo_url: string | null;
+
+    @ApiProperty({ example: 'contact@uet.edu.pk', nullable: true })
+    contact_email: string | null;
+
+    @ApiProperty({ example: ['uet.edu.pk'], type: [String] })
+    allowed_email_domains: string[];
+
+    @ApiProperty({ example: 'active' })
+    status: string;
+}
+

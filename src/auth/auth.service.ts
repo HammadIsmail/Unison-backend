@@ -4,6 +4,7 @@ import {
     Injectable,
     NotFoundException,
     UnauthorizedException,
+    ForbiddenException,
     Inject,
     forwardRef,
     HttpException,
@@ -16,7 +17,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcryptjs';
+import { ClsService } from 'nestjs-cls';
 import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { MailService } from '../common/mail/mail.service';
 import { ActivityService, ActivityType } from '../common/activity/activity.service';
 import {
@@ -30,6 +33,7 @@ import { NotificationService } from '../notification/notification.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserAuth } from './schemas/user-auth.schema';
 import { OTPRecord } from './schemas/otp.schema';
+import { TenantsService } from '../tenants/tenants.service';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +41,7 @@ export class AuthService {
 
     constructor(
         private readonly neo4j: Neo4jService,
+        private readonly tenantNeo4j: TenantNeo4jService,
         private readonly jwt: JwtService,
         private readonly config: ConfigService,
         private readonly mail: MailService,
@@ -44,6 +49,8 @@ export class AuthService {
         @Inject(forwardRef(() => NotificationService))
         private readonly notification: NotificationService,
         private readonly cloudinary: CloudinaryService,
+        private readonly tenantsService: TenantsService,
+        private readonly cls: ClsService,
         @InjectModel(UserAuth.name)
         private readonly userAuthModel: Model<UserAuth>,
         @InjectModel(OTPRecord.name)
@@ -52,7 +59,6 @@ export class AuthService {
 
     // ─── Send OTP ────────────────────────────────────────────────────────────────
     async sendOtp(dto: SendOtpDto) {
-        // Check for existing OTP to enforce rolling rate limit (60 s per resend)
         const existing = await this.otpModel.findOne({ email: dto.email, type: dto.type });
 
         if (existing) {
@@ -90,7 +96,6 @@ export class AuthService {
             throw new NotFoundException('No OTP was sent to this email for this purpose.');
         }
 
-        // ── Check lockout ─────────────────────────────────────────────────────
         if (record.locked_until && record.locked_until > new Date()) {
             const secondsLeft = Math.ceil((record.locked_until.getTime() - Date.now()) / 1000);
             throw new HttpException(
@@ -103,17 +108,17 @@ export class AuthService {
         }
 
         if (record.expires_at < new Date()) {
-            throw new BadRequestException('OTP has expired. Please request a new one.');
+            throw new BadRequestException('OTP has expired.');
         }
 
         if (record.otp !== dto.otp) {
             const attempts = (record.attempts || 0) + 1;
             if (attempts >= 3) {
-                record.locked_until = new Date(Date.now() + 300 * 1000);
+                const lockUntil = new Date(Date.now() + 5 * 60 * 1000);
                 record.attempts = 0;
+                record.locked_until = lockUntil;
                 await record.save();
-
-                const secondsLeft = Math.ceil((record.locked_until.getTime() - Date.now()) / 1000);
+                const secondsLeft = Math.ceil((lockUntil.getTime() - Date.now()) / 1000);
                 throw new HttpException(
                     {
                         message: 'Too many failed OTP attempts. Please try again later.',
@@ -128,13 +133,11 @@ export class AuthService {
             throw new BadRequestException('Invalid OTP.');
         }
 
-        // Mark as verified
         record.verified = true;
         record.attempts = 0;
         record.locked_until = null;
         await record.save();
 
-        // Issue short-lived verified_token
         const verifiedToken = this.jwt.sign(
             { email: dto.email, type: dto.type, purpose: 'verified' },
             {
@@ -147,12 +150,13 @@ export class AuthService {
     }
 
     // ─── Register ────────────────────────────────────────────────────────────────
-    async register(dto: RegisterDto, file: Express.Multer.File) {
+    async register(dto: RegisterDto, file?: Express.Multer.File) {
         if (!file && dto.role !== 'partner') {
+
             throw new BadRequestException('Student card picture is required.');
         }
 
-        // Validate verified_token
+        // 1. Validate verified_token
         let payload: { email: string; type: string; purpose: string };
         try {
             payload = this.jwt.verify(dto.verified_token, {
@@ -169,25 +173,48 @@ export class AuthService {
             throw new BadRequestException('Email mismatch with verified_token.');
         }
 
-        // Check duplicate email — only block if a non-deleted account already holds this email
-        const existingEmail = await this.userAuthModel.findOne({
-            email: dto.email,
-            is_deleted: { $ne: true },
-        });
+        // 2. Validate tenant existence and status
+        const tenant = await this.tenantsService.getTenantById(dto.tenant_id);
+        if (!tenant || tenant.status !== 'active') {
+            throw new BadRequestException('Invalid or inactive university.');
+        }
+
+        // 3. Validate email domain restriction (student & alumni)
+        if (
+            tenant.allowed_email_domains &&
+            tenant.allowed_email_domains.length > 0 &&
+            dto.role !== 'partner'
+        ) {
+            const emailDomain = dto.email.split('@')[1]?.toLowerCase().trim();
+            const allowed = tenant.allowed_email_domains.map((d) => d.toLowerCase().trim());
+            if (!allowed.includes(emailDomain)) {
+                throw new BadRequestException('Email domain is not allowed for this university.');
+            }
+        }
+
+        // 4. Check duplicate email globally (across all tenants)
+        const existingEmail = await this.userAuthModel
+            .findOne({
+                email: dto.email.toLowerCase().trim(),
+                is_deleted: { $ne: true },
+            })
+            .setOptions({ skipTenantScope: true })
+            .exec();
+
         if (existingEmail) {
             throw new ConflictException('An account with this email already exists.');
         }
 
-        // Check duplicate username in Neo4j
+        // 5. Check duplicate username globally in Neo4j
         const existingUsername = await this.neo4j.run(
-            'MATCH (u:User {username: $username}) RETURN u',
+            'MATCH (u:User {username: $username}) RETURN u.id AS id',
             { username: dto.username },
         );
-        if (existingUsername.records.length) {
+        if (existingUsername.records.length > 0) {
             throw new ConflictException('Username is already taken.');
         }
 
-        // Upload student card to Cloudinary (not required for partner)
+        // 6. Upload student card to Cloudinary (if provided)
         let studentCardUrl: string | null = null;
         if (file) {
             const uploadResult = await this.cloudinary.uploadFile(file);
@@ -198,88 +225,102 @@ export class AuthService {
         const userId = uuidv4();
         const now = new Date().toISOString();
 
-        // 1. Save Credentials to MongoDB
-        await this.userAuthModel.create({
-            userId,
-            email: dto.email,
-            password: hashedPassword,
-            role: dto.role,
-            account_status: 'pending'
-        });
+        // 7. Execute within tenant CLS context
+        return this.cls.run(async () => {
+            this.cls.set('tenantId', tenant.id);
 
-        // 2. Save Profile to Neo4j
-        let extraProps = '';
-        if (dto.role === 'alumni') {
-            extraProps = `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`;
-        } else if (dto.role === 'student') {
-            extraProps = `semester: $semester, batch: $batch,`;
-        } else if (dto.role === 'partner') {
-            extraProps = `affiliation: $affiliation, job_title: $job_title,`;
-        }
-
-        await this.neo4j.run(
-            `CREATE (u:User {
-          id: $id,
-          username: $username,
-          display_name: $display_name,
-          email: $email,
-          role: $role,
-          roll_number: $roll_number,
-          degree: $degree,
-          student_card_url: $studentCardUrl,
-          account_status: 'pending',
-          created_at: $now,
-         ${extraProps}
-         profile_picture: null,
-         bio: null,
-         phone: null
-       })`,
-            {
-                id: userId,
-                username: dto.username,
-                display_name: dto.display_name,
-                email: dto.email,
+            // A. Save Credentials to MongoDB with tenantId
+            await this.userAuthModel.create({
+                userId,
+                email: dto.email.toLowerCase().trim(),
+                password: hashedPassword,
                 role: dto.role,
-                roll_number: dto.roll_number ?? null,
-                degree: dto.degree ?? null,
-                studentCardUrl: studentCardUrl,
-                graduation_year: dto.graduation_year ?? null,
-                semester: dto.semester ?? null,
-                batch: dto.batch ?? null,
-                affiliation: dto.affiliation ?? null,
-                job_title: dto.job_title ?? null,
-                now,
-            },
-        );
+                account_status: 'pending',
+                tenantId: tenant.id,
+            });
 
-        // Clean up OTP record in MongoDB
-        await this.otpModel.deleteOne({ email: dto.email, type: 'email_verification' });
+            // B. Save Profile to Neo4j with tenantId
+            let extraProps = '';
+            if (dto.role === 'alumni') {
+                extraProps = `graduation_year: $graduation_year, batch: coalesce($batch, toString($graduation_year - 4) + '-' + toString($graduation_year)),`;
+            } else if (dto.role === 'student') {
+                extraProps = `semester: $semester, batch: $batch,`;
+            } else if (dto.role === 'partner') {
+                extraProps = `affiliation: $affiliation, job_title: $job_title,`;
+            }
 
-        // 3. Log Activity
-        await this.activity.logActivity(
-            ActivityType.USER_REGISTERED,
-            `New ${dto.role} registered: ${dto.display_name}`,
-            userId
-        );
-
-        // 4. Notify Admins
-        const adminResult = await this.neo4j.run(`MATCH (a:User {role: 'admin'}) RETURN a.id AS id`);
-        const notificationPromises = adminResult.records.map(r =>
-            this.notification.createNotification(
-                r.get('id'),
-                `New ${dto.role} account pending approval: ${dto.display_name} (${dto.username})`,
-                'user_registered',
+            await this.neo4j.run(
+                `CREATE (u:User {
+                    id: $id,
+                    username: $username,
+                    display_name: $display_name,
+                    email: $email,
+                    role: $role,
+                    roll_number: $roll_number,
+                    degree: $degree,
+                    student_card_url: $studentCardUrl,
+                    account_status: 'pending',
+                    tenantId: $tenantId,
+                    created_at: $now,
+                    ${extraProps}
+                    profile_picture: null,
+                    bio: null,
+                    phone: null
+                })`,
                 {
-                    sender_username: dto.username,
-                    sender_display_name: dto.display_name,
-                    sender_profile_picture: undefined,
-                    reference_link: '/admin/pending-accounts'
-                }
-            )
-        );
-        await Promise.allSettled(notificationPromises);
+                    id: userId,
+                    username: dto.username,
+                    display_name: dto.display_name,
+                    email: dto.email.toLowerCase().trim(),
+                    role: dto.role,
+                    tenantId: tenant.id,
+                    roll_number: dto.roll_number ?? null,
+                    degree: dto.degree ?? null,
+                    studentCardUrl: studentCardUrl,
+                    graduation_year: dto.graduation_year ?? null,
+                    semester: dto.semester ?? null,
+                    batch: dto.batch ?? null,
+                    affiliation: dto.affiliation ?? null,
+                    job_title: dto.job_title ?? null,
+                    now,
+                },
+            );
 
-        return { message: 'Account created successfully. Pending admin approval.' };
+            // Clean up OTP record
+            await this.otpModel.deleteOne({ email: dto.email, type: 'email_verification' });
+
+            // C. Log Activity in tenant context
+            await this.activity.logActivity(
+                ActivityType.USER_REGISTERED,
+                `New ${dto.role} registered: ${dto.display_name}`,
+                userId,
+            );
+
+            // D. Notify only this tenant's Admins
+            const adminResult = await this.neo4j.run(
+                `MATCH (a:User {role: 'admin', tenantId: $tenantId})
+                 WHERE a.is_deleted IS NULL OR a.is_deleted = false
+                 RETURN a.id AS id`,
+                { tenantId: tenant.id },
+            );
+
+            const notificationPromises = adminResult.records.map((r) =>
+                this.notification.createNotification(
+                    r.get('id'),
+                    `New ${dto.role} account pending approval: ${dto.display_name} (${dto.username})`,
+                    'user_registered',
+                    {
+                        sender_username: dto.username,
+                        sender_display_name: dto.display_name,
+                        sender_profile_picture: undefined,
+                        reference_link: '/admin/pending-accounts',
+                    },
+                ),
+            );
+            await Promise.allSettled(notificationPromises);
+
+            return { message: 'Account created successfully. Pending admin approval.' };
+        });
     }
 
     // ─── Login ───────────────────────────────────────────────────────────────────
@@ -287,14 +328,18 @@ export class AuthService {
         const email = dto.email.trim().toLowerCase();
         this.logger.log(`Attempting login for: ${email}`);
 
-        const auth = await this.userAuthModel.findOne({ email });
+        // Email lookup before tenant context exists -> explicit skipTenantScope
+        const auth = await this.userAuthModel
+            .findOne({ email })
+            .setOptions({ skipTenantScope: true })
+            .exec();
 
         if (!auth || auth.is_deleted) {
             this.logger.warn(`Login failed: ${!auth ? 'Email not found' : 'Account soft-deleted'} - ${email}`);
             throw new UnauthorizedException('Invalid email or password.');
         }
 
-        // ── Check lockout ─────────────────────────────────────────────────────
+        // Check lockout
         if (auth.login_locked_until && auth.login_locked_until > new Date()) {
             const secondsLeft = Math.ceil((auth.login_locked_until.getTime() - Date.now()) / 1000);
             this.logger.warn(`Login blocked (locked) for ${email}, ${secondsLeft}s remaining`);
@@ -313,12 +358,10 @@ export class AuthService {
 
             const attempts = (auth.login_attempts || 0) + 1;
             if (attempts >= 3) {
-                // Lock for 5 minutes
                 const lockUntil = new Date(Date.now() + 5 * 60 * 1000);
-                await this.userAuthModel.updateOne(
-                    { email },
-                    { login_attempts: 0, login_locked_until: lockUntil },
-                );
+                await this.userAuthModel
+                    .updateOne({ email }, { login_attempts: 0, login_locked_until: lockUntil })
+                    .setOptions({ skipTenantScope: true });
                 const secondsLeft = Math.ceil((lockUntil.getTime() - Date.now()) / 1000);
                 throw new HttpException(
                     {
@@ -329,16 +372,17 @@ export class AuthService {
                 );
             }
 
-            await this.userAuthModel.updateOne({ email }, { login_attempts: attempts });
+            await this.userAuthModel
+                .updateOne({ email }, { login_attempts: attempts })
+                .setOptions({ skipTenantScope: true });
             throw new UnauthorizedException('Invalid email or password.');
         }
 
-        // ── Password correct — reset counters ─────────────────────────────────
+        // Password correct — reset counters
         if ((auth.login_attempts ?? 0) > 0 || auth.login_locked_until) {
-            await this.userAuthModel.updateOne(
-                { email },
-                { login_attempts: 0, login_locked_until: null },
-            );
+            await this.userAuthModel
+                .updateOne({ email }, { login_attempts: 0, login_locked_until: null })
+                .setOptions({ skipTenantScope: true });
         }
 
         if (auth.account_status === 'pending') {
@@ -350,21 +394,58 @@ export class AuthService {
             throw new UnauthorizedException('Your account registration was rejected.');
         }
 
-        // Fetch profile from Neo4j
+        // ── Case A: Super Admin ────────────────────────────────────────────────
+        if (auth.role === 'super_admin') {
+            const token = this.jwt.sign(
+                { sub: auth.userId, email: auth.email, role: 'super_admin' },
+                {
+                    secret: this.config.get<string>('JWT_SECRET')!,
+                    expiresIn: (this.config.get<string>('JWT_EXPIRES_IN') || '7d') as any,
+                },
+            );
+
+            return {
+                token,
+                role: 'super_admin',
+                account_status: auth.account_status,
+                profile: {
+                    id: auth.userId,
+                    email: auth.email,
+                    role: 'super_admin',
+                },
+                tenant: null,
+            };
+        }
+
+        // ── Case B: Tenant User (alumni, student, partner, admin) ──────────────
+        if (!auth.tenantId) {
+            throw new UnauthorizedException('Session outdated. Please log in again.');
+        }
+
+        // Check if tenant is suspended
+        const tenant = await this.tenantsService.getTenantById(auth.tenantId);
+        if (!tenant) {
+            throw new UnauthorizedException('University not found.');
+        }
+        if (tenant.status === 'suspended') {
+            throw new ForbiddenException("This university's access has been suspended.");
+        }
+
+        // Fetch profile from Neo4j (filtered by tenantId)
         const result = await this.neo4j.run(
-            `MATCH (u:User {id: $userId}) 
-             OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity)
+            `MATCH (u:User {id: $userId, tenantId: $tenantId})
+             OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
              WHERE o.is_deleted IS NULL OR o.is_deleted = false
              RETURN u, count(DISTINCT o) AS posts_count`,
-            { userId: auth.userId },
+            { userId: auth.userId, tenantId: auth.tenantId },
         );
 
         const user = result.records[0]?.get('u')?.properties;
-        const posts_count = result.records[0]?.get('posts_count')?.toNumber() || 0;
+        const posts_count = result.records[0]?.get('posts_count')?.toNumber?.() || 0;
 
-        // Build response profile
         const profile: any = {
             id: auth.userId,
+            tenant_id: auth.tenantId,
             email: auth.email,
             role: auth.role,
         };
@@ -387,15 +468,27 @@ export class AuthService {
             }
         }
 
+        // Issue token carrying tenantId
         const token = this.jwt.sign(
-            { sub: auth.userId, email: auth.email, role: auth.role },
+            { sub: auth.userId, email: auth.email, role: auth.role, tenantId: auth.tenantId },
             {
                 secret: this.config.get<string>('JWT_SECRET')!,
                 expiresIn: (this.config.get<string>('JWT_EXPIRES_IN') || '7d') as any,
             },
         );
 
-        return { token, role: auth.role, account_status: auth.account_status, profile };
+        return {
+            token,
+            role: auth.role,
+            account_status: auth.account_status,
+            profile,
+            tenant: {
+                id: tenant.id,
+                slug: tenant.slug,
+                name: tenant.name,
+                logo_url: tenant.logo_url || null,
+            },
+        };
     }
 
     // ─── Reset Password ──────────────────────────────────────────────────────────
@@ -413,7 +506,11 @@ export class AuthService {
             throw new UnauthorizedException('verified_token is not for password reset.');
         }
 
-        const auth = await this.userAuthModel.findOne({ email: payload.email });
+        const auth = await this.userAuthModel
+            .findOne({ email: payload.email })
+            .setOptions({ skipTenantScope: true })
+            .exec();
+
         if (!auth) {
             throw new NotFoundException('No account found for this email.');
         }
@@ -422,7 +519,6 @@ export class AuthService {
         auth.password = hashed;
         await auth.save();
 
-        // Clean up OTP record in MongoDB
         await this.otpModel.deleteOne({ email: payload.email, type: 'forgot_password' });
 
         return { message: 'Password reset successfully.' };

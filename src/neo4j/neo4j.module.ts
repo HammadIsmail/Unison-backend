@@ -2,6 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import neo4j from 'neo4j-driver';
 import { Neo4jService } from './neo4j.service';
+import { TenantNeo4jService } from './tenant-neo4j.service';
 
 @Global()
 @Module({
@@ -13,12 +14,14 @@ import { Neo4jService } from './neo4j.service';
             useFactory: (config: ConfigService) => {
                 const uri = config.get<string>('NEO4J_URI')!;
                 const user = config.get<string>('NEO4J_USERNAME')!;
-                const password = config.get<string>('NEO4J_PASSWORD')!
+                const password = config.get<string>('NEO4J_PASSWORD')!;
                 return neo4j.driver(uri, neo4j.auth.basic(user, password));
             },
         },
         Neo4jService,
+        TenantNeo4jService,
     ],
-    exports: [Neo4jService],
+    exports: [Neo4jService, TenantNeo4jService],
 })
 export class Neo4jModule { }
+

@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Neo4jService } from '../neo4j/neo4j.service';
+import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-
 import { NotificationService } from '../notification/notification.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -10,7 +9,7 @@ import { UserAuth } from '../auth/schemas/user-auth.schema';
 @Injectable()
 export class StudentService {
   constructor(
-    private readonly neo4j: Neo4jService,
+    private readonly neo4j: TenantNeo4jService,
     private readonly cloudinaryService: CloudinaryService,
     private readonly notification: NotificationService,
     @InjectModel(UserAuth.name)
@@ -19,14 +18,14 @@ export class StudentService {
 
   async getProfile(id: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, role: 'student'})
+      `MATCH (u:User {id: $id, role: 'student', tenantId: $tenantId})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education)
+       OPTIONAL MATCH (u)-[:HAS_EDUCATION]->(e:Education {tenantId: $tenantId})
        OPTIONAL MATCH (u)-[r:HAS_SKILL]->(s:Skill)
-       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User)
+       OPTIONAL MATCH (u)-[:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
        WHERE c.is_deleted IS NULL OR c.is_deleted = false
-       OPTIONAL MATCH (f_in:User)-[:FOLLOWS]->(u)
-       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User)
+       OPTIONAL MATCH (f_in:User {tenantId: $tenantId})-[:FOLLOWS]->(u)
+       OPTIONAL MATCH (u)-[:FOLLOWS]->(f_out:User {tenantId: $tenantId})
        RETURN u, collect(DISTINCT e) AS education, collect(DISTINCT {id: s.id, name: s.name, category: s.category, proficiency_level: r.proficiency_level}) AS skills, count(DISTINCT c) AS connections_count, count(DISTINCT f_in) AS followerCount, count(DISTINCT f_out) AS followingCount`,
       { id }
     );
@@ -52,7 +51,7 @@ export class StudentService {
       degree: user.degree,
       skills: skills.map((s: any) => s.name),
       detailed_skills: skills,
-      batch: user.batch || null, // Might be null/undefined for students initially
+      batch: user.batch || null,
       bio: user.bio || null,
       phone: user.phone || null,
       profile_picture: user.profile_picture || null,
@@ -64,18 +63,11 @@ export class StudentService {
     };
   }
 
-
-
-  // Skill management (add/update/delete) is unified under AlumniService.
-  // Students use POST/PUT/DELETE /api/alumni/skills via @Roles('alumni','partner','student').
-
-
-
   async getConnections(userId: string) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User)
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
        WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
-       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {is_current: true})
+       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
        RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
               c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
               w.company_name AS company, w.role AS role`,
@@ -97,9 +89,9 @@ export class StudentService {
   async deleteAccount(userId: string) {
     const now = new Date().toISOString();
 
-    // 1. Soft Delete in Neo4j
+    // 1. Soft Delete in Neo4j with tenantId filter
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId})
+      `MATCH (u:User {id: $userId, tenantId: $tenantId})
        SET u.is_deleted = true, u.deleted_at = $now`,
       { userId, now }
     );
@@ -115,7 +107,7 @@ export class StudentService {
 
   async requestUpgrade(userId: string, graduationYear: number) {
     const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, role: 'student'}) RETURN u.upgrade_status AS status`,
+      `MATCH (u:User {id: $userId, role: 'student', tenantId: $tenantId}) RETURN u.upgrade_status AS status`,
       { userId }
     );
 
@@ -129,7 +121,7 @@ export class StudentService {
     }
 
     await this.neo4j.run(
-      `MATCH (u:User {id: $userId, role: 'student'})
+      `MATCH (u:User {id: $userId, role: 'student', tenantId: $tenantId})
        SET u.upgrade_status = 'pending', u.upgrade_rejection_reason = null, u.graduation_year = $graduationYear`,
       { userId, graduationYear }
     );

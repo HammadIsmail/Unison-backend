@@ -1,5 +1,32 @@
 # 📚 UNISON Exhaustive API Handbook (v1.0)
 
+## 🏛️ Multi-Tenancy & Universities
+UNISON is a multi-tenant platform. Every user, opportunity, event, and chat message belongs to a specific university tenant. All tenant boundaries are strictly isolated.
+
+### 0. List Public Active Tenants
+`GET /api/tenants`  
+**Summary**: Retrieves a public list of all active universities for the registration university picker.
+
+**Response (200 OK)**:
+```json
+[
+  {
+    "id": "uuid-tenant-1",
+    "slug": "uet-lahore",
+    "name": "University of Engineering and Technology, Lahore",
+    "logo_url": "https://res.cloudinary.com/demo/image/upload/v1234/uet-logo.png"
+  },
+  {
+    "id": "uuid-tenant-2",
+    "slug": "fast-nuces",
+    "name": "FAST National University of Computer and Emerging Sciences",
+    "logo_url": null
+  }
+]
+```
+
+---
+
 ## 🔐 Authentication
 Handle user entry, verification, and security.
 
@@ -63,10 +90,11 @@ Handle user entry, verification, and security.
 **Request**: `multipart/form-data`
 | Field | Type | Status | Description |
 | :--- | :--- | :--- | :--- |
+| `tenant_id` | String (UUID) | **Required** | Target university ID (from `GET /api/tenants`) |
 | `verified_token` | String | **Required** | Token received from Verify OTP endpoint |
-| `username` | String | **Required** | Unique identifier (e.g., `ahmed_h`) |
+| `username` | String | **Required** | Unique identifier (e.g., `ahmed_h`) — globally unique |
 | `display_name` | String | **Required** | Preferred name |
-| `email` | String | **Required** | Must match verified email |
+| `email` | String | **Required** | Must match verified email — globally unique |
 | `password` | String | **Required** | Min 8 characters |
 | `role` | Enum | **Required** | `alumni`, `student`, or `partner` |
 | `roll_number` | String | *Optional* | University ID (Required for students/alumni) |
@@ -78,6 +106,9 @@ Handle user entry, verification, and security.
 | `semester` | Number | *Optional* | **Student Only** (Required for students) |
 | `batch` | String | *Optional* | **Alumni / Student Only** — auto-computed for alumni if omitted |
 
+> [!NOTE]
+> **Email Domain Enforcement**: If the university has configured `allowed_email_domains` (e.g., `uet.edu.pk`), student and alumni registrations must use an email matching one of those domains. Industry partner accounts (`role = partner`) are exempt from university domain restrictions.
+
 **Response (201)**:
 ```json
 { "message": "Account created successfully. Pending admin approval." }
@@ -87,7 +118,7 @@ Handle user entry, verification, and security.
 
 ### 4. Login
 `POST /api/auth/login`  
-**Summary**: Authenticate to receive an access token.
+**Summary**: Authenticate to receive an access token, tenant branding, and user profile.
 
 **Request Body**:
 | Field | Type | Status | Required |
@@ -101,8 +132,15 @@ Handle user entry, verification, and security.
   "token": "JWT_ACCESS_TOKEN",
   "role": "alumni",
   "account_status": "approved",
+  "tenant": {
+    "id": "uuid-tenant-1",
+    "slug": "uet-lahore",
+    "name": "University of Engineering and Technology, Lahore",
+    "logo_url": "https://res.cloudinary.com/demo/image/upload/v1234/uet-logo.png"
+  },
   "profile": {
     "id": "uuid-user-123",
+    "tenant_id": "uuid-tenant-1",
     "username": "ahmed_h",
     "display_name": "Ahmed The Dev",
     "email": "ahmed@uet.edu.pk",
@@ -119,7 +157,26 @@ Handle user entry, verification, and security.
 ```
 
 > [!WARNING]
-> **Brute-Force Protection**: After **3 consecutive wrong passwords**, the account is locked for **5 minutes**. Further attempts (or the 3rd failing attempt itself) return `429 Too Many Requests` with `retry_after_seconds` so the frontend can display a live countdown.
+> **Brute-Force Protection**: After **3 consecutive wrong passwords**, the account is locked for **5 minutes**. Further attempts return `429 Too Many Requests` with `retry_after_seconds`.
+
+> [!CAUTION]
+> **Suspended University Access (403 Forbidden)**: If the university tenant has been suspended by the platform super administrator, login attempts and protected API calls return:
+> ```json
+> {
+>   "statusCode": 403,
+>   "message": "This university's access has been suspended."
+> }
+> ```
+
+> [!IMPORTANT]
+> **Session Outdated (401 Unauthorized)**: If an older legacy JWT is used that lacks a `tenantId`, all protected endpoints return:
+> ```json
+> {
+>   "statusCode": 401,
+>   "message": "Session outdated. Please log in again."
+> }
+> ```
+
 
 **Error Response (429 — account locked)**:
 ```json
@@ -716,6 +773,249 @@ Restricted to users with the `admin` role. Requires `Bearer JWT`.
 **Response (200)**:
 ```json
 { "message": "Event removed by administrator." }
+```
+
+---
+
+### 25. Get University Tenant Settings
+`GET /api/admin/tenant`  
+**Summary**: Retrieves the current university tenant profile, branding, contact info, and allowed email domains.
+**Role**: `admin`
+
+**Response (200)**:
+```json
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "slug": "uet-lahore",
+  "name": "University of Engineering and Technology, Lahore",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/v1/logo.png",
+  "contact_email": "contact@uet.edu.pk",
+  "allowed_email_domains": ["uet.edu.pk", "student.uet.edu.pk"],
+  "status": "active"
+}
+```
+
+---
+
+### 26. Update University Tenant Settings
+`PUT /api/admin/tenant`  
+**Summary**: Updates tenant branding and contact information. Automatically purges the tenant cache.
+**Role**: `admin`
+
+**Request Body**:
+```json
+{
+  "name": "UET Lahore Main Campus",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/v2/new-logo.png",
+  "contact_email": "admin@uet.edu.pk",
+  "allowed_email_domains": ["uet.edu.pk", "student.uet.edu.pk", "alumni.uet.edu.pk"]
+}
+```
+
+**Response (200)**:
+```json
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "slug": "uet-lahore",
+  "name": "UET Lahore Main Campus",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/v2/new-logo.png",
+  "contact_email": "admin@uet.edu.pk",
+  "allowed_email_domains": ["uet.edu.pk", "student.uet.edu.pk", "alumni.uet.edu.pk"],
+  "status": "active"
+}
+```
+
+---
+
+## 👑 Super Admin
+Restricted to users with the `super_admin` role. Requires `Bearer JWT`.
+Super admins operate cross-tenant at the platform infrastructure level: onboarding universities, monitoring system-wide stats, and managing tenant suspensions.
+
+### 1. Platform-wide Statistics
+`GET /api/super-admin/stats`  
+**Summary**: Aggregates platform-wide metrics across all universities (active/suspended tenants, total users per role, total opportunities, events).
+
+**Response (200)**:
+```json
+{
+  "tenants": {
+    "total": 5,
+    "active": 4,
+    "suspended": 1
+  },
+  "users": {
+    "student": 1250,
+    "alumni": 850,
+    "partner": 60,
+    "admin": 10,
+    "moderator": 4
+  },
+  "content": {
+    "total_opportunities": 320,
+    "total_events": 85
+  }
+}
+```
+
+---
+
+### 2. List University Tenants
+`GET /api/super-admin/tenants`  
+**Summary**: Lists all registered university tenants with pagination, search, status filter, and live user counts.
+**Query Parameters**:
+| Parameter | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `page` | Integer | No | Page number (default: 1) |
+| `limit` | Integer | No | Results per page (default: 10) |
+| `search` | String | No | Search substring matching tenant name or slug |
+| `status` | String | No | Filter by `'active'` or `'suspended'` |
+
+**Response (200)**:
+```json
+{
+  "total": 2,
+  "page": 1,
+  "data": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "slug": "uet-lahore",
+      "name": "University of Engineering and Technology, Lahore",
+      "logo_url": "https://res.cloudinary.com/demo/image/upload/v1/logo.png",
+      "contact_email": "contact@uet.edu.pk",
+      "allowed_email_domains": ["uet.edu.pk"],
+      "status": "active",
+      "suspended_reason": null,
+      "created_at": "2024-01-15T08:00:00Z",
+      "updated_at": "2024-05-10T12:00:00Z",
+      "counts": {
+        "users": 2110
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 3. Create University Tenant
+`POST /api/super-admin/tenants`  
+**Summary**: Onboards a new university tenant and atomically creates its initial tenant administrator account.
+
+**Request Body**:
+```json
+{
+  "name": "FAST National University",
+  "slug": "fast-nuces",
+  "contact_email": "admin@nu.edu.pk",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/fast.png",
+  "allowed_email_domains": ["nu.edu.pk"],
+  "admin": {
+    "email": "campus.admin@nu.edu.pk",
+    "password": "StrongPassword123!",
+    "display_name": "FAST Campus Administrator",
+    "username": "fast_admin"
+  }
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "id": "7ca92f14-9812-4261-a1fb-1c863f55efa2",
+  "slug": "fast-nuces",
+  "name": "FAST National University",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/fast.png",
+  "contact_email": "admin@nu.edu.pk",
+  "allowed_email_domains": ["nu.edu.pk"],
+  "status": "active",
+  "createdAt": "2024-06-01T10:00:00.000Z",
+  "updatedAt": "2024-06-01T10:00:00.000Z"
+}
+```
+
+---
+
+### 4. Get University Tenant Details
+`GET /api/super-admin/tenants/:id`  
+**Summary**: Retrieves comprehensive metadata for a specific university tenant including aggregated user counts.
+
+**Response (200)**:
+```json
+{
+  "id": "7ca92f14-9812-4261-a1fb-1c863f55efa2",
+  "slug": "fast-nuces",
+  "name": "FAST National University",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/fast.png",
+  "contact_email": "admin@nu.edu.pk",
+  "allowed_email_domains": ["nu.edu.pk"],
+  "status": "active",
+  "suspended_reason": null,
+  "createdAt": "2024-06-01T10:00:00.000Z",
+  "updatedAt": "2024-06-01T10:00:00.000Z",
+  "total_users": 1
+}
+```
+
+---
+
+### 5. Update University Tenant
+`PUT /api/super-admin/tenants/:id`  
+**Summary**: Updates university name, logo, contact email, or allowed email domains. Invalidates the active cache.
+
+**Request Body**:
+```json
+{
+  "name": "National University of Computer and Emerging Sciences (FAST-NUCES)",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/fast_new.png",
+  "contact_email": "contact@nu.edu.pk",
+  "allowed_email_domains": ["nu.edu.pk", "cfd.nu.edu.pk"]
+}
+```
+
+**Response (200)**:
+```json
+{
+  "id": "7ca92f14-9812-4261-a1fb-1c863f55efa2",
+  "slug": "fast-nuces",
+  "name": "National University of Computer and Emerging Sciences (FAST-NUCES)",
+  "logo_url": "https://res.cloudinary.com/demo/image/upload/fast_new.png",
+  "contact_email": "contact@nu.edu.pk",
+  "allowed_email_domains": ["nu.edu.pk", "cfd.nu.edu.pk"],
+  "status": "active"
+}
+```
+
+---
+
+### 6. Suspend University Tenant
+`PATCH /api/super-admin/tenants/:id/suspend`  
+**Summary**: Instantly suspends a university tenant. All tenant members are locked out immediately (`403 Forbidden` on all routes).
+
+**Request Body**:
+```json
+{
+  "reason": "Contract non-renewal or institutional request"
+}
+```
+
+**Response (200)**:
+```json
+{
+  "message": "Tenant fast-nuces has been suspended successfully"
+}
+```
+
+---
+
+### 7. Reactivate University Tenant
+`PATCH /api/super-admin/tenants/:id/reactivate`  
+**Summary**: Restores a suspended university tenant to `'active'` status. Tenant members can authenticate immediately.
+
+**Response (200)**:
+```json
+{
+  "message": "Tenant fast-nuces has been reactivated successfully"
+}
 ```
 
 ---
@@ -2691,4 +2991,658 @@ GET /api/feed?type=event&page=2&limit=5
   ]
 }
 ```
+
+---
+
+## 🔮 GraphQL API
+UNISON provides a full code-first GraphQL API covering platform features across Tenants, Auth, User Profiles, Search, Opportunities, Events, Announcements, Administration, and Super Administration. (Real-time WebSockets remain on Socket.io for duplex push events).
+
+### Endpoint & Tooling
+- **GraphQL Endpoint**: `POST /graphql`
+- **Interactive Playground / Apollo Sandbox**: Navigable at `http://localhost:5000/graphql` in development mode.
+- **Authentication**: Pass the user's JWT in the standard HTTP header:
+  ```http
+  Authorization: Bearer <your-jwt-token>
+  ```
+- **Tenant Context**: Inherits the exact same fail-closed CLS tenant context as the REST API. Unauthenticated requests to scoped queries/mutations fail closed; suspended tenant accounts return `403 Forbidden`. Cross-tenant queries resolve to empty lists or throw `404 Not Found`.
+
+---
+
+### 1. Queries
+
+#### `tenants`
+List all public active universities/tenants (unauthenticated).
+```graphql
+query GetPublicTenants {
+  tenants {
+    id
+    slug
+    name
+    logo_url
+  }
+}
+```
+
+#### `tenant(slug: String!)`
+Get single tenant public branding and status by its slug.
+```graphql
+query GetTenantBySlug($slug: String!) {
+  tenant(slug: $slug) {
+    id
+    slug
+    name
+    logo_url
+    contact_email
+    allowed_email_domains
+    status
+  }
+}
+```
+
+#### `me`
+Get current authenticated user profile (`Bearer JWT`).
+```graphql
+query GetMyProfile {
+  me {
+    id
+    username
+    display_name
+    email
+    role
+    bio
+    headline
+    location
+    created_at
+    skills {
+      id
+      name
+    }
+  }
+}
+```
+
+#### `userProfile(id: String!)`
+Get public profile for a user within the same university tenant.
+```graphql
+query GetUserProfile($userId: String!) {
+  userProfile(id: $userId) {
+    id
+    username
+    display_name
+    role
+    headline
+    bio
+    work_experiences {
+      id
+      title
+      company_name
+      is_current
+    }
+    educations {
+      id
+      institution
+      degree
+      graduation_year
+    }
+    skills {
+      id
+      name
+    }
+  }
+}
+```
+
+#### `searchUsers`
+Tenant-scoped user search with filters.
+```graphql
+query SearchUsers($displayName: String, $company: String, $skill: String, $batchYear: String, $degree: String) {
+  searchUsers(
+    displayName: $displayName
+    company: $company
+    skill: $skill
+    batchYear: $batchYear
+    degree: $degree
+  ) {
+    id
+    display_name
+    username
+    headline
+    role
+    avatar_url
+  }
+}
+```
+
+#### `opportunities`
+List opportunities within the university tenant with pagination and filters.
+```graphql
+query GetOpportunities($page: Int, $limit: Int, $type: String, $skill: String, $isRemote: Boolean) {
+  opportunities(page: $page, limit: $limit, type: $type, skill: $skill, isRemote: $isRemote) {
+    total
+    page
+    data {
+      id
+      title
+      type
+      description
+      location
+      is_remote
+      deadline
+      company_name
+      apply_link
+      posted_by
+      poster_username
+      posted_at
+      skills
+    }
+  }
+}
+```
+
+#### `opportunity(id: String!)`
+Get full details of a single opportunity by ID.
+```graphql
+query GetOpportunity($id: String!) {
+  opportunity(id: $id) {
+    id
+    title
+    type
+    description
+    requirements
+    location
+    is_remote
+    deadline
+    company_name
+    apply_link
+    posted_by
+    poster_username
+    posted_at
+    skills
+  }
+}
+```
+
+#### `events`
+List events within the tenant with pagination and filters.
+```graphql
+query GetEvents($page: Int, $limit: Int, $type: String, $isOnline: Boolean, $status: String) {
+  events(page: $page, limit: $limit, type: $type, isOnline: $isOnline, status: $status) {
+    total
+    page
+    data {
+      id
+      title
+      description
+      type
+      date
+      is_online
+      location
+      meeting_link
+      max_attendees
+      banner_url
+      hosted_by
+      host_username
+      created_at
+    }
+  }
+}
+```
+
+#### `event(id: String!)`
+Get full details of a single event by ID.
+```graphql
+query GetEvent($id: String!) {
+  event(id: $id) {
+    id
+    title
+    description
+    type
+    date
+    is_online
+    location
+    meeting_link
+    max_attendees
+    banner_url
+    hosted_by
+    host_username
+  }
+}
+```
+
+#### `announcements`
+List official university announcements.
+```graphql
+query GetAnnouncements($page: Int, $limit: Int) {
+  announcements(page: $page, limit: $limit) {
+    total
+    page
+    data {
+      id
+      title
+      description
+      event_date
+      media_url
+      media_type
+      created_by_admin {
+        id
+        name
+      }
+      created_at
+    }
+  }
+}
+```
+
+#### `announcement(id: String!)`
+Get a single announcement by ID.
+```graphql
+query GetAnnouncement($id: String!) {
+  announcement(id: $id) {
+    id
+    title
+    description
+    event_date
+    media_url
+    media_type
+    created_at
+  }
+}
+```
+
+#### `adminDashboardStats`
+Get admin dashboard metrics for the caller's university (`admin` or `moderator` role).
+```graphql
+query GetAdminStats {
+  adminDashboardStats {
+    total_users
+    total_students
+    total_alumni
+    total_partners
+    pending_approvals
+    active_opportunities
+    total_events
+  }
+}
+```
+
+#### `adminPendingAccounts`
+List pending user registrations requiring approval (`admin` or `moderator`).
+```graphql
+query GetPendingAccounts {
+  adminPendingAccounts {
+    id
+    username
+    display_name
+    email
+    role
+    roll_number
+    degree
+    batch
+    student_card_url
+    created_at
+  }
+}
+```
+
+#### `adminPendingUpgrades`
+List pending student-to-alumni profile upgrade requests (`admin` or `moderator`).
+```graphql
+query GetPendingUpgrades {
+  adminPendingUpgrades {
+    id
+    user_id
+    display_name
+    username
+    email
+    roll_number
+    current_role
+    requested_role
+    graduation_year
+    degree
+    degree_card_url
+    created_at
+  }
+}
+```
+
+#### `adminCurrentTenant`
+Get metadata and settings for the authenticated admin's university tenant (`admin`).
+```graphql
+query GetCurrentTenantSettings {
+  adminCurrentTenant {
+    id
+    slug
+    name
+    logo_url
+    contact_email
+    allowed_email_domains
+    status
+  }
+}
+```
+
+#### `adminStaffList`
+List all administrators and moderators in the current university tenant (`admin`).
+```graphql
+query GetStaffList {
+  adminStaffList {
+    id
+    email
+    display_name
+    username
+    role
+    created_at
+  }
+}
+```
+
+#### `superAdminPlatformStats`
+Get platform-wide aggregated statistics across all universities (`super_admin`).
+```graphql
+query GetPlatformStats {
+  superAdminPlatformStats {
+    total_tenants
+    active_tenants
+    suspended_tenants
+    total_users
+    total_opportunities
+    total_events
+  }
+}
+```
+
+#### `superAdminTenants`
+List all platform university tenants (`super_admin`).
+```graphql
+query ListPlatformTenants($status: String, $search: String) {
+  superAdminTenants(status: $status, search: $search) {
+    id
+    slug
+    name
+    status
+    allowed_email_domains
+    logo_url
+    contact_email
+    suspended_reason
+    total_users
+    createdAt
+  }
+}
+```
+
+#### `superAdminTenant(id: String!)`
+Get single university tenant details (`super_admin`).
+```graphql
+query GetPlatformTenant($id: String!) {
+  superAdminTenant(id: $id) {
+    id
+    slug
+    name
+    status
+    allowed_email_domains
+    logo_url
+    contact_email
+    suspended_reason
+    total_users
+    createdAt
+    updatedAt
+  }
+}
+```
+
+---
+
+### 2. Mutations
+
+#### `login`
+Authenticate a user with email and password.
+```graphql
+mutation Login($input: LoginInput!) {
+  login(input: $input) {
+    access_token
+    account_status
+    user {
+      id
+      email
+      role
+      name
+      tenant_id
+    }
+    tenant {
+      id
+      slug
+      name
+      logo_url
+    }
+  }
+}
+```
+
+#### `register`
+Register a new student, alumni, or partner account under a university tenant.
+```graphql
+mutation Register($input: RegisterInput!) {
+  register(input: $input) {
+    message
+    id
+  }
+}
+```
+*Variables Example*:
+```json
+{
+  "input": {
+    "tenant_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "ahmed.k@uet.edu.pk",
+    "password": "StrongPassword123!",
+    "role": "student",
+    "display_name": "Ahmed Khan",
+    "username": "ahmed_k",
+    "roll_number": "2021-CS-101",
+    "degree": "Computer Science",
+    "batch": "2021"
+  }
+}
+```
+
+#### `createOpportunity`
+Post a new job, internship, or project (`admin`, `alumni`, `partner`).
+```graphql
+mutation CreateOpportunity($input: CreateOpportunityInput!) {
+  createOpportunity(input: $input) {
+    message
+    id
+  }
+}
+```
+
+#### `updateOpportunity`
+Update an opportunity posting.
+```graphql
+mutation UpdateOpportunity($id: String!, $input: UpdateOpportunityInput!) {
+  updateOpportunity(id: $id, input: $input) {
+    message
+    id
+  }
+}
+```
+
+#### `deleteOpportunity`
+Remove an opportunity.
+```graphql
+mutation DeleteOpportunity($id: String!) {
+  deleteOpportunity(id: $id) {
+    message
+    id
+  }
+}
+```
+
+#### `createEvent`
+Schedule an event (`admin`, `alumni`, `partner`).
+```graphql
+mutation CreateEvent($input: CreateEventInput!) {
+  createEvent(input: $input) {
+    message
+    id
+  }
+}
+```
+
+#### `deleteEvent`
+Cancel or remove an event.
+```graphql
+mutation DeleteEvent($id: String!) {
+  deleteEvent(id: $id) {
+    message
+    id
+  }
+}
+```
+
+#### `broadcastAnnouncement`
+Broadcast an official announcement to all university tenant members (`admin`).
+```graphql
+mutation BroadcastAnnouncement($input: CreateAnnouncementInput!) {
+  broadcastAnnouncement(input: $input) {
+    message
+    id
+  }
+}
+```
+
+#### `deleteAnnouncement`
+Delete an announcement (`admin`).
+```graphql
+mutation DeleteAnnouncement($id: String!) {
+  deleteAnnouncement(id: $id) {
+    message
+    id
+  }
+}
+```
+
+#### `adminApproveAccount`
+Approve a pending account registration (`admin`, `moderator`).
+```graphql
+mutation ApproveAccount($id: String!) {
+  adminApproveAccount(id: $id) {
+    message
+    id
+  }
+}
+```
+
+#### `adminRejectAccount`
+Reject a pending registration with a feedback reason (`admin`, `moderator`).
+```graphql
+mutation RejectAccount($id: String!, $reason: String!) {
+  adminRejectAccount(id: $id, reason: $reason) {
+    message
+    id
+  }
+}
+```
+
+#### `adminApproveUpgrade`
+Approve a student-to-alumni graduation upgrade (`admin`, `moderator`).
+```graphql
+mutation ApproveUpgrade($id: String!) {
+  adminApproveUpgrade(id: $id) {
+    message
+    id
+  }
+}
+```
+
+#### `adminRejectUpgrade`
+Reject a student graduation upgrade (`admin`, `moderator`).
+```graphql
+mutation RejectUpgrade($id: String!, $reason: String!) {
+  adminRejectUpgrade(id: $id, reason: $reason) {
+    message
+    id
+  }
+}
+```
+
+#### `adminUpdateTenant`
+Update current university tenant profile and branding (`admin`).
+```graphql
+mutation UpdateTenantSettings($input: UpdateTenantSettingsInput!) {
+  adminUpdateTenant(input: $input) {
+    id
+    slug
+    name
+    logo_url
+    contact_email
+    allowed_email_domains
+    status
+  }
+}
+```
+
+#### `adminCreateStaff`
+Create a new administrator or moderator account for the university (`admin`).
+```graphql
+mutation CreateStaff($input: CreateStaffInput!) {
+  adminCreateStaff(input: $input) {
+    message
+    id
+  }
+}
+```
+
+#### `superAdminCreateTenant`
+Onboard a new university tenant and create its root administrator (`super_admin`).
+```graphql
+mutation SuperAdminCreateTenant($input: CreateTenantInput!) {
+  superAdminCreateTenant(input: $input) {
+    id
+    slug
+    name
+    status
+    allowed_email_domains
+  }
+}
+```
+
+#### `superAdminUpdateTenant`
+Update university metadata and allowed domains across universities (`super_admin`).
+```graphql
+mutation SuperAdminUpdateTenant($id: String!, $input: UpdateTenantInput!) {
+  superAdminUpdateTenant(id: $id, input: $input) {
+    id
+    slug
+    name
+    status
+    logo_url
+    contact_email
+    allowed_email_domains
+  }
+}
+```
+
+#### `superAdminSuspendTenant`
+Suspend a university tenant immediately (`super_admin`).
+```graphql
+mutation SuperAdminSuspendTenant($id: String!, $reason: String!) {
+  superAdminSuspendTenant(id: $id, reason: $reason) {
+    message
+    id
+  }
+}
+```
+
+#### `superAdminReactivateTenant`
+Reactivate a suspended university tenant (`super_admin`).
+```graphql
+mutation SuperAdminReactivateTenant($id: String!) {
+  superAdminReactivateTenant(id: $id) {
+    message
+    id
+  }
+}
+```
+
 

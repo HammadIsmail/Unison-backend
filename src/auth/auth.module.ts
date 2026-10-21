@@ -31,6 +31,7 @@ import { OTPRecord, OTPSchema } from './schemas/otp.schema';
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy],
-    exports: [JwtModule, PassportModule],
+    exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule { }
+
