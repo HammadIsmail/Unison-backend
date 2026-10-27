@@ -71,11 +71,28 @@ export const createTenantScopePlugin = (cls: ClsService) => (schema: Schema) => 
     }
   });
 
+  schema.pre('validate', function (this: any) {
+    if (this.isNew && !this.tenantId) {
+      try {
+        const tenantId = resolveTenantId();
+        if (tenantId) {
+          this.tenantId = tenantId;
+        }
+      } catch {
+        // Validation will handle if required
+      }
+    }
+  });
+
   schema.pre('save', function (this: any) {
     if (this.isNew && !this.tenantId) {
-      const tenantId = resolveTenantId();
-      if (tenantId) {
-        this.tenantId = tenantId;
+      try {
+        const tenantId = resolveTenantId();
+        if (tenantId) {
+          this.tenantId = tenantId;
+        }
+      } catch {
+        // Ignore
       }
     }
   });

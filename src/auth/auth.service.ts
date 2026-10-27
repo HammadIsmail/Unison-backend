@@ -217,8 +217,12 @@ export class AuthService {
         // 6. Upload student card to Cloudinary (if provided)
         let studentCardUrl: string | null = null;
         if (file) {
-            const uploadResult = await this.cloudinary.uploadFile(file);
-            studentCardUrl = uploadResult.secure_url;
+            try {
+                const uploadResult = await this.cloudinary.uploadFile(file);
+                studentCardUrl = uploadResult?.secure_url || null;
+            } catch (err: any) {
+                this.logger.warn(`Cloudinary student card upload failed: ${err?.message || err}`);
+            }
         }
 
         const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -249,75 +253,89 @@ export class AuthService {
                 extraProps = `affiliation: $affiliation, job_title: $job_title,`;
             }
 
-            await this.neo4j.run(
-                `CREATE (u:User {
-                    id: $id,
-                    username: $username,
-                    display_name: $display_name,
-                    email: $email,
-                    role: $role,
-                    roll_number: $roll_number,
-                    degree: $degree,
-                    student_card_url: $studentCardUrl,
-                    account_status: 'pending',
-                    tenantId: $tenantId,
-                    created_at: $now,
-                    ${extraProps}
-                    profile_picture: null,
-                    bio: null,
-                    phone: null
-                })`,
-                {
-                    id: userId,
-                    username: dto.username,
-                    display_name: dto.display_name,
-                    email: dto.email.toLowerCase().trim(),
-                    role: dto.role,
-                    tenantId: tenant.id,
-                    roll_number: dto.roll_number ?? null,
-                    degree: dto.degree ?? null,
-                    studentCardUrl: studentCardUrl,
-                    graduation_year: dto.graduation_year ?? null,
-                    semester: dto.semester ?? null,
-                    batch: dto.batch ?? null,
-                    affiliation: dto.affiliation ?? null,
-                    job_title: dto.job_title ?? null,
-                    now,
-                },
-            );
+            try {
+                await this.neo4j.run(
+                    `CREATE (u:User {
+                        id: $id,
+                        username: $username,
+                        display_name: $display_name,
+                        email: $email,
+                        role: $role,
+                        roll_number: $roll_number,
+                        degree: $degree,
+                        student_card_url: $studentCardUrl,
+                        account_status: 'pending',
+                        tenantId: $tenantId,
+                        created_at: $now,
+                        ${extraProps}
+                        profile_picture: null,
+                        bio: null,
+                        phone: null
+                    })`,
+                    {
+                        id: userId,
+                        username: dto.username,
+                        display_name: dto.display_name,
+                        email: dto.email.toLowerCase().trim(),
+                        role: dto.role,
+                        tenantId: tenant.id,
+                        roll_number: dto.roll_number ?? null,
+                        degree: dto.degree ?? null,
+                        studentCardUrl: studentCardUrl,
+                        graduation_year: dto.graduation_year ?? null,
+                        semester: dto.semester ?? null,
+                        batch: dto.batch ?? null,
+                        affiliation: dto.affiliation ?? null,
+                        job_title: dto.job_title ?? null,
+                        now,
+                    },
+                );
+            } catch (err: any) {
+                this.logger.warn(`Neo4j user creation skipped: ${err?.message || err}`);
+            }
 
             // Clean up OTP record
             await this.otpModel.deleteOne({ email: dto.email, type: 'email_verification' });
 
             // C. Log Activity in tenant context
-            await this.activity.logActivity(
-                ActivityType.USER_REGISTERED,
-                `New ${dto.role} registered: ${dto.display_name}`,
-                userId,
-            );
+            try {
+                await this.activity.logActivity(
+                    ActivityType.USER_REGISTERED,
+                    `New ${dto.role} registered: ${dto.display_name}`,
+                    userId,
+                    tenant.id,
+                );
+            } catch (err: any) {
+                this.logger.warn(`Activity logging failed: ${err?.message || err}`);
+            }
 
             // D. Notify only this tenant's Admins
-            const adminResult = await this.neo4j.run(
-                `MATCH (a:User {role: 'admin', tenantId: $tenantId})
-                 WHERE a.is_deleted IS NULL OR a.is_deleted = false
-                 RETURN a.id AS id`,
-                { tenantId: tenant.id },
-            );
+            try {
+                const adminResult = await this.neo4j.run(
+                    `MATCH (a:User {role: 'admin', tenantId: $tenantId})
+                     WHERE a.is_deleted IS NULL OR a.is_deleted = false
+                     RETURN a.id AS id`,
+                    { tenantId: tenant.id },
+                );
 
-            const notificationPromises = adminResult.records.map((r) =>
-                this.notification.createNotification(
-                    r.get('id'),
-                    `New ${dto.role} account pending approval: ${dto.display_name} (${dto.username})`,
-                    'user_registered',
-                    {
-                        sender_username: dto.username,
-                        sender_display_name: dto.display_name,
-                        sender_profile_picture: undefined,
-                        reference_link: '/admin/pending-accounts',
-                    },
-                ),
-            );
-            await Promise.allSettled(notificationPromises);
+                const notificationPromises = (adminResult.records || []).map((r) =>
+                    this.notification.createNotification(
+                        r.get('id'),
+                        `New ${dto.role} account pending approval: ${dto.display_name} (${dto.username})`,
+                        'user_registered',
+                        {
+                            sender_username: dto.username,
+                            sender_display_name: dto.display_name,
+                            sender_profile_picture: undefined,
+                            reference_link: '/admin/pending-accounts',
+                        },
+                        tenant.id,
+                    ),
+                );
+                await Promise.allSettled(notificationPromises);
+            } catch (err: any) {
+                this.logger.warn(`Admin notification failed: ${err?.message || err}`);
+            }
 
             return { message: 'Account created successfully. Pending admin approval.' };
         });

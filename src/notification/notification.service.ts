@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { ClsService } from 'nestjs-cls';
 import { NotificationGateway } from './notification.gateway';
 import { Notification } from './schemas/notification.schema';
 
@@ -18,6 +19,7 @@ export class NotificationService {
     @InjectModel(Notification.name)
     private readonly notificationModel: Model<Notification>,
     private readonly gateway: NotificationGateway,
+    private readonly cls: ClsService,
   ) { }
 
   async getUserNotifications(userId: string, readStatus?: string) {
@@ -74,9 +76,11 @@ export class NotificationService {
     return { message: 'All notifications cleared.' };
   }
 
-  async createNotification(userId: string, message: string, type: string, metadata?: NotificationMetadata) {
+  async createNotification(userId: string, message: string, type: string, metadata?: NotificationMetadata, tenantId?: string | null) {
+    const resolvedTenantId = tenantId || this.cls.get<string>('tenantId') || null;
     const notification = await this.notificationModel.create({
       recipientId: userId,
+      tenantId: resolvedTenantId,
       message,
       type,
       sender_username: metadata?.sender_username,
