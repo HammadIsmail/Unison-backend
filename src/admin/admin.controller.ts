@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { BulkActionDto, BulkRejectDto, AdminActivityFilterDto, AnalyticsFilterDto } from './dto/admin-request.dto';
+import { GetUser } from '../common/decorators/get-user.decorator';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -74,8 +75,8 @@ export class AdminController {
   @Roles('admin', 'moderator')
   @ApiOperation({ summary: 'List all profile upgrade requests from students' })
   @ApiResponse({ status: 200, type: [UpgradeRequestResponseDto] })
-  getPendingUpgrades() {
-    return this.adminService.getPendingUpgrades();
+  getPendingUpgrades(@GetUser('tenantId') tenantId?: string) {
+    return this.adminService.getPendingUpgrades(tenantId);
   }
 
   @Patch('approve-upgrade/:id')

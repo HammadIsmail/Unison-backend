@@ -31,7 +31,37 @@ export class PartnerService {
     );
 
     if (!result.records.length) {
-      throw new NotFoundException('Partner profile not found.');
+      // Fallback to MongoDB
+      const auth = await this.userAuthModel
+        .findOne({ userId: id, is_deleted: { $ne: true } })
+        .lean()
+        .exec();
+
+      if (!auth) {
+        throw new NotFoundException('Partner profile not found.');
+      }
+
+      const emailName = auth.email.split('@')[0];
+      return {
+        id: auth.userId,
+        role: 'partner',
+        username: (auth as any).username || emailName,
+        display_name: (auth as any).display_name || emailName,
+        email: auth.email,
+        bio: (auth as any).bio || null,
+        affiliation: (auth as any).affiliation || null,
+        job_title: (auth as any).job_title || null,
+        phone: (auth as any).phone || null,
+        linkedin_url: (auth as any).linkedin_url || null,
+        profile_picture: (auth as any).profile_picture || null,
+        backDropImage: (auth as any).backDropImage || null,
+        connections_count: 0,
+        posts_count: 0,
+        followerCount: 0,
+        followingCount: 0,
+        account_status: auth.account_status,
+        tenant_id: auth.tenantId,
+      };
     }
 
     const record = result.records[0];

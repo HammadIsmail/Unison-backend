@@ -94,11 +94,11 @@ export class AddSkillDto {
   @MaxLength(50)
   skill_name: string;
 
-  @ApiProperty({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Programming', maxLength: 50 })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ description: 'Skill category (e.g. Programming, Soft Skills)', example: 'Programming', maxLength: 50 })
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  category: string;
+  category?: string;
 
   @ApiProperty({ description: 'Proficiency level', enum: ['beginner', 'intermediate', 'expert'] })
   @IsNotEmpty()
@@ -148,7 +148,8 @@ export class CreateEducationDto {
   start_date: string;
 
   @ApiPropertyOptional({ description: 'End date of the education', example: '2025-06-30' })
-  @ValidateIf(o => !o.is_current || (o.end_date && o.end_date !== ''))
+  @ValidateIf(o => !o.is_current && !!o.end_date && o.end_date !== '')
+  @IsOptional()
   @IsDateString()
   end_date?: string;
 
@@ -183,12 +184,12 @@ export class UpdateEducationDto {
   start_date?: string;
 
   @ApiPropertyOptional({ description: 'Updated end date', example: '2026-06-30' })
+  @ValidateIf(o => !o.is_current && !!o.end_date && o.end_date !== '')
   @IsOptional()
-  @ValidateIf(o => (o.end_date !== undefined && o.end_date !== null && o.end_date !== ''))
   @IsDateString()
   end_date?: string;
 
-  @ApiPropertyOptional({ description: 'Whether this is now the current education', example: false })
+  @ApiPropertyOptional({ description: 'Whether this is currently active', example: true })
   @IsOptional()
   @IsBoolean()
   is_current?: boolean;

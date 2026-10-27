@@ -27,6 +27,91 @@ export class UserAuth extends Document {
   @Prop({ type: String })
   rejection_reason: string;
 
+  @Prop({ type: String })
+  username?: string;
+
+  @Prop({ type: String })
+  display_name?: string;
+
+  @Prop({ type: String })
+  roll_number?: string;
+
+  @Prop({ type: String })
+  degree?: string;
+
+  @Prop({ type: Number })
+  semester?: number;
+
+  @Prop({ type: String })
+  batch?: string;
+
+  @Prop({ type: Number })
+  graduation_year?: number;
+
+  @Prop({ type: String })
+  affiliation?: string | null;
+
+  @Prop({ type: String })
+  job_title?: string | null;
+
+  @Prop({ type: String })
+  profile_picture?: string | null;
+
+  @Prop({ type: String, default: null })
+  backDropImage?: string | null;
+
+  @Prop({ type: String, default: null })
+  bio?: string | null;
+
+  @Prop({ type: String, default: null })
+  phone?: string | null;
+
+  @Prop({ type: String, default: null })
+  linkedin_url?: string | null;
+
+  @Prop({ type: [String], default: [] })
+  skills?: string[];
+
+  @Prop({ type: [Object], default: [] })
+  detailed_skills?: Array<{
+    id: string;
+    name: string;
+    category?: string | null;
+    proficiency_level?: string;
+    years_experience?: number;
+  }>;
+
+  @Prop({ type: [Object], default: [] })
+  education?: Array<{
+    id: string;
+    university: string;
+    degree: string;
+    field_of_study?: string | null;
+    start_date: string;
+    end_date?: string | null;
+    is_current: boolean;
+  }>;
+
+  @Prop({ type: [Object], default: [] })
+  work_experiences?: Array<{
+    id: string;
+    company_name: string;
+    role: string;
+    start_date: string;
+    end_date?: string | null;
+    is_current: boolean;
+    employment_type?: string | null;
+  }>;
+
+  @Prop({ type: String })
+  student_card_url?: string | null;
+
+  @Prop({ type: String, default: null })
+  upgrade_status?: string | null;
+
+  @Prop({ type: String, default: null })
+  upgrade_rejection_reason?: string | null;
+
   // ─── Soft Delete ──────────────────────────────────────────────────────────
   @Prop({ type: Boolean, default: false, index: true })
   is_deleted: boolean;

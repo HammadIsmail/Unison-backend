@@ -69,36 +69,47 @@ export class AdminService {
   }
 
   async getPendingAccounts() {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {account_status: 'pending', tenantId: $tenantId})
-       WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, 
-              u.created_at AS registered_at, u.profile_picture AS profile_picture, u.student_card_url AS student_card_url,
-              u.affiliation AS affiliation, u.job_title AS job_title`,
-    );
+    try {
+      const result = await this.neo4j.run(
+        `MATCH (u:User {account_status: 'pending'})
+         WHERE u.is_deleted IS NULL OR u.is_deleted = false
+         RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.role AS role, 
+                u.created_at AS registered_at, u.profile_picture AS profile_picture, u.student_card_url AS student_card_url,
+                u.affiliation AS affiliation, u.job_title AS job_title,
+                u.roll_number AS roll_number, u.degree AS degree, u.batch AS batch,
+                u.graduation_year AS graduation_year, u.semester AS semester`,
+      );
 
-    if (result.records && result.records.length > 0) {
-      return result.records.map((record) => {
-        const registeredAt = record.get('registered_at');
-        return {
-          id: record.get('id'),
-          username: record.get('username'),
-          display_name: record.get('display_name'),
-          email: record.get('email'),
-          role: record.get('role'),
-          registered_at: registeredAt
-            ? typeof registeredAt === 'string'
-              ? registeredAt
-              : registeredAt.toString
-                ? registeredAt.toString()
-                : registeredAt
-            : null,
-          profile_picture: record.get('profile_picture') || null,
-          student_card_url: record.get('student_card_url') || null,
-          affiliation: record.get('affiliation') || null,
-          job_title: record.get('job_title') || null,
-        };
-      });
+      if (result.records && result.records.length > 0) {
+        return result.records.map((record) => {
+          const registeredAt = record.get('registered_at');
+          return {
+            id: record.get('id'),
+            username: record.get('username') || record.get('email')?.split('@')[0],
+            display_name: record.get('display_name') || record.get('username') || record.get('email')?.split('@')[0],
+            email: record.get('email'),
+            role: record.get('role'),
+            registered_at: registeredAt
+              ? typeof registeredAt === 'string'
+                ? registeredAt
+                : registeredAt.toString
+                  ? registeredAt.toString()
+                  : registeredAt
+              : null,
+            profile_picture: record.get('profile_picture') || null,
+            student_card_url: record.get('student_card_url') || null,
+            affiliation: record.get('affiliation') || null,
+            job_title: record.get('job_title') || null,
+            roll_number: record.get('roll_number') || null,
+            degree: record.get('degree') || null,
+            batch: record.get('batch') || null,
+            graduation_year: record.get('graduation_year') || null,
+            semester: record.get('semester') || null,
+          };
+        });
+      }
+    } catch (err: any) {
+      this.logger.warn(`Neo4j getPendingAccounts query failed: ${err?.message || err}`);
     }
 
     // Fallback to MongoDB
@@ -109,104 +120,150 @@ export class AdminService {
 
     return pendingUsers.map((u: any) => ({
       id: u.userId,
-      username: u.email.split('@')[0],
-      display_name: u.email.split('@')[0],
+      username: u.username || u.email.split('@')[0],
+      display_name: u.display_name || u.username || u.email.split('@')[0],
       email: u.email,
       role: u.role,
       registered_at: u.createdAt ? u.createdAt.toISOString() : null,
-      profile_picture: null,
-      student_card_url: null,
-      affiliation: null,
-      job_title: null,
+      profile_picture: u.backDropImage || null,
+      student_card_url: u.student_card_url || null,
+      affiliation: u.affiliation || null,
+      job_title: u.job_title || null,
+      roll_number: u.roll_number || null,
+      degree: u.degree || null,
+      batch: u.batch || null,
+      graduation_year: u.graduation_year || null,
+      semester: u.semester || null,
     }));
   }
 
   async approveAccount(id: string) {
-    // 1. Update Neo4j
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, tenantId: $tenantId})
-       SET u.account_status = 'approved'
-       RETURN u`,
-      { id },
+    // 1. Update MongoDB
+    const authUser = await this.userAuthModel.findOneAndUpdate(
+      { userId: id },
+      { account_status: 'approved' },
+      { new: true },
     );
 
-    if (!result.records.length) {
-      throw new NotFoundException('Account not found in Neo4j.');
+    // 2. Update Neo4j
+    let neo4jUser: any = null;
+    try {
+      const result = await this.neo4j.run(
+        `MATCH (u:User {id: $id, tenantId: $tenantId})
+         SET u.account_status = 'approved'
+         RETURN u`,
+        { id },
+      );
+      if (result.records && result.records.length > 0) {
+        neo4jUser = result.records[0].get('u').properties;
+      }
+    } catch (err: any) {
+      this.logger.warn(`Neo4j approveAccount update failed: ${err?.message || err}`);
+    }
+
+    if (!authUser && !neo4jUser) {
+      throw new NotFoundException('Account not found.');
+    }
+
+    const email = authUser?.email || neo4jUser?.email;
+    const displayName = neo4jUser?.display_name || neo4jUser?.username || email?.split('@')[0] || 'User';
+
+    if (email) {
+      try {
+        await this.mail.sendApprovalEmail(email, displayName);
+      } catch (err: any) {
+        this.logger.warn(`Failed to send approval email: ${err?.message || err}`);
+      }
     }
 
     try {
-      // 2. Update MongoDB
-      await this.userAuthModel.findOneAndUpdate({ userId: id }, { account_status: 'approved' });
-    } catch (error) {
-      // Rollback Neo4j
-      await this.neo4j.run(
-        `MATCH (u:User {id: $id, tenantId: $tenantId}) SET u.account_status = 'pending'`,
-        { id },
+      await this.activity.logActivity(
+        ActivityType.ACCOUNT_APPROVED,
+        `Account approved for ${displayName}`,
+        id,
       );
-      throw error;
+    } catch (err: any) {
+      this.logger.warn(`Activity logging failed: ${err?.message || err}`);
     }
 
-    const user = result.records[0].get('u').properties;
-    await this.mail.sendApprovalEmail(user.email, user.display_name || user.username);
-
-    await this.activity.logActivity(
-      ActivityType.ACCOUNT_APPROVED,
-      `Account approved for ${user.display_name || user.username}`,
-      id,
-    );
-
-    await this.notification.createNotification(
-      id,
-      'Your account has been approved by the admin. Welcome to UNISON!',
-      'account_approved',
-      {
-        sender_display_name: 'UNISON Administration',
-        reference_link: '/',
-      },
-    );
+    try {
+      await this.notification.createNotification(
+        id,
+        'Your account has been approved by the admin. Welcome to UNISON!',
+        'account_approved',
+        {
+          sender_display_name: 'UNISON Administration',
+          reference_link: '/',
+        },
+      );
+    } catch (err: any) {
+      this.logger.warn(`Notification failed: ${err?.message || err}`);
+    }
 
     return { message: 'Account approved. Email sent to user.' };
   }
 
   async rejectAccount(id: string, dto: RejectAccountDto) {
-    // 1. Update Neo4j
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, tenantId: $tenantId})
-       SET u.account_status = 'rejected'
-       RETURN u`,
-      { id },
+    // 1. Update MongoDB
+    const authUser = await this.userAuthModel.findOneAndUpdate(
+      { userId: id },
+      { account_status: 'rejected', rejection_reason: dto.rejection_reason },
+      { new: true },
     );
 
-    if (!result.records.length) {
-      throw new NotFoundException('Account not found in Neo4j.');
+    // 2. Update Neo4j
+    let neo4jUser: any = null;
+    try {
+      const result = await this.neo4j.run(
+        `MATCH (u:User {id: $id, tenantId: $tenantId})
+         SET u.account_status = 'rejected'
+         RETURN u`,
+        { id },
+      );
+      if (result.records && result.records.length > 0) {
+        neo4jUser = result.records[0].get('u').properties;
+      }
+    } catch (err: any) {
+      this.logger.warn(`Neo4j rejectAccount update failed: ${err?.message || err}`);
+    }
+
+    if (!authUser && !neo4jUser) {
+      throw new NotFoundException('Account not found.');
+    }
+
+    const email = authUser?.email || neo4jUser?.email;
+    const displayName = neo4jUser?.display_name || neo4jUser?.username || email?.split('@')[0] || 'User';
+
+    if (email) {
+      try {
+        await this.mail.sendRejectionEmail(email, displayName, dto.rejection_reason);
+      } catch (err: any) {
+        this.logger.warn(`Failed to send rejection email: ${err?.message || err}`);
+      }
     }
 
     try {
-      // 2. Update MongoDB
-      await this.userAuthModel.findOneAndUpdate(
-        { userId: id },
-        { account_status: 'rejected', rejection_reason: dto.rejection_reason },
+      await this.activity.logActivity(
+        ActivityType.ACCOUNT_REJECTED,
+        `Account rejected for ${displayName}: ${dto.rejection_reason}`,
+        id,
       );
-    } catch (error) {
-      // Rollback Neo4j
-      await this.neo4j.run(
-        `MATCH (u:User {id: $id, tenantId: $tenantId}) SET u.account_status = 'pending'`,
-        { id },
-      );
-      throw error;
+    } catch (err: any) {
+      this.logger.warn(`Activity logging failed: ${err?.message || err}`);
     }
 
-    const user = result.records[0].get('u').properties;
-    await this.mail.sendRejectionEmail(user.email, user.display_name || user.username, dto.rejection_reason);
-
-    await this.notification.createNotification(
-      id,
-      `Your account request was rejected. Reason: ${dto.rejection_reason}`,
-      'account_rejected',
-      {
-        sender_display_name: 'UNISON Administration',
-      },
-    );
+    try {
+      await this.notification.createNotification(
+        id,
+        `Your account request was rejected. Reason: ${dto.rejection_reason}`,
+        'account_rejected',
+        {
+          sender_display_name: 'UNISON Administration',
+        },
+      );
+    } catch (err: any) {
+      this.logger.warn(`Notification failed: ${err?.message || err}`);
+    }
 
     return { message: 'Account rejected. Email sent to user.' };
   }
@@ -237,91 +294,147 @@ export class AdminService {
     };
   }
 
-  async getPendingUpgrades() {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {role: 'student', upgrade_status: 'pending', tenantId: $tenantId})
-       WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.roll_number AS roll_number, u.upgrade_status AS upgrade_status, u.profile_picture AS profile_picture, u.graduation_year AS graduation_year`,
-    );
+  async getPendingUpgrades(tenantId?: string) {
+    let result: any = null;
+    try {
+      result = await this.neo4j.run(
+        `MATCH (u:User {role: 'student', upgrade_status: 'pending'})
+         WHERE (u.is_deleted IS NULL OR u.is_deleted = false)
+           AND ($tenantId IS NULL OR u.tenantId = $tenantId)
+         RETURN u.id AS id, u.username AS username, u.display_name AS display_name, u.email AS email, u.roll_number AS roll_number, u.upgrade_status AS upgrade_status, u.profile_picture AS profile_picture, u.graduation_year AS graduation_year`,
+        { tenantId: tenantId || null },
+      );
+    } catch {
+      result = { records: [] };
+    }
 
-    return result.records.map((record) => ({
-      id: record.get('id'),
-      username: record.get('username'),
-      display_name: record.get('display_name'),
-      email: record.get('email'),
-      roll_number: record.get('roll_number') || null,
-      graduation_year:
-        typeof record.get('graduation_year')?.toNumber === 'function'
-          ? record.get('graduation_year').toNumber()
-          : record.get('graduation_year') || null,
-      upgrade_status: record.get('upgrade_status'),
-      profile_picture: record.get('profile_picture') || null,
+    if (result?.records?.length) {
+      return result.records.map((record: any) => ({
+        id: record.get('id'),
+        username: record.get('username'),
+        display_name: record.get('display_name'),
+        email: record.get('email'),
+        roll_number: record.get('roll_number') || null,
+        graduation_year:
+          typeof record.get('graduation_year')?.toNumber === 'function'
+            ? record.get('graduation_year').toNumber()
+            : record.get('graduation_year') || null,
+        upgrade_status: record.get('upgrade_status'),
+        profile_picture: record.get('profile_picture') || null,
+      }));
+    }
+
+    // Fallback to MongoDB
+    const filter: any = { role: 'student', upgrade_status: 'pending', is_deleted: { $ne: true } };
+    if (tenantId) {
+      filter.$or = [{ tenantId }, { tenant_id: tenantId }, { tenantId: null }, { tenantId: { $exists: false } }];
+    }
+    const pending = await this.userAuthModel
+      .find(filter)
+      .lean()
+      .exec();
+
+    return pending.map((u: any) => ({
+      id: u.userId,
+      username: u.username || u.email.split('@')[0],
+      display_name: u.display_name || (u as any).name || u.email.split('@')[0],
+      email: u.email,
+      roll_number: u.roll_number || null,
+      graduation_year: u.graduation_year || null,
+      upgrade_status: u.upgrade_status || 'pending',
+      profile_picture: u.profile_picture || null,
     }));
   }
 
   async approveUpgrade(id: string) {
-    // 1. Update Neo4j
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, role: 'student', upgrade_status: 'pending', tenantId: $tenantId})
-       SET u.role = 'alumni'
-       REMOVE u.upgrade_status, u.upgrade_rejection_reason
-       RETURN u`,
-      { id },
-    );
-
-    if (!result.records.length) {
+    const user = await this.userAuthModel.findOne({ userId: id, is_deleted: { $ne: true } });
+    if (!user) {
       throw new NotFoundException('Pending upgrade request not found for this user.');
     }
 
+    // 1. Update MongoDB Role & remove upgrade_status
+    await this.userAuthModel.updateOne(
+      { userId: id },
+      {
+        $set: { role: 'alumni' },
+        $unset: { upgrade_status: 1, upgrade_rejection_reason: 1 },
+      }
+    );
+
+    // 2. Update Neo4j (best effort)
     try {
-      // 2. Update MongoDB Role
-      await this.userAuthModel.findOneAndUpdate({ userId: id }, { role: 'alumni' });
-    } catch (error) {
-      // Rollback Neo4j
       await this.neo4j.run(
-        `MATCH (u:User {id: $id, tenantId: $tenantId}) 
-         SET u.role = 'student', u.upgrade_status = 'pending'`,
+        `MATCH (u:User {id: $id})
+         SET u.role = 'alumni'
+         REMOVE u.upgrade_status, u.upgrade_rejection_reason
+         RETURN u`,
         { id },
       );
-      throw error;
+    } catch (neoErr) {
+      console.warn('[Neo4j] approveUpgrade failed:', neoErr);
     }
 
-    const user = result.records[0].get('u').properties;
-    await this.mail.sendUpgradeApprovalEmail(user.email, user.display_name || user.username);
+    const displayName = (user as any).display_name || (user as any).username || 'User';
+    try {
+      await this.mail.sendUpgradeApprovalEmail(user.email, displayName);
+    } catch {}
 
-    await this.activity.logActivity(
-      ActivityType.PROFILE_UPDATED,
-      `Profile upgraded to Alumni for ${user.display_name || user.username}`,
-      id,
-    );
+    try {
+      await this.activity.logActivity(
+        ActivityType.PROFILE_UPDATED,
+        `Profile upgraded to Alumni for ${displayName}`,
+        id,
+      );
+    } catch {}
 
-    await this.notification.createNotification(
-      id,
-      'Congratulations! Your request to upgrade to an Alumni profile has been approved.',
-      'profile_upgraded',
-      {
-        sender_display_name: 'UNISON Administration',
-        reference_link: '/',
-      },
-    );
+    try {
+      await this.notification.createNotification(
+        id,
+        'Congratulations! Your request to upgrade to an Alumni profile has been approved.',
+        'profile_upgraded',
+        {
+          sender_display_name: 'UNISON Administration',
+          reference_link: '/',
+        },
+      );
+    } catch {}
 
     return { message: 'Profile upgraded successfully. Email sent to user.' };
   }
 
   async rejectUpgrade(id: string, dto: RejectUpgradeDto) {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, role: 'student', upgrade_status: 'pending', tenantId: $tenantId})
-       SET u.upgrade_status = 'rejected', u.upgrade_rejection_reason = $reason
-       RETURN u`,
-      { id, reason: dto.rejection_reason },
-    );
-
-    if (!result.records.length) {
+    const user = await this.userAuthModel.findOne({ userId: id, is_deleted: { $ne: true } });
+    if (!user) {
       throw new NotFoundException('Pending upgrade request not found for this user.');
     }
 
-    const user = result.records[0].get('u').properties;
-    await this.mail.sendUpgradeRejectionEmail(user.email, user.display_name || user.username, dto.rejection_reason);
+    // 1. Update MongoDB
+    await this.userAuthModel.updateOne(
+      { userId: id },
+      {
+        $set: {
+          upgrade_status: 'rejected',
+          upgrade_rejection_reason: dto.rejection_reason,
+        },
+      }
+    );
+
+    // 2. Update Neo4j (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $id})
+         SET u.upgrade_status = 'rejected', u.upgrade_rejection_reason = $reason
+         RETURN u`,
+        { id, reason: dto.rejection_reason },
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] rejectUpgrade failed:', neoErr);
+    }
+
+    const displayName = (user as any).display_name || (user as any).username || 'User';
+    try {
+      await this.mail.sendUpgradeRejectionEmail(user.email, displayName, dto.rejection_reason);
+    } catch {}
 
     await this.notification.createNotification(
       id,

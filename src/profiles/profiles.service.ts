@@ -1,9 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { TenantNeo4jService } from '../neo4j/tenant-neo4j.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { UserAuth } from '../auth/schemas/user-auth.schema';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly neo4j: TenantNeo4jService) {}
+  constructor(
+    private readonly neo4j: TenantNeo4jService,
+    @InjectModel(UserAuth.name)
+    private readonly userAuthModel: Model<UserAuth>,
+  ) {}
 
   async getUserPublicProfile(targetId: string, currentUserId: string) {
     const query = `
@@ -81,9 +88,58 @@ export class ProfilesService {
       RETURN u, work_exp, education, skills, opps, conn_status, is_sender, followers_count, following_count, is_following, is_blocked, opps_count, connections_count
     `;
 
-    const result = await this.neo4j.run(query, { targetId, currentUserId });
-    if (!result.records.length) {
-      throw new NotFoundException('User profile not found or not approved.');
+    let result: any = null;
+    try {
+      result = await this.neo4j.run(query, { targetId, currentUserId });
+    } catch {
+      result = { records: [] };
+    }
+
+    if (!result?.records?.length) {
+      const auth = await this.userAuthModel
+        .findOne({ userId: targetId, account_status: 'approved', is_deleted: { $ne: true } })
+        .lean()
+        .exec();
+
+      if (!auth) {
+        throw new NotFoundException('User profile not found or not approved.');
+      }
+
+      const emailName = auth.email.split('@')[0];
+      return {
+        id: auth.userId,
+        username: (auth as any).username || emailName,
+        display_name: (auth as any).display_name || emailName,
+        email: auth.email,
+        bio: (auth as any).bio || null,
+        role: auth.role,
+        degree: (auth as any).degree || null,
+        graduation_year: (auth as any).graduation_year || null,
+        batch: (auth as any).batch || null,
+        semester: (auth as any).semester || null,
+        roll_number: (auth as any).roll_number || null,
+        profile_picture: (auth as any).profile_picture || null,
+        backDropImage: (auth as any).backDropImage || null,
+        linkedin_url: (auth as any).linkedin_url || null,
+        github_url: null,
+        portfolio_url: null,
+        is_online: false,
+        last_seen: null,
+        work_experience: (auth as any).work_experiences || [],
+        education: (auth as any).education || [],
+        skills: (auth as any).detailed_skills || [],
+        opportunities_posted: [],
+        connection_status: 'none',
+        is_connection_sender: false,
+        followers_count: 0,
+        following_count: 0,
+        is_following: false,
+        is_blocked: false,
+        opportunities_count: 0,
+        connections_count: 0,
+        affiliation: (auth as any).affiliation || null,
+        job_title: (auth as any).job_title || null,
+      };
     }
 
     const record = result.records[0];

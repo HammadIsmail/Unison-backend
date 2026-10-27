@@ -6,13 +6,17 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { NotificationModule } from '../notification/notification.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserAuth, UserAuthSchema } from '../auth/schemas/user-auth.schema';
+import { Connection, ConnectionSchema } from '../connections/schemas/connection.schema';
 
 @Module({
   imports: [
     Neo4jModule, 
     CloudinaryModule, 
     NotificationModule,
-    MongooseModule.forFeature([{ name: UserAuth.name, schema: UserAuthSchema }])
+    MongooseModule.forFeature([
+      { name: UserAuth.name, schema: UserAuthSchema },
+      { name: Connection.name, schema: ConnectionSchema },
+    ]),
   ],
   controllers: [StudentController],
   providers: [StudentService],

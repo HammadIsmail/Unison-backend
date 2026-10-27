@@ -16,6 +16,7 @@ import { NotificationService } from '../notification/notification.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserAuth } from '../auth/schemas/user-auth.schema';
+import { Connection } from '../connections/schemas/connection.schema';
 import { UnifiedUpdateProfileDto } from '../profile-management/dto/profile-management.dto';
 
 @Injectable()
@@ -27,6 +28,8 @@ export class AlumniService {
     private readonly notification: NotificationService,
     @InjectModel(UserAuth.name)
     private readonly userAuthModel: Model<UserAuth>,
+    @InjectModel(Connection.name)
+    private readonly connectionModel: Model<Connection>,
   ) { }
 
   async getProfile(id: string) {
@@ -53,7 +56,47 @@ export class AlumniService {
     );
 
     if (!result.records.length) {
-      throw new NotFoundException('Alumni profile not found.');
+      // Fallback to MongoDB
+      const auth = await this.userAuthModel
+        .findOne({ userId: id, is_deleted: { $ne: true } })
+        .lean()
+        .exec();
+
+      if (!auth) {
+        throw new NotFoundException('Alumni profile not found.');
+      }
+
+      const emailName = auth.email.split('@')[0];
+      const workExps = (auth as any).work_experiences || [];
+      const currentExp = workExps.find((e: any) => e.is_current);
+
+      return {
+        id: auth.userId,
+        role: 'alumni',
+        username: (auth as any).username || emailName,
+        display_name: (auth as any).display_name || emailName,
+        email: auth.email,
+        bio: (auth as any).bio || null,
+        graduation_year: (auth as any).graduation_year || 2024,
+        degree: (auth as any).degree || 'BS',
+        current_company: currentExp?.company_name || null,
+        role_title: currentExp?.role || null,
+        skills: (auth as any).skills || [],
+        batch: (auth as any).batch || null,
+        connections_count: 0,
+        posts_count: 0,
+        followerCount: 0,
+        followingCount: 0,
+        linkedin_url: (auth as any).linkedin_url || null,
+        phone: (auth as any).phone || null,
+        profile_picture: (auth as any).profile_picture || null,
+        backDropImage: (auth as any).backDropImage || null,
+        work_experiences: workExps,
+        detailed_skills: (auth as any).detailed_skills || [],
+        education: (auth as any).education || [],
+        account_status: auth.account_status,
+        tenant_id: auth.tenantId,
+      };
     }
 
     const record = result.records[0];
@@ -92,22 +135,19 @@ export class AlumniService {
   }
 
   async updateProfile(userId: string, dto: UnifiedUpdateProfileDto, files?: { profile_picture?: Express.Multer.File[], backDropImage?: Express.Multer.File[] }) {
+    const currentUser = await this.userAuthModel.findOne({ userId }).lean().exec();
+
     if (files?.profile_picture?.length) {
       const file = files.profile_picture[0];
       try {
-        const result = await this.neo4j.run(
-          `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.profile_picture AS oldPic`,
-          { userId }
-        );
-        const oldPic = result.records[0]?.get('oldPic');
-
         const uploadResult = await this.cloudinaryService.uploadFile(file);
         dto.profile_picture = uploadResult.secure_url;
 
+        const oldPic = currentUser?.profile_picture;
         if (oldPic) {
           const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
           if (publicId) {
-            await this.cloudinaryService.deleteImage(publicId);
+            await this.cloudinaryService.deleteImage(publicId).catch(() => {});
           }
         }
       } catch (err) {
@@ -118,19 +158,14 @@ export class AlumniService {
     if (files?.backDropImage?.length) {
       const file = files.backDropImage[0];
       try {
-        const result = await this.neo4j.run(
-          `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.backDropImage AS oldPic`,
-          { userId }
-        );
-        const oldPic = result.records[0]?.get('oldPic');
-
         const uploadResult = await this.cloudinaryService.uploadFile(file);
         dto.backDropImage = uploadResult.secure_url;
 
+        const oldPic = (currentUser as any)?.backDropImage;
         if (oldPic) {
           const publicId = this.cloudinaryService.extractPublicIdFromUrl(oldPic);
           if (publicId) {
-            await this.cloudinaryService.deleteImage(publicId);
+            await this.cloudinaryService.deleteImage(publicId).catch(() => {});
           }
         }
       } catch (err) {
@@ -138,94 +173,159 @@ export class AlumniService {
       }
     }
 
-    const setQuery = Object.keys(dto)
-      .filter((k) => dto[k as keyof UnifiedUpdateProfileDto] !== undefined)
-      .map((k) => `u.${k} = $${k}`)
-      .join(', ');
+    // Build update object for MongoDB
+    const mongoUpdate: any = {};
+    if (dto.display_name !== undefined) mongoUpdate.display_name = dto.display_name;
+    if (dto.bio !== undefined) mongoUpdate.bio = dto.bio;
+    if (dto.phone !== undefined) mongoUpdate.phone = dto.phone;
+    if (dto.linkedin_url !== undefined) mongoUpdate.linkedin_url = dto.linkedin_url;
+    if (dto.affiliation !== undefined) mongoUpdate.affiliation = dto.affiliation;
+    if (dto.job_title !== undefined) mongoUpdate.job_title = dto.job_title;
+    if (dto.semester !== undefined) mongoUpdate.semester = Number(dto.semester);
+    if (dto.profile_picture !== undefined) mongoUpdate.profile_picture = dto.profile_picture;
+    if (dto.backDropImage !== undefined) mongoUpdate.backDropImage = dto.backDropImage;
 
-    if (!setQuery) return { message: 'No fields to update.' };
+    if (Object.keys(mongoUpdate).length > 0) {
+      await this.userAuthModel.updateOne({ userId }, { $set: mongoUpdate });
+    }
 
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId}) SET ${setQuery} RETURN u`,
-      { userId, ...dto }
-    );
+    // Neo4j update (best effort)
+    try {
+      const setQuery = Object.keys(dto)
+        .filter((k) => dto[k as keyof UnifiedUpdateProfileDto] !== undefined)
+        .map((k) => `u.${k} = $${k}`)
+        .join(', ');
 
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name`,
-      { userId }
-    );
-    const name = result.records[0]?.get('name') || 'User';
+      if (setQuery) {
+        await this.neo4j.run(
+          `MATCH (u:User {id: $userId, tenantId: $tenantId}) SET ${setQuery} RETURN u`,
+          { userId, ...dto }
+        );
+      }
+    } catch (neoErr) {
+      console.warn('[Neo4j] updateProfile failed:', neoErr);
+    }
 
-    await this.activity.logActivity(
-      ActivityType.PROFILE_UPDATED,
-      `${name} updated their profile information`,
-      userId
-    );
+    const name = dto.display_name || currentUser?.display_name || 'User';
+
+    try {
+      await this.activity.logActivity(
+        ActivityType.PROFILE_UPDATED,
+        `${name} updated their profile information`,
+        userId
+      );
+    } catch (actErr) {
+      console.warn('[Activity] logActivity failed:', actErr);
+    }
 
     return { message: 'Profile updated successfully.' };
   }
 
   async addWorkExperience(userId: string, dto: CreateWorkExperienceDto) {
     const expId = uuidv4();
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})
-       CREATE (w:WorkExperience {
-         id: $expId,
-         tenantId: $tenantId,
-         company_name: $dto.company_name,
-         role: $dto.role,
-         start_date: $dto.start_date,
-         end_date: $dto.end_date,
-         is_current: $dto.is_current,
-         employment_type: $dto.employment_type
-       })
-       CREATE (u)-[:HAS_EXPERIENCE]->(w)`,
-      { userId, expId, dto }
+    const newExp = {
+      id: expId,
+      company_name: dto.company_name,
+      role: dto.role,
+      start_date: dto.start_date,
+      end_date: dto.is_current ? null : (dto.end_date || null),
+      is_current: dto.is_current ?? false,
+      employment_type: dto.employment_type || null,
+    };
+
+    await this.userAuthModel.updateOne(
+      { userId },
+      { $push: { work_experiences: newExp } }
     );
 
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name`,
-      { userId }
-    );
-    const name = result.records[0]?.get('name') || 'User';
+    // Neo4j update (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})
+         CREATE (w:WorkExperience {
+           id: $expId,
+           tenantId: $tenantId,
+           company_name: $dto.company_name,
+           role: $dto.role,
+           start_date: $dto.start_date,
+           end_date: $dto.end_date,
+           is_current: $dto.is_current,
+           employment_type: $dto.employment_type
+         })
+         CREATE (u)-[:HAS_EXPERIENCE]->(w)`,
+        { userId, expId, dto }
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] addWorkExperience failed:', neoErr);
+    }
 
-    await this.activity.logActivity(
-      ActivityType.EXPERIENCE_ADDED,
-      `${name} added a new work experience at ${dto.company_name}`,
-      expId
-    );
+    try {
+      const user = await this.userAuthModel.findOne({ userId }).lean().exec();
+      const name = user?.display_name || 'User';
+      await this.activity.logActivity(
+        ActivityType.EXPERIENCE_ADDED,
+        `${name} added a new work experience at ${dto.company_name}`,
+        expId
+      );
+    } catch {}
 
     return { message: 'Work experience added successfully.' };
   }
 
   async updateWorkExperience(userId: string, expId: string, dto: UpdateWorkExperienceDto) {
-    const setQuery = Object.keys(dto)
-      .filter((k) => dto[k as keyof UpdateWorkExperienceDto] !== undefined)
-      .map((k) => `w.${k} = $${k}`)
-      .join(', ');
+    const updateFields: any = {};
+    if (dto.role !== undefined) updateFields['work_experiences.$.role'] = dto.role;
+    if (dto.end_date !== undefined) updateFields['work_experiences.$.end_date'] = dto.end_date;
+    if (dto.is_current !== undefined) {
+      updateFields['work_experiences.$.is_current'] = dto.is_current;
+      if (dto.is_current) {
+        updateFields['work_experiences.$.end_date'] = null;
+      }
+    }
 
-    if (!setQuery) return { message: 'No fields to update.' };
+    if (Object.keys(updateFields).length > 0) {
+      await this.userAuthModel.updateOne(
+        { userId, 'work_experiences.id': expId },
+        { $set: updateFields }
+      );
+    }
 
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId, tenantId: $tenantId})
-       SET ${setQuery} RETURN w`,
-      { userId, expId, ...dto }
-    );
+    // Neo4j update (best effort)
+    try {
+      const setQuery = Object.keys(dto)
+        .filter((k) => dto[k as keyof UpdateWorkExperienceDto] !== undefined)
+        .map((k) => `w.${k} = $${k}`)
+        .join(', ');
 
-    if (!result.records.length) throw new NotFoundException('Work experience not found.');
+      if (setQuery) {
+        await this.neo4j.run(
+          `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId, tenantId: $tenantId})
+           SET ${setQuery} RETURN w`,
+          { userId, expId, ...dto }
+        );
+      }
+    } catch (neoErr) {
+      console.warn('[Neo4j] updateWorkExperience failed:', neoErr);
+    }
 
     return { message: 'Work experience updated successfully.' };
   }
 
   async deleteWorkExperience(userId: string, expId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId, tenantId: $tenantId})
-       DETACH DELETE w RETURN count(w) AS cnt`,
-      { userId, expId }
+    await this.userAuthModel.updateOne(
+      { userId },
+      { $pull: { work_experiences: { id: expId } } }
     );
 
-    if (result.records[0].get('cnt').toNumber() === 0) {
-      throw new NotFoundException('Work experience not found.');
+    // Neo4j update (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EXPERIENCE]->(w:WorkExperience {id: $expId, tenantId: $tenantId})
+         DETACH DELETE w RETURN count(w) AS cnt`,
+        { userId, expId }
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] deleteWorkExperience failed:', neoErr);
     }
 
     return { message: 'Work experience removed successfully.' };
@@ -234,59 +334,133 @@ export class AlumniService {
   // ── Unified Skill Methods (accessible by alumni, partner, student) ──────────
 
   async addSkill(userId: string, dto: AddSkillDto) {
-    const countResult = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_SKILL]->(s:Skill) RETURN count(s) AS skillCount`,
-      { userId }
-    );
-    const skillCount = countResult.records[0]?.get('skillCount').toNumber() || 0;
-    if (skillCount >= 50) {
+    const user = await this.userAuthModel.findOne({ userId });
+    const currentDetailedSkills = (user as any)?.detailed_skills || [];
+    if (currentDetailedSkills.length >= 50) {
       throw new BadRequestException('You can only add up to 50 skills.');
     }
 
     const skillId = uuidv4();
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})
-       MERGE (s:Skill {name: toLower($dto.skill_name)})
-       ON CREATE SET s.id = $skillId, s.category = $dto.category
-       MERGE (u)-[r:HAS_SKILL]->(s)
-       SET r.proficiency_level = $dto.proficiency_level, r.years_experience = $dto.years_experience`,
-      { userId, skillId, dto }
+    const skillName = dto.skill_name.trim();
+
+    const exists = currentDetailedSkills.some(
+      (s: any) => s.name?.toLowerCase() === skillName.toLowerCase()
     );
+
+    const newSkill = {
+      id: skillId,
+      name: skillName,
+      category: dto.category || 'General',
+      proficiency_level: dto.proficiency_level || 'intermediate',
+      years_experience: dto.years_experience || 0,
+    };
+
+    if (!exists) {
+      await this.userAuthModel.updateOne(
+        { userId },
+        {
+          $push: {
+            detailed_skills: newSkill,
+            skills: skillName,
+          },
+        }
+      );
+    } else {
+      await this.userAuthModel.updateOne(
+        { userId, 'detailed_skills.name': { $regex: new RegExp(`^${skillName}$`, 'i') } },
+        {
+          $set: {
+            'detailed_skills.$.proficiency_level': dto.proficiency_level || 'intermediate',
+            'detailed_skills.$.years_experience': dto.years_experience || 0,
+            'detailed_skills.$.category': dto.category || 'General',
+          },
+        }
+      );
+    }
+
+    // Neo4j update (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})
+         MERGE (s:Skill {name: toLower($dto.skill_name)})
+         ON CREATE SET s.id = $skillId, s.category = $dto.category
+         MERGE (u)-[r:HAS_SKILL]->(s)
+         SET r.proficiency_level = $dto.proficiency_level, r.years_experience = $dto.years_experience`,
+        { userId, skillId, dto: { ...dto, category: dto.category || 'General' } }
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] addSkill failed:', neoErr);
+    }
 
     return { message: 'Skill added successfully.' };
   }
 
   async updateSkill(userId: string, skillId: string, dto: UpdateSkillDto) {
-    const updates: string[] = [];
-    if (dto.proficiency_level !== undefined) updates.push('r.proficiency_level = $proficiency_level');
-    if (dto.years_experience !== undefined) updates.push('r.years_experience = $years_experience');
+    const updateFields: any = {};
+    if (dto.proficiency_level !== undefined) {
+      updateFields['detailed_skills.$.proficiency_level'] = dto.proficiency_level;
+    }
+    if (dto.years_experience !== undefined) {
+      updateFields['detailed_skills.$.years_experience'] = dto.years_experience;
+    }
 
-    if (!updates.length) return { message: 'No fields to update.' };
+    if (Object.keys(updateFields).length > 0) {
+      await this.userAuthModel.updateOne(
+        { userId, 'detailed_skills.id': skillId },
+        { $set: updateFields }
+      );
+    }
 
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
-       SET ${updates.join(', ')}
-       RETURN r`,
-      { userId, skillId, ...dto }
-    );
+    // Neo4j update (best effort)
+    try {
+      const updates: string[] = [];
+      if (dto.proficiency_level !== undefined) updates.push('r.proficiency_level = $proficiency_level');
+      if (dto.years_experience !== undefined) updates.push('r.years_experience = $years_experience');
 
-    if (!result.records.length) {
-      throw new NotFoundException('Skill not found on your profile.');
+      if (updates.length) {
+        await this.neo4j.run(
+          `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
+           SET ${updates.join(', ')}
+           RETURN r`,
+          { userId, skillId, ...dto }
+        );
+      }
+    } catch (neoErr) {
+      console.warn('[Neo4j] updateSkill failed:', neoErr);
     }
 
     return { message: 'Skill updated successfully.' };
   }
 
   async deleteSkill(userId: string, skillId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
-       DELETE r
-       RETURN count(r) AS cnt`,
-      { userId, skillId }
+    const user = await this.userAuthModel.findOne({ userId }).lean().exec();
+    const currentDetailedSkills = (user as any)?.detailed_skills || [];
+    const skillToDelete = currentDetailedSkills.find(
+      (s: any) => s.id === skillId || s.name?.toLowerCase() === skillId.toLowerCase()
     );
 
-    if (result.records[0].get('cnt').toNumber() === 0) {
-      throw new NotFoundException('Skill not found on your profile.');
+    if (skillToDelete) {
+      await this.userAuthModel.updateOne(
+        { userId },
+        {
+          $pull: {
+            detailed_skills: { id: skillToDelete.id },
+            skills: skillToDelete.name,
+          },
+        }
+      );
+    }
+
+    // Neo4j update (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:HAS_SKILL]->(s:Skill {id: $skillId})
+         DELETE r
+         RETURN count(r) AS cnt`,
+        { userId, skillId }
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] deleteSkill failed:', neoErr);
     }
 
     return { message: 'Skill removed successfully.' };
@@ -296,91 +470,179 @@ export class AlumniService {
 
   async addEducation(userId: string, dto: CreateEducationDto) {
     const eduId = uuidv4();
-    await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})
-       CREATE (e:Education {
-         id: $eduId,
-         tenantId: $tenantId,
-         university: $dto.university,
-         degree: $dto.degree,
-         field_of_study: $dto.field_of_study,
-         start_date: $dto.start_date,
-         end_date: $dto.end_date,
-         is_current: $dto.is_current
-       })
-       CREATE (u)-[:HAS_EDUCATION]->(e)`,
-      { userId, eduId, dto }
+    const newEdu = {
+      id: eduId,
+      university: dto.university,
+      degree: dto.degree,
+      field_of_study: dto.field_of_study || null,
+      start_date: dto.start_date,
+      end_date: dto.is_current ? null : (dto.end_date || null),
+      is_current: dto.is_current ?? false,
+    };
+
+    await this.userAuthModel.updateOne(
+      { userId },
+      { $push: { education: newEdu } }
     );
 
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId}) RETURN u.display_name AS name`,
-      { userId }
-    );
-    const name = result.records[0]?.get('name') || 'User';
+    // Neo4j update (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})
+         CREATE (e:Education {
+           id: $eduId,
+           tenantId: $tenantId,
+           university: $dto.university,
+           degree: $dto.degree,
+           field_of_study: $dto.field_of_study,
+           start_date: $dto.start_date,
+           end_date: $dto.end_date,
+           is_current: $dto.is_current
+         })
+         CREATE (u)-[:HAS_EDUCATION]->(e)`,
+        { userId, eduId, dto }
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] addEducation failed:', neoErr);
+    }
 
-    await this.activity.logActivity(
-      ActivityType.PROFILE_UPDATED,
-      `${name} added new education: ${dto.degree} at ${dto.university}`,
-      userId
-    );
+    try {
+      const user = await this.userAuthModel.findOne({ userId }).lean().exec();
+      const name = user?.display_name || 'User';
+      await this.activity.logActivity(
+        ActivityType.PROFILE_UPDATED,
+        `${name} added new education: ${dto.degree} at ${dto.university}`,
+        userId
+      );
+    } catch {}
 
     return { message: 'Education added successfully.' };
   }
 
   async updateEducation(userId: string, eduId: string, dto: UpdateEducationDto) {
-    const setQuery = Object.keys(dto)
-      .filter((k) => dto[k as keyof UpdateEducationDto] !== undefined)
-      .map((k) => `e.${k} = $${k}`)
-      .join(', ');
+    const updateFields: any = {};
+    if (dto.degree !== undefined) updateFields['education.$.degree'] = dto.degree;
+    if (dto.university !== undefined) updateFields['education.$.university'] = dto.university;
+    if (dto.field_of_study !== undefined) updateFields['education.$.field_of_study'] = dto.field_of_study;
+    if (dto.start_date !== undefined) updateFields['education.$.start_date'] = dto.start_date;
+    if (dto.end_date !== undefined) updateFields['education.$.end_date'] = dto.end_date;
+    if (dto.is_current !== undefined) {
+      updateFields['education.$.is_current'] = dto.is_current;
+      if (dto.is_current) {
+        updateFields['education.$.end_date'] = null;
+      }
+    }
 
-    if (!setQuery) return { message: 'No fields to update.' };
+    if (Object.keys(updateFields).length > 0) {
+      await this.userAuthModel.updateOne(
+        { userId, 'education.id': eduId },
+        { $set: updateFields }
+      );
+    }
 
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EDUCATION]->(e:Education {id: $eduId, tenantId: $tenantId})
-       SET ${setQuery} RETURN e`,
-      { userId, eduId, ...dto }
-    );
+    // Neo4j update (best effort)
+    try {
+      const setQuery = Object.keys(dto)
+        .filter((k) => dto[k as keyof UpdateEducationDto] !== undefined)
+        .map((k) => `e.${k} = $${k}`)
+        .join(', ');
 
-    if (!result.records.length) throw new NotFoundException('Education record not found.');
+      if (setQuery) {
+        await this.neo4j.run(
+          `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EDUCATION]->(e:Education {id: $eduId, tenantId: $tenantId})
+           SET ${setQuery} RETURN e`,
+          { userId, eduId, ...dto }
+        );
+      }
+    } catch (neoErr) {
+      console.warn('[Neo4j] updateEducation failed:', neoErr);
+    }
 
     return { message: 'Education updated successfully.' };
   }
 
   async deleteEducation(userId: string, eduId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EDUCATION]->(e:Education {id: $eduId, tenantId: $tenantId})
-       DETACH DELETE e RETURN count(e) AS cnt`,
-      { userId, eduId }
+    await this.userAuthModel.updateOne(
+      { userId },
+      { $pull: { education: { id: eduId } } }
     );
 
-    if (result.records[0].get('cnt').toNumber() === 0) {
-      throw new NotFoundException('Education record not found.');
+    // Neo4j update (best effort)
+    try {
+      await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})-[:HAS_EDUCATION]->(e:Education {id: $eduId, tenantId: $tenantId})
+         DETACH DELETE e RETURN count(e) AS cnt`,
+        { userId, eduId }
+      );
+    } catch (neoErr) {
+      console.warn('[Neo4j] deleteEducation failed:', neoErr);
     }
 
     return { message: 'Education removed successfully.' };
   }
 
   async getConnections(userId: string) {
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
-       WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
-       OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
-       RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
-              c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
-              w.company_name AS company, w.role AS role`,
-      { userId }
-    );
+    const mongoConns = await this.connectionModel
+      .find({
+        $or: [{ senderId: userId }, { receiverId: userId }],
+        status: 'accepted',
+      })
+      .setOptions({ skipTenantScope: true })
+      .lean()
+      .exec();
 
-    return result.records.map((r) => ({
-      id: r.get('id'),
-      display_name: r.get('display_name'),
-      username: r.get('username'),
-      profile_picture: r.get('profile_picture') || null,
-      bio: r.get('bio') || null,
-      backDropImage: r.get('backDropImage') || null,
-      company: r.get('company') || null,
-      role: r.get('role') || null,
-    }));
+    if (mongoConns.length > 0) {
+      const partnerIds = mongoConns.map((c) =>
+        c.senderId === userId ? c.receiverId : c.senderId
+      );
+      const partners = await this.userAuthModel
+        .find({
+          userId: { $in: partnerIds },
+          is_deleted: { $ne: true },
+        })
+        .setOptions({ skipTenantScope: true })
+        .lean()
+        .exec();
+
+      return partners.map((p) => {
+        const currentExp = (p as any).work_experiences?.find((w: any) => w.is_current);
+        return {
+          id: p.userId,
+          display_name: p.display_name || p.username,
+          username: p.username,
+          profile_picture: p.profile_picture || null,
+          bio: (p as any).bio || null,
+          backDropImage: (p as any).backDropImage || null,
+          company: currentExp?.company_name || (p as any).affiliation || null,
+          role: currentExp?.role || (p as any).job_title || p.role || null,
+        };
+      });
+    }
+
+    try {
+      const result = await this.neo4j.run(
+        `MATCH (u:User {id: $userId, tenantId: $tenantId})-[r:CONNECTED_TO {status: 'accepted'}]-(c:User {tenantId: $tenantId})
+         WHERE (c.is_deleted IS NULL OR c.is_deleted = false) AND NOT c.role IN ['admin', 'moderator']
+         OPTIONAL MATCH (c)-[:HAS_EXPERIENCE]->(w:WorkExperience {tenantId: $tenantId, is_current: true})
+         RETURN c.id AS id, c.display_name AS display_name, c.username AS username, 
+                c.profile_picture AS profile_picture, c.bio AS bio, c.backDropImage AS backDropImage, 
+                w.company_name AS company, w.role AS role`,
+        { userId }
+      );
+
+      return result.records.map((r) => ({
+        id: r.get('id'),
+        display_name: r.get('display_name'),
+        username: r.get('username'),
+        profile_picture: r.get('profile_picture') || null,
+        bio: r.get('bio') || null,
+        backDropImage: r.get('backDropImage') || null,
+        company: r.get('company') || null,
+        role: r.get('role') || null,
+      }));
+    } catch {
+      return [];
+    }
   }
 
   async getBatchMates(userId: string) {

@@ -56,6 +56,7 @@ export class AddStudentSkillDto {
 export class RequestUpgradeDto {
   @ApiProperty({ description: 'The year the student is graduating or has graduated', example: 2024 })
   @IsNotEmpty()
+  @Type(() => Number)
   @IsInt()
   graduation_year: number;
 }

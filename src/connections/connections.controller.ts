@@ -15,6 +15,12 @@ import { RespondToConnectionDto } from './dto/connections.dto';
 export class ConnectionsController {
   constructor(private readonly connectionsService: ConnectionsService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Get your accepted connections' })
+  getMyConnections(@GetUser('sub') userId: string) {
+    return this.connectionsService.getMyConnections(userId);
+  }
+
   @Get('status/:target_id')
   @ApiOperation({ summary: 'Get connection status with another user' })
   @ApiResponse({ status: 200, type: ConnectionStatusResponseDto })

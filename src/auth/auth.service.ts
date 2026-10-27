@@ -241,6 +241,16 @@ export class AuthService {
                 role: dto.role,
                 account_status: 'pending',
                 tenantId: tenant.id,
+                username: dto.username,
+                display_name: dto.display_name,
+                roll_number: dto.roll_number,
+                degree: dto.degree,
+                semester: dto.semester,
+                batch: dto.batch,
+                graduation_year: dto.graduation_year,
+                affiliation: dto.affiliation,
+                job_title: dto.job_title,
+                student_card_url: studentCardUrl,
             });
 
             // B. Save Profile to Neo4j with tenantId

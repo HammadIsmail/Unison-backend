@@ -6,13 +6,17 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { ActivityModule } from '../common/activity/activity.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserAuth, UserAuthSchema } from '../auth/schemas/user-auth.schema';
+import { Connection, ConnectionSchema } from '../connections/schemas/connection.schema';
 
 @Module({
   imports: [
     Neo4jModule,
     CloudinaryModule,
     ActivityModule,
-    MongooseModule.forFeature([{ name: UserAuth.name, schema: UserAuthSchema }]),
+    MongooseModule.forFeature([
+      { name: UserAuth.name, schema: UserAuthSchema },
+      { name: Connection.name, schema: ConnectionSchema },
+    ]),
   ],
   controllers: [PartnerController],
   providers: [PartnerService],

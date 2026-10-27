@@ -86,6 +86,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
       if (result.records && result.records.length > 0) {
         const user = result.records[0].get('u').properties;
+        if (user.role) {
+          this.cls.set('userRole', user.role);
+        }
         return {
           sub: user.id,
           email: user.email,
@@ -104,6 +107,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       .setOptions({ skipTenantScope: true })
       .exec();
     if (auth && auth.account_status === 'approved') {
+      if (auth.role) {
+        this.cls.set('userRole', auth.role);
+      }
       return {
         sub: auth.userId,
         email: auth.email,

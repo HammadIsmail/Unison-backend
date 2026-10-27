@@ -20,7 +20,7 @@ export class StudentController {
 
 
   @Get('me')
-  @Roles('student')
+  @Roles('student', 'alumni')
   @ApiOperation({ summary: 'Get your own student profile' })
   @ApiResponse({ status: 200, type: StudentProfileResponseDto })
   getMe(@GetUser('sub') userId: string) {
@@ -33,7 +33,7 @@ export class StudentController {
   // and is accessible to students via @Roles('alumni', 'partner', 'student').
 
   @Get('connections')
-  @Roles('student')
+  @Roles('student', 'alumni')
   @ApiOperation({ summary: 'Get your accepted professional connections' })
   @ApiResponse({ status: 200, type: [NetworkUserResponseDto] }) 
   getConnections(@GetUser('sub') userId: string) {

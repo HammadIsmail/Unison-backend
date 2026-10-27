@@ -104,4 +104,60 @@ export class OpportunityController {
   ) {
     return this.opportunityService.remove(userId, role, id);
   }
+
+  @Get(':id/comments')
+  @ApiOperation({ summary: 'Get comments and questions on an opportunity' })
+  getComments(@Param('id') id: string) {
+    return this.opportunityService.getComments(id);
+  }
+
+  @Post(':id/comments')
+  @ApiOperation({ summary: 'Post a comment or question on an opportunity' })
+  addComment(
+    @Param('id') id: string,
+    @GetUser('sub') userId: string,
+    @Body('content') content: string,
+  ) {
+    if (!content || !content.trim()) {
+      throw new BadRequestException('Comment content cannot be empty.');
+    }
+    return this.opportunityService.addComment(id, userId, content.trim());
+  }
+
+  @Delete(':id/comments/:commentId')
+  @ApiOperation({ summary: 'Delete a comment on an opportunity' })
+  deleteComment(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+    @GetUser('sub') userId: string,
+    @GetUser('role') role: string,
+  ) {
+    return this.opportunityService.deleteComment(id, commentId, userId, role);
+  }
+
+  @Post(':id/comments/:commentId/reply')
+  @ApiOperation({ summary: 'Reply to a comment/question on an opportunity' })
+  addReply(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+    @GetUser('sub') userId: string,
+    @Body('content') content: string,
+  ) {
+    if (!content || !content.trim()) {
+      throw new BadRequestException('Reply content cannot be empty.');
+    }
+    return this.opportunityService.addReply(id, commentId, userId, content.trim());
+  }
+
+  @Delete(':id/comments/:commentId/reply/:replyId')
+  @ApiOperation({ summary: 'Delete a reply on an opportunity comment' })
+  deleteReply(
+    @Param('id') id: string,
+    @Param('commentId') commentId: string,
+    @Param('replyId') replyId: string,
+    @GetUser('sub') userId: string,
+    @GetUser('role') role: string,
+  ) {
+    return this.opportunityService.deleteReply(id, commentId, replyId, userId, role);
+  }
 }
