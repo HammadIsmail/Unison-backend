@@ -431,32 +431,37 @@ export class AuthService {
             throw new ForbiddenException("This university's access has been suspended.");
         }
 
-        // Fetch profile from Neo4j (filtered by tenantId)
-        const result = await this.neo4j.run(
-            `MATCH (u:User {id: $userId, tenantId: $tenantId})
-             OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
-             WHERE o.is_deleted IS NULL OR o.is_deleted = false
-             RETURN u, count(DISTINCT o) AS posts_count`,
-            { userId: auth.userId, tenantId: auth.tenantId },
-        );
-
-        const user = result.records[0]?.get('u')?.properties;
-        const posts_count = result.records[0]?.get('posts_count')?.toNumber?.() || 0;
+        // Fetch profile from Neo4j (filtered by tenantId, with graceful fallback if Neo4j is offline)
+        let user: any = null;
+        let posts_count = 0;
+        try {
+            const result = await this.neo4j.run(
+                `MATCH (u:User {id: $userId, tenantId: $tenantId})
+                 OPTIONAL MATCH (u)-[:POSTED]->(o:Opportunity {tenantId: $tenantId})
+                 WHERE o.is_deleted IS NULL OR o.is_deleted = false
+                 RETURN u, count(DISTINCT o) AS posts_count`,
+                { userId: auth.userId, tenantId: auth.tenantId },
+            );
+            user = result.records[0]?.get('u')?.properties;
+            posts_count = result.records[0]?.get('posts_count')?.toNumber?.() || 0;
+        } catch (neoErr: any) {
+            this.logger.warn(`Could not fetch Neo4j profile on login for ${auth.email}: ${neoErr?.message || neoErr}`);
+        }
 
         const profile: any = {
             id: auth.userId,
             tenant_id: auth.tenantId,
             email: auth.email,
             role: auth.role,
+            username: user?.username || auth.email.split('@')[0],
+            display_name: user?.display_name || user?.name || (auth.role === 'admin' ? 'University Admin' : auth.email.split('@')[0]),
+            profile_picture: user?.profile_picture || null,
+            bio: user?.bio || null,
+            account_status: user?.account_status || auth.account_status,
+            posts_count: posts_count,
         };
 
         if (user) {
-            profile.username = user.username;
-            profile.display_name = user.display_name || user.name;
-            profile.profile_picture = user.profile_picture || null;
-            profile.bio = user.bio || null;
-            profile.account_status = user.account_status;
-            profile.posts_count = posts_count;
 
             if (auth.role !== 'admin') {
                 profile.degree = user.degree;

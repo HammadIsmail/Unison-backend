@@ -287,6 +287,7 @@ export class SuperAdminService {
         { $match: { role: { $ne: 'super_admin' }, is_deleted: { $ne: true } } },
         { $group: { _id: '$role', count: { $sum: 1 } } },
       ])
+      .option({ skipTenantScope: true })
       .exec();
 
     const usersByRole: Record<string, number> = {
@@ -299,16 +300,21 @@ export class SuperAdminService {
       if (s._id) usersByRole[s._id] = s.count;
     });
 
-    // Opportunities & Events counts from Neo4j
-    const neo4jCounts = await this.neo4j.run(
-      `MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false
-       WITH count(o) AS total_opportunities
-       MATCH (e:Event) WHERE e.is_deleted IS NULL OR e.is_deleted = false
-       RETURN total_opportunities, count(e) AS total_events`,
-    );
-
-    const totalOpportunities = neo4jCounts.records[0]?.get('total_opportunities')?.toNumber?.() || 0;
-    const totalEvents = neo4jCounts.records[0]?.get('total_events')?.toNumber?.() || 0;
+    // Opportunities & Events counts from Neo4j (graceful fallback if offline)
+    let totalOpportunities = 0;
+    let totalEvents = 0;
+    try {
+      const neo4jCounts = await this.neo4j.run(
+        `MATCH (o:Opportunity) WHERE o.is_deleted IS NULL OR o.is_deleted = false
+         WITH count(o) AS total_opportunities
+         MATCH (e:Event) WHERE e.is_deleted IS NULL OR e.is_deleted = false
+         RETURN total_opportunities, count(e) AS total_events`,
+      );
+      totalOpportunities = neo4jCounts.records[0]?.get('total_opportunities')?.toNumber?.() || 0;
+      totalEvents = neo4jCounts.records[0]?.get('total_events')?.toNumber?.() || 0;
+    } catch (err: any) {
+      this.logger.warn(`Could not query Neo4j counts in getPlatformStats: ${err?.message || err}`);
+    }
 
     return {
       tenants: {
@@ -347,7 +353,10 @@ export class SuperAdminService {
       },
     ];
 
-    const results = await this.userAuthModel.aggregate(pipeline).exec();
+    const results = await this.userAuthModel
+      .aggregate(pipeline)
+      .option({ skipTenantScope: true })
+      .exec();
 
     for (const tId of tenantIds) {
       map.set(tId, { users: 0, alumni: 0, students: 0, partners: 0, pending: 0 });

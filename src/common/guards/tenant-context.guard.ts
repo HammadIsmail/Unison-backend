@@ -41,6 +41,10 @@ export class TenantContextGuard implements CanActivate {
 
     if (user.role === 'super_admin') {
       // Super admin operates globally without a tenant context
+      this.cls.set('isSuperAdmin', true);
+      this.cls.set('skipTenantScope', true);
+      this.cls.set('userRole', 'super_admin');
+      if (user.sub) this.cls.set('userId', user.sub);
       return true;
     }
 

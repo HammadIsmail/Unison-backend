@@ -27,6 +27,13 @@ export class TenantNeo4jService {
 
     const tenantId = this.cls.get<string>('tenantId');
     if (!tenantId) {
+      if (
+        this.cls.get<boolean>('isSuperAdmin') ||
+        this.cls.get<boolean>('skipTenantScope') ||
+        this.cls.get<string>('userRole') === 'super_admin'
+      ) {
+        return this.neo4j.run(cypher, params);
+      }
       throw new ForbiddenException('Tenant context missing (fail-closed)');
     }
 

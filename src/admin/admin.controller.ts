@@ -338,7 +338,7 @@ export class AdminController {
   // ─────────────────────────────────────────────────────────────────────────
 
   @Get('profile')
-  @Roles('admin', 'moderator')
+  @Roles('admin', 'moderator', 'super_admin')
   @ApiOperation({ summary: 'Get current admin/moderator profile' })
   getAdminProfile(@Req() req: any) {
     const adminId = req.user.sub;
@@ -346,7 +346,7 @@ export class AdminController {
   }
 
   @Patch('profile')
-  @Roles('admin', 'moderator')
+  @Roles('admin', 'moderator', 'super_admin')
   @UseInterceptors(FileInterceptor('profile_picture'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update current admin/moderator profile' })

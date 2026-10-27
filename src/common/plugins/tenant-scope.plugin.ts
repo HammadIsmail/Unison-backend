@@ -8,7 +8,12 @@ export const createTenantScopePlugin = (cls: ClsService) => (schema: Schema) => 
   }
 
   const resolveTenantId = (opts?: any): string | null => {
-    if (opts?.skipTenantScope) {
+    if (
+      opts?.skipTenantScope ||
+      cls.get<boolean>('skipTenantScope') ||
+      cls.get<string>('userRole') === 'super_admin' ||
+      cls.get<boolean>('isSuperAdmin')
+    ) {
       return null;
     }
     const tenantId = cls.get<string>('tenantId');

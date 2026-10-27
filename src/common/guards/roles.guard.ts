@@ -25,7 +25,7 @@ export class RolesGuard implements CanActivate {
     }
 
     const user = req?.user;
-    if (!user || !requiredRoles.includes(user.role)) {
+    if (!user || (!requiredRoles.includes(user.role) && user.role !== 'super_admin')) {
       throw new ForbiddenException('You do not have permission to access this resource.');
     }
 

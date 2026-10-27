@@ -48,6 +48,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         throw new UnauthorizedException('User not found or token invalid.');
       }
 
+      this.cls.set('isSuperAdmin', true);
+      this.cls.set('skipTenantScope', true);
+      this.cls.set('userRole', 'super_admin');
+      this.cls.set('userId', auth.userId);
+
       return {
         sub: auth.userId,
         email: auth.email,
@@ -67,26 +72,47 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // 4. Set CLS context for the request
     this.cls.set('tenantId', payload.tenantId);
+    this.cls.set('userId', payload.sub);
+    this.cls.set('userRole', payload.role);
 
-    // 5. Look up user in Neo4j with tenantId filter
-    const result = await this.neo4j.run(
-      `MATCH (u:User {id: $id, email: $email, tenantId: $tenantId})
-       WHERE u.is_deleted IS NULL OR u.is_deleted = false
-       RETURN u`,
-      { id: payload.sub, email: payload.email, tenantId: payload.tenantId },
-    );
+    // 5. Look up user in Neo4j with tenantId filter (with graceful fallback if Neo4j is unreachable)
+    try {
+      const result = await this.neo4j.run(
+        `MATCH (u:User {id: $id, email: $email, tenantId: $tenantId})
+         WHERE u.is_deleted IS NULL OR u.is_deleted = false
+         RETURN u`,
+        { id: payload.sub, email: payload.email, tenantId: payload.tenantId },
+      );
 
-    if (!result.records.length) {
-      throw new UnauthorizedException('User not found or token invalid.');
+      if (result.records && result.records.length > 0) {
+        const user = result.records[0].get('u').properties;
+        return {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.display_name || user.name || user.username,
+          tenantId: payload.tenantId,
+        };
+      }
+    } catch {
+      // Neo4j error caught, fallback below
     }
 
-    const user = result.records[0].get('u').properties;
-    return {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      name: user.display_name || user.name || user.username,
-      tenantId: payload.tenantId,
-    };
+    // Fallback to MongoDB if Neo4j is temporarily unreachable or user node is not synced to Neo4j
+    const auth = await this.userAuthModel
+      .findOne({ userId: payload.sub, is_deleted: { $ne: true } })
+      .setOptions({ skipTenantScope: true })
+      .exec();
+    if (auth && auth.account_status === 'approved') {
+      return {
+        sub: auth.userId,
+        email: auth.email,
+        role: auth.role,
+        name: auth.email.split('@')[0],
+        tenantId: auth.tenantId,
+      };
+    }
+
+    throw new UnauthorizedException('User not found or token invalid.');
   }
 }

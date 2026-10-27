@@ -61,6 +61,13 @@ export class AdminService {
     private readonly announcementModel: Model<Announcement>,
   ) {}
 
+  private toNum(val: any): number {
+    if (!val) return 0;
+    if (typeof val.toNumber === 'function') return val.toNumber();
+    const n = Number(val);
+    return isNaN(n) ? 0 : n;
+  }
+
   async getPendingAccounts() {
     const result = await this.neo4j.run(
       `MATCH (u:User {account_status: 'pending', tenantId: $tenantId})
@@ -70,27 +77,48 @@ export class AdminService {
               u.affiliation AS affiliation, u.job_title AS job_title`,
     );
 
-    return result.records.map((record) => {
-      const registeredAt = record.get('registered_at');
-      return {
-        id: record.get('id'),
-        username: record.get('username'),
-        display_name: record.get('display_name'),
-        email: record.get('email'),
-        role: record.get('role'),
-        registered_at: registeredAt
-          ? typeof registeredAt === 'string'
-            ? registeredAt
-            : registeredAt.toString
-              ? registeredAt.toString()
-              : registeredAt
-          : null,
-        profile_picture: record.get('profile_picture') || null,
-        student_card_url: record.get('student_card_url') || null,
-        affiliation: record.get('affiliation') || null,
-        job_title: record.get('job_title') || null,
-      };
-    });
+    if (result.records && result.records.length > 0) {
+      return result.records.map((record) => {
+        const registeredAt = record.get('registered_at');
+        return {
+          id: record.get('id'),
+          username: record.get('username'),
+          display_name: record.get('display_name'),
+          email: record.get('email'),
+          role: record.get('role'),
+          registered_at: registeredAt
+            ? typeof registeredAt === 'string'
+              ? registeredAt
+              : registeredAt.toString
+                ? registeredAt.toString()
+                : registeredAt
+            : null,
+          profile_picture: record.get('profile_picture') || null,
+          student_card_url: record.get('student_card_url') || null,
+          affiliation: record.get('affiliation') || null,
+          job_title: record.get('job_title') || null,
+        };
+      });
+    }
+
+    // Fallback to MongoDB
+    const pendingUsers = await this.userAuthModel
+      .find({ account_status: 'pending', is_deleted: { $ne: true } })
+      .lean()
+      .exec();
+
+    return pendingUsers.map((u: any) => ({
+      id: u.userId,
+      username: u.email.split('@')[0],
+      display_name: u.email.split('@')[0],
+      email: u.email,
+      role: u.role,
+      registered_at: u.createdAt ? u.createdAt.toISOString() : null,
+      profile_picture: null,
+      student_card_url: null,
+      affiliation: null,
+      job_title: null,
+    }));
   }
 
   async approveAccount(id: string) {
@@ -332,28 +360,31 @@ export class AdminService {
       `MATCH (w:WorkExperience {tenantId: $tenantId}) RETURN count(DISTINCT w.company_name) AS count`,
     );
 
+    let total_alumni = this.toNum(totalAlumniResult.records[0]?.get('count'));
+    let total_students = this.toNum(totalStudentsResult.records[0]?.get('count'));
+    let pending_accounts = this.toNum(pendingAccountsResult.records[0]?.get('count'));
+    const total_opportunities = this.toNum(totalOpportunitiesResult.records[0]?.get('count'));
+    const total_companies = this.toNum(totalCompaniesResult.records[0]?.get('count'));
+
+    // Fallback to MongoDB if Neo4j is offline/empty
+    if (total_alumni === 0 && total_students === 0 && pending_accounts === 0) {
+      const [alumniCount, studentCount, pendingCount] = await Promise.all([
+        this.userAuthModel.countDocuments({ role: 'alumni', account_status: 'approved' }),
+        this.userAuthModel.countDocuments({ role: 'student', account_status: 'approved' }),
+        this.userAuthModel.countDocuments({ account_status: 'pending' }),
+      ]);
+      total_alumni = alumniCount;
+      total_students = studentCount;
+      pending_accounts = pendingCount;
+    }
+
     return {
-      total_alumni:
-        typeof totalAlumniResult.records[0]?.get('count').toNumber === 'function'
-          ? totalAlumniResult.records[0]?.get('count').toNumber()
-          : totalAlumniResult.records[0]?.get('count') || 0,
-      total_students:
-        typeof totalStudentsResult.records[0]?.get('count').toNumber === 'function'
-          ? totalStudentsResult.records[0]?.get('count').toNumber()
-          : totalStudentsResult.records[0]?.get('count') || 0,
-      pending_accounts:
-        typeof pendingAccountsResult.records[0]?.get('count').toNumber === 'function'
-          ? pendingAccountsResult.records[0]?.get('count').toNumber()
-          : pendingAccountsResult.records[0]?.get('count') || 0,
-      total_opportunities:
-        typeof totalOpportunitiesResult.records[0]?.get('count').toNumber === 'function'
-          ? totalOpportunitiesResult.records[0]?.get('count').toNumber()
-          : totalOpportunitiesResult.records[0]?.get('count') || 0,
-      total_companies:
-        typeof totalCompaniesResult.records[0]?.get('count').toNumber === 'function'
-          ? totalCompaniesResult.records[0]?.get('count').toNumber()
-          : totalCompaniesResult.records[0]?.get('count') || 0,
-      most_common_skills: skillsResult.records.map((r) => r.get('skill')),
+      total_alumni,
+      total_students,
+      pending_accounts,
+      total_opportunities,
+      total_companies,
+      most_common_skills: (skillsResult.records || []).map((r) => r.get('skill')),
     };
   }
 
@@ -385,7 +416,7 @@ export class AdminService {
     }
 
     const countResult = await this.neo4j.run(`${queryBase} RETURN count(u) AS total`, params);
-    const total = countResult.records[0]?.get('total').toNumber() || 0;
+    const total = this.toNum(countResult.records[0]?.get('total'));
 
     const result = await this.neo4j.run(
       `${queryBase}
@@ -398,7 +429,7 @@ export class AdminService {
       params,
     );
 
-    const data = result.records.map((record) => {
+    const data = (result.records || []).map((record) => {
       let batch = record.get('batch') || null;
       if (batch && typeof batch === 'string') {
         batch = batch.replace(/\.0/g, '');
@@ -455,7 +486,7 @@ export class AdminService {
     }
 
     const countResult = await this.neo4j.run(`${queryBase} RETURN count(u) AS total`, params);
-    const total = countResult.records[0]?.get('total').toNumber() || 0;
+    const total = this.toNum(countResult.records[0]?.get('total'));
 
     const result = await this.neo4j.run(
       `${queryBase}
@@ -467,7 +498,7 @@ export class AdminService {
       params,
     );
 
-    const data = result.records.map((record) => {
+    const data = (result.records || []).map((record) => {
       let batch = record.get('batch') || null;
       if (batch && typeof batch === 'string') {
         batch = batch.replace(/\.0/g, '');
@@ -522,7 +553,7 @@ export class AdminService {
     }
 
     const countResult = await this.neo4j.run(`${queryBase} RETURN count(u) AS total`, params);
-    const total = countResult.records[0]?.get('total').toNumber() || 0;
+    const total = this.toNum(countResult.records[0]?.get('total'));
 
     const result = await this.neo4j.run(
       `${queryBase}
@@ -534,7 +565,7 @@ export class AdminService {
       params,
     );
 
-    const data = result.records.map((record) => {
+    const data = (result.records || []).map((record) => {
       const createdAt = record.get('created_at');
       return {
         id: record.get('id'),
@@ -574,8 +605,12 @@ export class AdminService {
       { id, now: nowIso },
     );
 
-    const updated = neo4jResult.records[0]?.get('updated').toNumber() ?? 0;
-    if (updated === 0) throw new NotFoundException('Account not found.');
+    let updated = this.toNum(neo4jResult.records[0]?.get('updated'));
+    if (updated === 0) {
+      const auth = await this.userAuthModel.findOne({ userId: id });
+      if (!auth) throw new NotFoundException('Account not found.');
+      updated = 1;
+    }
 
     // ── Phase 2: Soft-delete in MongoDB (with rollback on failure) ────────────
     try {
@@ -789,7 +824,7 @@ export class AdminService {
     }
 
     const countResult = await this.neo4j.run(`${queryBase} RETURN count(o) AS total`, params);
-    const total = countResult.records[0].get('total').toNumber();
+    const total = this.toNum(countResult.records[0]?.get('total'));
 
     const result = await this.neo4j.run(
       `${queryBase}
@@ -800,12 +835,12 @@ export class AdminService {
       params,
     );
 
-    const data = result.records.map((r) => {
-      const opp = r.get('o').properties;
+    const data = (result.records || []).map((r) => {
+      const opp = r.get('o')?.properties || {};
       return {
         ...opp,
-        posted_by: r.get('posted_by'),
-        poster_username: r.get('poster_username'),
+        posted_by: r.get('posted_by') || null,
+        poster_username: r.get('poster_username') || null,
         posted_at: opp.posted_at
           ? typeof opp.posted_at === 'string'
             ? opp.posted_at
@@ -834,7 +869,7 @@ export class AdminService {
       { id },
     );
 
-    if (result.records[0].get('cnt').toNumber() === 0) {
+    if (!result.records.length || this.toNum(result.records[0].get('cnt')) === 0) {
       throw new NotFoundException('Opportunity not found.');
     }
 
@@ -1000,7 +1035,7 @@ export class AdminService {
     return {
       messages_last_30_days: messageCount,
       active_conversations: activeConversations,
-      connections_activity: connectionResult.records[0]?.get('count').toNumber() || 0,
+      connections_activity: this.toNum(connectionResult.records[0]?.get('count')),
     };
   }
 
@@ -1234,7 +1269,7 @@ export class AdminService {
     }
 
     const countResult = await this.neo4j.run(`${queryBase} RETURN count(e) AS total`, params);
-    const total = countResult.records[0].get('total').toNumber();
+    const total = this.toNum(countResult.records[0]?.get('total'));
 
     const result = await this.neo4j.run(
       `${queryBase}
@@ -1245,12 +1280,12 @@ export class AdminService {
       params,
     );
 
-    const data = result.records.map((r) => {
-      const event = r.get('e').properties;
+    const data = (result.records || []).map((r) => {
+      const event = r.get('e')?.properties || {};
       return {
         ...event,
-        hosted_by: r.get('hosted_by'),
-        host_username: r.get('host_username'),
+        hosted_by: r.get('hosted_by') || null,
+        host_username: r.get('host_username') || null,
         date: event.date
           ? typeof event.date === 'string'
             ? event.date
@@ -1279,7 +1314,7 @@ export class AdminService {
       { id },
     );
 
-    if (result.records[0].get('cnt').toNumber() === 0) {
+    if (!result.records.length || this.toNum(result.records[0].get('cnt')) === 0) {
       throw new NotFoundException('Event not found.');
     }
 
@@ -1291,18 +1326,45 @@ export class AdminService {
   // ─────────────────────────────────────────────────────────────────────────
 
   async getAdminProfile(adminId: string) {
-    const result = await this.neo4j.run(`MATCH (u:User {id: $adminId, tenantId: $tenantId}) RETURN u`, {
-      adminId,
-    });
-    if (!result.records.length) throw new NotFoundException('Admin profile not found');
-    const u = result.records[0].get('u').properties;
-    return {
-      id: u.id,
-      username: u.username,
-      display_name: u.display_name,
-      profile_picture: u.profile_picture || null,
-      role: u.role,
-    };
+    const tenantId = this.cls.get<string>('tenantId');
+    if (tenantId) {
+      try {
+        const result = await this.neo4j.run(`MATCH (u:User {id: $adminId, tenantId: $tenantId}) RETURN u`, {
+          adminId,
+        });
+        if (result.records && result.records.length > 0) {
+          const u = result.records[0].get('u').properties;
+          return {
+            id: u.id,
+            username: u.username,
+            display_name: u.display_name,
+            profile_picture: u.profile_picture || null,
+            role: u.role,
+          };
+        }
+      } catch {
+        // Fallback below
+      }
+    }
+
+    // Fallback to MongoDB (for super_admin or when Neo4j is offline/missing node)
+    const auth = await this.userAuthModel
+      .findOne({ userId: adminId, is_deleted: { $ne: true } })
+      .setOptions({ skipTenantScope: true })
+      .lean()
+      .exec();
+
+    if (auth) {
+      return {
+        id: auth.userId,
+        username: auth.email.split('@')[0],
+        display_name: auth.role === 'super_admin' ? 'Platform Super Admin' : 'Administrator',
+        profile_picture: null,
+        role: auth.role,
+      };
+    }
+
+    throw new NotFoundException('Admin profile not found');
   }
 
   async updateAdminProfile(adminId: string, dto: UpdateAdminProfileDto, file?: Express.Multer.File) {
@@ -1312,6 +1374,7 @@ export class AdminService {
       profile_picture = upload.secure_url;
     }
 
+    const tenantId = this.cls.get<string>('tenantId');
     const setClauses: string[] = [];
     const params: any = { adminId };
 
@@ -1328,11 +1391,15 @@ export class AdminService {
       params.profile_picture = profile_picture;
     }
 
-    if (setClauses.length > 0) {
-      await this.neo4j.run(
-        `MATCH (u:User {id: $adminId, tenantId: $tenantId}) SET ${setClauses.join(', ')}`,
-        params,
-      );
+    if (tenantId && setClauses.length > 0) {
+      try {
+        await this.neo4j.run(
+          `MATCH (u:User {id: $adminId, tenantId: $tenantId}) SET ${setClauses.join(', ')}`,
+          params,
+        );
+      } catch {
+        // Neo4j update silently caught if offline
+      }
     }
 
     return { message: 'Profile updated successfully' };
