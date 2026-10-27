@@ -17,7 +17,7 @@
     "migrate:email-index": "ts-node -r tsconfig-paths/register src/scripts/migrate-email-index.ts",
     "migrate:multitenant": "ts-node -r tsconfig-paths/register src/scripts/migrate-multitenant.ts",
     "init:neo4j": "ts-node -r tsconfig-paths/register src/scripts/init-neo4j.ts",
-
+    "setup:admins": "node src/scripts/setup-admins.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
+    "@as-integrations/express5": "^1.1.2",
     "@nestjs/apollo": "^14.0.3",
     "@nestjs/bullmq": "^12.0.0",
     "@nestjs/common": "^12.2.0",
@@ -52,7 +53,6 @@
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@sentry/node": "^10.46.0",
     "@sentry/profiling-node": "^10.46.0",
-    "apollo-server-express": "^3.13.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.3.19",
     "class-transformer": "^0.5.1",

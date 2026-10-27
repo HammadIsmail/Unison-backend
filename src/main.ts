@@ -79,8 +79,8 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = process.env.PORT || 5000;
-  await app.listen(port);
-  console.log(`🚀 UNISON API running on http://localhost:${port}/api`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 UNISON API running on http://0.0.0.0:${port}/api`);
   console.log(`📚 Swagger docs at http://localhost:${port}/api/docs`);
 }
 bootstrap();

@@ -1,0 +1,453 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type AdminDashboardStats {
+  most_common_skills: [String!]!
+  pending_accounts: Int!
+  total_alumni: Int!
+  total_companies: Int!
+  total_opportunities: Int!
+  total_students: Int!
+}
+
+type Announcement {
+  created_at: String
+  created_by_admin: AnnouncementAdmin
+  description: String!
+  event_date: String
+  id: ID!
+  media_type: String
+  media_url: String
+  title: String!
+}
+
+type AnnouncementAdmin {
+  id: ID!
+  name: String!
+}
+
+type AnnouncementPagination {
+  data: [Announcement!]!
+  page: Int!
+  total: Int!
+}
+
+type AuthResponse {
+  access_token: String!
+  account_status: String
+  tenant: AuthTenant
+  user: AuthUser!
+}
+
+type AuthTenant {
+  id: ID!
+  logo_url: String
+  name: String!
+  slug: String!
+}
+
+type AuthUser {
+  email: String!
+  id: ID!
+  name: String
+  role: String!
+  tenant_id: String
+}
+
+input CreateAnnouncementInput {
+  description: String!
+  event_date: String
+  title: String!
+}
+
+input CreateEventInput {
+  date: String!
+  description: String!
+  is_online: Boolean!
+  location: String
+  max_attendees: Int
+  meeting_link: String
+  title: String!
+  type: String!
+}
+
+input CreateOpportunityInput {
+  apply_link: String
+  company_name: String
+  deadline: String
+  description: String!
+  is_remote: Boolean
+  location: String
+  requirements: String
+  skills: [String!]
+  title: String!
+  type: String!
+}
+
+input CreateStaffInput {
+  display_name: String!
+  email: String!
+  password: String!
+  role: String!
+  username: String!
+}
+
+input CreateTenantAdminInput {
+  display_name: String!
+  email: String!
+  password: String!
+  username: String!
+}
+
+input CreateTenantInput {
+  admin: CreateTenantAdminInput!
+  allowed_email_domains: [String!]!
+  contact_email: String
+  logo_url: String
+  name: String!
+  slug: String!
+}
+
+type Education {
+  degree: String
+  end_year: Int
+  field_of_study: String
+  id: ID
+  start_year: Int
+  university: String
+}
+
+type Event {
+  banner_url: String
+  created_at: String
+  date: String!
+  description: String!
+  host_username: String
+  hosted_by: String
+  id: ID!
+  is_online: Boolean!
+  location: String
+  max_attendees: Int
+  meeting_link: String
+  title: String!
+  type: String!
+}
+
+type EventPagination {
+  data: [Event!]!
+  page: Int!
+  total: Int!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  """Approve a pending account"""
+  adminApproveAccount(id: String!): SuccessMessage!
+
+  """Approve student to alumni upgrade"""
+  adminApproveUpgrade(id: String!): SuccessMessage!
+
+  """Create a new staff member"""
+  adminCreateStaff(input: CreateStaffInput!): SuccessMessage!
+
+  """Reject a pending account request"""
+  adminRejectAccount(id: String!, reason: String!): SuccessMessage!
+
+  """Reject student to alumni upgrade"""
+  adminRejectUpgrade(id: String!, reason: String!): SuccessMessage!
+
+  """Update current tenant settings"""
+  adminUpdateTenant(input: UpdateTenantSettingsInput!): Tenant!
+
+  """Broadcast a new tenant announcement"""
+  broadcastAnnouncement(input: CreateAnnouncementInput!): SuccessMessage!
+
+  """Create a new event"""
+  createEvent(input: CreateEventInput!): SuccessMessage!
+
+  """Create a new opportunity"""
+  createOpportunity(input: CreateOpportunityInput!): SuccessMessage!
+
+  """Delete an announcement"""
+  deleteAnnouncement(id: String!): SuccessMessage!
+
+  """Delete an event"""
+  deleteEvent(id: String!): SuccessMessage!
+
+  """Delete an opportunity"""
+  deleteOpportunity(id: String!): SuccessMessage!
+
+  """Authenticate user with email and password"""
+  login(input: LoginInput!): AuthResponse!
+
+  """Register a new tenant user account"""
+  register(input: RegisterInput!): SuccessMessage!
+
+  """Onboard a new university tenant"""
+  superAdminCreateTenant(input: CreateTenantInput!): SuperAdminTenant!
+
+  """Reactivate a suspended tenant"""
+  superAdminReactivateTenant(id: String!): SuccessMessage!
+
+  """Suspend a tenant"""
+  superAdminSuspendTenant(id: String!, reason: String!): SuccessMessage!
+
+  """Update a tenant"""
+  superAdminUpdateTenant(id: String!, input: UpdateTenantInput!): SuperAdminTenant!
+
+  """Update an existing opportunity"""
+  updateOpportunity(id: String!, input: UpdateOpportunityInput!): SuccessMessage!
+}
+
+type Opportunity {
+  apply_link: String
+  company_name: String
+  deadline: String
+  description: String!
+  id: ID!
+  is_remote: Boolean
+  location: String
+  media_urls: [String!]
+  posted_at: String
+  posted_by: String
+  poster_username: String
+  requirements: String
+  skills: [String!]
+  title: String!
+  type: String!
+}
+
+type OpportunityPagination {
+  data: [Opportunity!]!
+  page: Int!
+  total: Int!
+}
+
+type PendingAccount {
+  affiliation: String
+  display_name: String!
+  email: String!
+  id: ID!
+  job_title: String
+  profile_picture: String
+  registered_at: String
+  role: String!
+  student_card_url: String
+  username: String!
+}
+
+type PendingUpgrade {
+  display_name: String!
+  email: String!
+  graduation_year: Int
+  id: ID!
+  profile_picture: String
+  roll_number: String
+  upgrade_status: String
+  username: String!
+}
+
+type PublicTenant {
+  id: ID!
+  logo_url: String
+  name: String!
+  slug: String!
+}
+
+type Query {
+  """Get settings for current tenant"""
+  adminCurrentTenant: Tenant!
+
+  """Get tenant dashboard statistics"""
+  adminDashboardStats: AdminDashboardStats!
+
+  """List pending accounts for moderation"""
+  adminPendingAccounts: [PendingAccount!]!
+
+  """List pending student-to-alumni upgrades"""
+  adminPendingUpgrades: [PendingUpgrade!]!
+
+  """List tenant staff members"""
+  adminStaffList: [StaffMember!]!
+
+  """Get announcement by ID"""
+  announcement(id: String!): Announcement!
+
+  """List tenant announcements"""
+  announcements(limit: Int! = 10, page: Int! = 1): AnnouncementPagination!
+
+  """Get event details by ID"""
+  event(id: String!): Event!
+
+  """List upcoming and past events"""
+  events(isOnline: Boolean, limit: Int! = 10, page: Int! = 1, status: String, type: String): EventPagination!
+
+  """Get current authenticated user profile"""
+  me: UserProfile!
+
+  """List opportunities with filters"""
+  opportunities(isRemote: Boolean, limit: Int! = 10, page: Int! = 1, skill: String, type: String): OpportunityPagination!
+
+  """Get a single opportunity by ID"""
+  opportunity(id: String!): Opportunity!
+
+  """Search users within the tenant"""
+  searchUsers(batchYear: String, company: String, degree: String, displayName: String, skill: String): [UserProfile!]!
+
+  """Platform-wide aggregated statistics"""
+  superAdminPlatformStats: SuperAdminStats!
+
+  """Get tenant details by ID"""
+  superAdminTenant(id: String!): SuperAdminTenant!
+
+  """List all platform tenants"""
+  superAdminTenants(search: String, status: String): [SuperAdminTenant!]!
+
+  """Get tenant details by slug"""
+  tenant(slug: String!): Tenant!
+
+  """List public active universities/tenants"""
+  tenants: [PublicTenant!]!
+
+  """Get public profile for a user"""
+  userProfile(id: String!): UserProfile!
+}
+
+input RegisterInput {
+  affiliation: String
+  batch: String
+  degree: String
+  display_name: String!
+  email: String!
+  graduation_year: Int
+  job_title: String
+  password: String!
+  role: String!
+  roll_number: String
+  semester: Int
+  tenant_id: String!
+  username: String!
+}
+
+type StaffMember {
+  display_name: String!
+  email: String!
+  id: ID!
+  profile_picture: String
+  role: String!
+  username: String!
+}
+
+type SuccessMessage {
+  id: String
+  message: String!
+}
+
+type SuperAdminStats {
+  active_tenants: Int!
+  suspended_tenants: Int!
+  total_events: Int!
+  total_opportunities: Int!
+  total_tenants: Int!
+  total_users: Int!
+}
+
+type SuperAdminTenant {
+  allowed_email_domains: [String!]!
+  contact_email: String
+  createdAt: String
+  id: ID!
+  logo_url: String
+  name: String!
+  slug: String!
+  status: String!
+  suspended_reason: String
+  total_users: Int
+  updatedAt: String
+}
+
+type Tenant {
+  allowed_email_domains: [String!]!
+  contact_email: String
+  createdAt: String
+  id: ID!
+  logo_url: String
+  name: String!
+  slug: String!
+  status: String!
+  suspended_reason: String
+  updatedAt: String
+}
+
+input UpdateOpportunityInput {
+  apply_link: String
+  company_name: String
+  deadline: String
+  description: String
+  is_remote: Boolean
+  location: String
+  requirements: String
+  skills: [String!]
+  title: String
+  type: String
+}
+
+input UpdateTenantInput {
+  allowed_email_domains: [String!]
+  contact_email: String
+  logo_url: String
+  name: String
+}
+
+input UpdateTenantSettingsInput {
+  allowed_email_domains: [String!]
+  contact_email: String
+  logo_url: String
+  name: String
+}
+
+type UserProfile {
+  affiliation: String
+  batch: String
+  bio: String
+  connection_status: String
+  connections_count: Int
+  created_at: String
+  degree: String
+  display_name: String!
+  education: [Education!]
+  email: String!
+  followers_count: Int
+  following_count: Int
+  github_url: String
+  graduation_year: Int
+  id: ID!
+  is_connected: Boolean
+  is_following: Boolean
+  job_title: String
+  linkedin_url: String
+  location: String
+  phone: String
+  profile_picture: String
+  role: String!
+  roll_number: String
+  semester: Int
+  skills: [String!]
+  username: String!
+  work_experiences: [WorkExperience!]
+}
+
+type WorkExperience {
+  company_name: String
+  employment_type: String
+  end_date: String
+  id: ID
+  is_current: Boolean
+  role: String
+  start_date: String
+}
