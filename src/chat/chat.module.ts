@@ -9,11 +9,14 @@ import { NotificationModule } from '../notification/notification.module';
 import { Neo4jModule } from '../neo4j/neo4j.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
+import { UserAuth, UserAuthSchema } from '../auth/schemas/user-auth.schema';
+
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Conversation.name, schema: ConversationSchema },
       { name: Message.name, schema: MessageSchema },
+      { name: UserAuth.name, schema: UserAuthSchema },
     ]),
     ConnectionsModule,
     NotificationModule,

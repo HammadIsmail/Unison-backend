@@ -12,8 +12,7 @@ A robust, scalable backend service built with [NestJS](https://nestjs.com/), fea
 - **📧 Email Services:** Integrated email delivery system utilizing Resend and Nodemailer.
 - **☁️ Cloud Media Storage:** Seamless image and media uploads handling via Cloudinary.
 - **📊 Monitoring & Observability:**
-  - Error tracking and performance profiling with **Sentry**.
-  - Metrics collection and tracing with **OpenTelemetry**, pushing directly to **Grafana Cloud**.
+  - Official framework-native APM, distributed tracing, and error tracking via **NestJS Observe Cloud**.
 - **📝 API Documentation:** Auto-generated interactive API documentation using Swagger UI.
 
 ## 🛠️ Tech Stack
@@ -22,8 +21,8 @@ A robust, scalable backend service built with [NestJS](https://nestjs.com/), fea
 - **Databases:** [MongoDB](https://www.mongodb.com/) (Mongoose), [Neo4j](https://neo4j.com/)
 - **Authentication:** Passport, JWT, bcryptjs
 - **Real-time:** Socket.io
-- **Observability:** Sentry, OpenTelemetry
-- **Tools:** PM2 (Process Management), Jest (Testing), ESLint/Prettier (Linting/Formatting)
+- **Observability:** NestJS Observe Cloud (`@nestjs/observe`)
+- **Tools:** PM2 (Process Management), Vitest (Testing), Prettier / Oxlint
 
 ## 🚀 Getting Started
 

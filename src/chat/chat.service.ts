@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Conversation } from './schemas/conversation.schema';
 import { Message } from './schemas/message.schema';
+import { UserAuth } from '../auth/schemas/user-auth.schema';
 import { ConnectionsService } from '../connections/connections.service';
 import { NotificationGateway } from '../notification/notification.gateway';
 import { NotificationService } from '../notification/notification.service';
@@ -13,6 +14,7 @@ export class ChatService {
   constructor(
     @InjectModel(Conversation.name) private conversationModel: Model<Conversation>,
     @InjectModel(Message.name) private messageModel: Model<Message>,
+    @InjectModel(UserAuth.name) private userAuthModel: Model<UserAuth>,
     private readonly connectionsService: ConnectionsService,
     private readonly notificationGateway: NotificationGateway,
     private readonly notificationService: NotificationService,
@@ -106,38 +108,75 @@ export class ChatService {
       .sort({ updatedAt: -1 })
       .exec();
 
-    // Attach basic Neo4j profile info of the other participant
-    // Since this is a fast loop, we'll collect IDs and fetch in bulk
-    const otherParticipantIds = conversations.map(c => 
-      c.participants.find(p => p !== userId)
-    ).filter(id => !!id);
+    // Attach profile info of the other participant
+    const otherParticipantIds: string[] = conversations
+      .map((c) => c.participants.find((p) => p !== userId))
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
 
-    let userDict = {};
+    let userDict: Record<string, any> = {};
     if (otherParticipantIds.length > 0) {
-      const result = await this.neo4jService.run(
-        `MATCH (u:User) WHERE u.id IN $ids 
-         RETURN u.id AS id, u.display_name AS display_name, u.profile_picture AS profile_picture, u.username AS username, u.is_online AS is_online, u.last_seen AS last_seen`,
-        { ids: otherParticipantIds }
-      );
-      
-      result.records.forEach(r => {
-        userDict[r.get('id')] = {
-          id: r.get('id'),
-          display_name: r.get('display_name'),
-          profile_picture: r.get('profile_picture'),
-          username: r.get('username'),
-          is_online: r.get('is_online') || false,
-          last_seen: r.get('last_seen') || null
-        };
-      });
+      try {
+        const result = await this.neo4jService.run(
+          `MATCH (u:User) WHERE u.id IN $ids 
+           RETURN u.id AS id, u.display_name AS display_name, u.profile_picture AS profile_picture, u.username AS username, u.is_online AS is_online, u.last_seen AS last_seen`,
+          { ids: otherParticipantIds }
+        );
+        
+        result.records.forEach(r => {
+          userDict[r.get('id')] = {
+            id: r.get('id'),
+            display_name: r.get('display_name'),
+            profile_picture: r.get('profile_picture'),
+            username: r.get('username'),
+            is_online: r.get('is_online') || false,
+            last_seen: r.get('last_seen') || null
+          };
+        });
+      } catch (err) {
+        // Neo4j offline / unreachable
+      }
+
+      // MongoDB fallback for any participant missing from Neo4j
+      const missingIds: string[] = otherParticipantIds.filter((id) => !userDict[id]);
+      if (missingIds.length > 0) {
+        try {
+          const mongoUsers = await this.userAuthModel
+            .find({ userId: { $in: missingIds }, is_deleted: { $ne: true } } as any)
+            .setOptions({ skipTenantScope: true })
+            .lean()
+            .exec();
+
+          mongoUsers.forEach((u: any) => {
+            const fallbackName = u.display_name || u.username || u.email?.split('@')[0] || 'User';
+            userDict[u.userId] = {
+              id: u.userId,
+              display_name: fallbackName,
+              profile_picture: u.profile_picture || null,
+              username: u.username || fallbackName,
+              is_online: false,
+              last_seen: null,
+            };
+          });
+        } catch (mErr) {
+          // MongoDB query error
+        }
+      }
     }
 
     return conversations.map(c => {
       const otherId = c.participants.find(p => p !== userId) || userId;
       const cObj = c.toObject();
+      const profile = userDict[otherId] || {
+        id: otherId,
+        display_name: 'Connected User',
+        username: 'user',
+        profile_picture: null,
+        is_online: false,
+        last_seen: null,
+      };
       return {
         ...cObj,
-        participantProfile: userDict[otherId] || null,
+        participantProfile: profile,
       };
     });
   }
@@ -273,7 +312,7 @@ export class ChatService {
     });
 
     if (!conversation) {
-      throw new NotFoundException('Conversation not found.');
+      return { success: true };
     }
 
     const now = new Date();

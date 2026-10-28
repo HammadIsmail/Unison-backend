@@ -23,6 +23,6 @@ export class HealthController {
 
   @Get('test-error')
   triggerError() {
-    throw new Error('🚀 Sentry Test Error: Monitoring is working!');
+    throw new Error('🚀 Monitoring Test Error: Test error triggered!');
   }
 }

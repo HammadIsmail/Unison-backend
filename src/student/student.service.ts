@@ -38,14 +38,19 @@ export class StudentService {
       result = { records: [] };
     }
 
+    const mongoConnectionsCount = await this.connectionModel.countDocuments({
+      $or: [{ senderId: id }, { receiverId: id }],
+      status: 'accepted',
+    });
+
     if (result && result.records && result.records.length > 0) {
       const record = result.records[0];
       const user = record.get('u').properties;
       const education = record.get('education').map((node: any) => node.properties);
       const skills = record.get('skills').filter((s: any) => s.id !== null);
-      const connections_count = record.get('connections_count').toNumber();
-      const followerCount = record.get('followerCount').toNumber();
-      const followingCount = record.get('followingCount').toNumber();
+      const neoConnectionsCount = typeof record.get('connections_count')?.toNumber === 'function' ? record.get('connections_count').toNumber() : (record.get('connections_count') || 0);
+      const followerCount = typeof record.get('followerCount')?.toNumber === 'function' ? record.get('followerCount').toNumber() : (record.get('followerCount') || 0);
+      const followingCount = typeof record.get('followingCount')?.toNumber === 'function' ? record.get('followingCount').toNumber() : (record.get('followingCount') || 0);
 
       return {
         id: user.id || id,
@@ -64,7 +69,7 @@ export class StudentService {
         phone: user.phone || null,
         profile_picture: user.profile_picture || null,
         backDropImage: user.backDropImage || null,
-        connections_count,
+        connections_count: Math.max(neoConnectionsCount, mongoConnectionsCount),
         followerCount,
         followingCount,
         education: education,
@@ -101,7 +106,7 @@ export class StudentService {
       phone: (auth as any).phone || null,
       profile_picture: (auth as any).profile_picture || null,
       backDropImage: (auth as any).backDropImage || null,
-      connections_count: 0,
+      connections_count: mongoConnectionsCount,
       followerCount: 0,
       followingCount: 0,
       education: (auth as any).education || [],

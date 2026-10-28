@@ -75,7 +75,6 @@ import { TenantContextGuard } from './common/guards/tenant-context.guard';
         CLOUDINARY_CLOUD_NAME: Joi.string().required(),
         CLOUDINARY_API_KEY: Joi.string().required(),
         CLOUDINARY_API_SECRET: Joi.string().required(),
-        SENTRY_DSN: Joi.string().required(),
         DEFAULT_TENANT_SLUG: Joi.string().default('uet-lahore'),
         DEFAULT_TENANT_NAME: Joi.string().default('University of Engineering and Technology, Lahore'),
         SUPER_ADMIN_EMAIL: Joi.string().default('superadmin@unison.local'),

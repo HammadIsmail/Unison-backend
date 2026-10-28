@@ -18,6 +18,7 @@ import { Model } from 'mongoose';
 import { UserAuth } from '../auth/schemas/user-auth.schema';
 import { Connection } from '../connections/schemas/connection.schema';
 import { UnifiedUpdateProfileDto } from '../profile-management/dto/profile-management.dto';
+import { Opportunity } from '../opportunity/schemas/opportunity.schema';
 
 @Injectable()
 export class AlumniService {
@@ -30,9 +31,22 @@ export class AlumniService {
     private readonly userAuthModel: Model<UserAuth>,
     @InjectModel(Connection.name)
     private readonly connectionModel: Model<Connection>,
+    @InjectModel(Opportunity.name)
+    private readonly opportunityModel: Model<Opportunity>,
   ) { }
 
   async getProfile(id: string) {
+    // Primary counts from MongoDB (single source of truth for transactions)
+    const [mongoConnectionsCount, mongoPostsCount] = await Promise.all([
+      this.connectionModel.countDocuments({
+        $or: [{ senderId: id }, { receiverId: id }],
+        status: 'accepted',
+      }),
+      this.opportunityModel.countDocuments({
+        userId: id,
+        is_deleted: { $ne: true },
+      }),
+    ]);
     const result = await this.neo4j.run(
       `MATCH (u:User {id: $id, role: 'alumni', tenantId: $tenantId})
        WHERE u.is_deleted IS NULL OR u.is_deleted = false
@@ -83,8 +97,8 @@ export class AlumniService {
         role_title: currentExp?.role || null,
         skills: (auth as any).skills || [],
         batch: (auth as any).batch || null,
-        connections_count: 0,
-        posts_count: 0,
+        connections_count: mongoConnectionsCount,
+        posts_count: mongoPostsCount,
         followerCount: 0,
         followingCount: 0,
         linkedin_url: (auth as any).linkedin_url || null,
@@ -104,12 +118,13 @@ export class AlumniService {
     const experiences = record.get('experiences').map((node: any) => node.properties);
     const education = record.get('education').map((node: any) => node.properties);
     const skills = record.get('skills').filter((s: any) => s.id !== null);
-    const connections_count = record.get('connections_count').toNumber();
-    const posts_count = record.get('posts_count').toNumber();
-    const followerCount = record.get('followerCount').toNumber();
-    const followingCount = record.get('followingCount').toNumber();
+    const neoConnectionsCount = typeof record.get('connections_count')?.toNumber === 'function' ? record.get('connections_count').toNumber() : (record.get('connections_count') || 0);
+    const neoPostsCount = typeof record.get('posts_count')?.toNumber === 'function' ? record.get('posts_count').toNumber() : (record.get('posts_count') || 0);
+    const followerCount = typeof record.get('followerCount')?.toNumber === 'function' ? record.get('followerCount').toNumber() : (record.get('followerCount') || 0);
+    const followingCount = typeof record.get('followingCount')?.toNumber === 'function' ? record.get('followingCount').toNumber() : (record.get('followingCount') || 0);
 
     return {
+      id: user.id || id,
       username: user.username,
       display_name: user.display_name,
       email: user.email,
@@ -120,8 +135,8 @@ export class AlumniService {
       role: experiences.find((e: any) => e.is_current)?.role || null,
       skills: skills.map((s: any) => s.name),
       batch: user.batch,
-      connections_count,
-      posts_count,
+      connections_count: Math.max(neoConnectionsCount, mongoConnectionsCount),
+      posts_count: Math.max(neoPostsCount, mongoPostsCount),
       followerCount,
       followingCount,
       linkedin_url: user.linkedin_url || null,

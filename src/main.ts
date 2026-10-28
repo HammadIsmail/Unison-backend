@@ -14,27 +14,10 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { Logger } from 'nestjs-pino';
-import { setupMetrics } from './otel';
 import { ObserveInstrument } from './observe';
 
 async function bootstrap() {
-  // Start OpenTelemetry metrics push
-  setupMetrics();
-
-  // Catch unhandled exceptions & track perf
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    integrations: [
-      nodeProfilingIntegration(),
-    ],
-    tracesSampleRate: 1.0,
-    profilesSampleRate: 1.0,
-    sendDefaultPii: true,
-  });
-
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
     instrument: ObserveInstrument,
