@@ -18,6 +18,7 @@
     "migrate:multitenant": "ts-node -r tsconfig-paths/register src/scripts/migrate-multitenant.ts",
     "init:neo4j": "ts-node -r tsconfig-paths/register src/scripts/init-neo4j.ts",
     "setup:admins": "node src/scripts/setup-admins.js",
+    "seed:100": "node src/scripts/seed-100-users.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",

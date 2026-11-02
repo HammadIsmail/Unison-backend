@@ -341,7 +341,7 @@ export class FeedService {
         type: 'announcement',
         id: a._id.toString(),
         title: a.title,
-        description: a.content,
+        description: a.description || a.content || '',
         created_at: a.created_at ? new Date(a.created_at).toISOString() : new Date().toISOString(),
         company_name: null,
         opportunity_type: null,
@@ -350,9 +350,9 @@ export class FeedService {
         apply_link: null,
         deadline: null,
         media: [],
-        banner_url: a.banner_url || null,
-        media_url: a.banner_url || null,
-        event_date: null,
+        banner_url: a.banner_url || a.media_url || null,
+        media_url: a.media_url || a.banner_url || null,
+        event_date: a.event_date || null,
         is_online: null,
         meeting_link: null,
         max_attendees: null,
@@ -369,23 +369,51 @@ export class FeedService {
     });
   }
 
+  private parseNeo4jDate(val: any): string | null {
+    if (!val) return null;
+    if (typeof val === 'string') return val;
+    if (typeof val.toISOString === 'function') {
+      try {
+        return val.toISOString();
+      } catch {}
+    }
+    if (typeof val.toString === 'function') {
+      const str = val.toString();
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    if (val.year !== undefined && val.month !== undefined && val.day !== undefined) {
+      const getNum = (v: any) => (v && typeof v === 'object' && 'low' in v ? Number(v.low) : Number(v) || 0);
+      const y = getNum(val.year);
+      const m = getNum(val.month);
+      const d = getNum(val.day);
+      const h = getNum(val.hour);
+      const min = getNum(val.minute);
+      const s = getNum(val.second);
+      if (y > 0 && m > 0 && d > 0) {
+        return new Date(Date.UTC(y, m - 1, d, h, min, s)).toISOString();
+      }
+    }
+    return null;
+  }
+
   private mapNeo4jRecords(records: any[]): FeedItemDto[] {
     return records.map((r) => ({
       type: r.get('type'),
       id: r.get('id'),
       title: r.get('title'),
       description: r.get('description'),
-      created_at: r.get('created_at') ? new Date(r.get('created_at').toString()).toISOString() : new Date().toISOString(),
+      created_at: this.parseNeo4jDate(r.get('created_at')) || new Date().toISOString(),
       company_name: r.get('company_name'),
       opportunity_type: r.get('opportunity_type'),
       location: r.get('location'),
       is_remote: r.get('is_remote'),
       apply_link: r.get('apply_link'),
-      deadline: r.get('deadline'),
+      deadline: this.parseNeo4jDate(r.get('deadline')),
       media: r.get('media') || [],
       banner_url: r.get('banner_url'),
       media_url: r.get('banner_url') || (Array.isArray(r.get('media')) ? r.get('media')[0] : r.get('media')) || null,
-      event_date: r.get('event_date'),
+      event_date: this.parseNeo4jDate(r.get('event_date')),
       is_online: r.get('is_online'),
       meeting_link: r.get('meeting_link'),
       max_attendees: r.get('max_attendees') ? Number(r.get('max_attendees')) : null,
