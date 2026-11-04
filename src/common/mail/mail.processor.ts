@@ -83,12 +83,59 @@ export class MailProcessor extends WorkerHost {
     this.logger.log(`Successfully dispatched email job #${job.id} ("${type}") to "${to}"`);
   }
 
-  private async handleSendOtp(to: string, otp: string): Promise<void> {
+  /**
+   * Dispatches email via Vercel HTTPS mail endpoint (to bypass cloud SMTP blocks on Render),
+   * falling back to direct SMTP transporter when VERCEL_MAIL_URL is not set.
+   */
+  private async dispatchMail(to: string, subject: string, html: string): Promise<void> {
+    const vercelMailUrl = this.config.get<string>('VERCEL_MAIL_URL');
+    const internalSecret = this.config.get<string>(
+      'INTERNAL_MAIL_SECRET',
+      'unison_internal_mail_secret_2026'
+    );
+
+    if (vercelMailUrl) {
+      const endpoint = `${vercelMailUrl.replace(/\/+$/, '')}/api/send-email`;
+      this.logger.log(`Sending email via Vercel HTTPS endpoint: ${endpoint}`);
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': internalSecret,
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          html,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        this.logger.error(`Vercel mail endpoint failed with status ${res.status}: ${errorText}`);
+        throw new Error(`Vercel mail failed (${res.status}): ${errorText}`);
+      }
+
+      const result = await res.json();
+      this.logger.log(`Email successfully delivered via Vercel endpoint (messageId: ${result.messageId})`);
+      return;
+    }
+
+    // Fallback: direct SMTP transporter
     await this.transporter.sendMail({
       from: `UNISON Alumni Network <${this.fromEmail}>`,
       to,
-      subject: 'Your UNISON OTP Code',
-      html: `
+      subject,
+      html,
+    });
+  }
+
+  private async handleSendOtp(to: string, otp: string): Promise<void> {
+    await this.dispatchMail(
+      to,
+      'Your UNISON OTP Code',
+      `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #4F46E5; text-align: center;">UNISON Alumni Network</h2>
           <p>Your One-Time Password (OTP) is:</p>
@@ -98,16 +145,15 @@ export class MailProcessor extends WorkerHost {
           <p style="margin-top: 20px;">This OTP is valid for <strong>10 minutes</strong>.</p>
           <p style="color: #6b7280; font-size: 14px;">If you did not request this, please ignore this email.</p>
         </div>
-      `,
-    });
+      `
+    );
   }
 
   private async handleSendApproval(to: string, name: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `UNISON Alumni Network <${this.fromEmail}>`,
+    await this.dispatchMail(
       to,
-      subject: 'Your UNISON Account Has Been Approved!',
-      html: `
+      'Your UNISON Account Has Been Approved!',
+      `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #10b981;">Welcome to UNISON, ${name}!</h2>
           <p>Your account has been <strong>approved</strong> by the admin.</p>
@@ -116,16 +162,15 @@ export class MailProcessor extends WorkerHost {
             <a href="#" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Login Now</a>
           </div>
         </div>
-      `,
-    });
+      `
+    );
   }
 
   private async handleSendRejection(to: string, name: string, reason: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `UNISON Alumni Network <${this.fromEmail}>`,
+    await this.dispatchMail(
       to,
-      subject: 'UNISON Account Registration Update',
-      html: `
+      'UNISON Account Registration Update',
+      `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #ef4444;">Hello ${name},</h2>
           <p>Unfortunately, your account registration has been <strong>rejected</strong>.</p>
@@ -134,16 +179,15 @@ export class MailProcessor extends WorkerHost {
           </p>
           <p style="margin-top: 20px;">Please contact the department if you believe this is an error or try registering again with the correct details.</p>
         </div>
-      `,
-    });
+      `
+    );
   }
 
   private async handleSendUpgradeApproval(to: string, name: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `UNISON Alumni Network <${this.fromEmail}>`,
+    await this.dispatchMail(
       to,
-      subject: 'Your UNISON Profile Has Been Upgraded!',
-      html: `
+      'Your UNISON Profile Has Been Upgraded!',
+      `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #10b981;">Congratulations, ${name}!</h2>
           <p>Your request to upgrade your profile to <strong>Alumni</strong> has been approved by the admin.</p>
@@ -152,16 +196,15 @@ export class MailProcessor extends WorkerHost {
             <a href="#" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Explore Alumni Features</a>
           </div>
         </div>
-      `,
-    });
+      `
+    );
   }
 
   private async handleSendUpgradeRejection(to: string, name: string, reason: string): Promise<void> {
-    await this.transporter.sendMail({
-      from: `UNISON Alumni Network <${this.fromEmail}>`,
+    await this.dispatchMail(
       to,
-      subject: 'UNISON Profile Upgrade Update',
-      html: `
+      'UNISON Profile Upgrade Update',
+      `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #ef4444;">Hello ${name},</h2>
           <p>Unfortunately, your request to upgrade your profile to Alumni has been <strong>rejected</strong>.</p>
@@ -170,7 +213,7 @@ export class MailProcessor extends WorkerHost {
           </p>
           <p style="margin-top: 20px;">Please contact the administration if you have any questions or need further clarification.</p>
         </div>
-      `,
-    });
+      `
+    );
   }
 }
