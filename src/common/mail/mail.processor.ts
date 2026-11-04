@@ -37,17 +37,23 @@ export class MailProcessor extends WorkerHost {
 
     this.fromEmail = this.config.get<string>('MAIL_FROM', user || 'ranahammadismail@gmail.com');
 
+    const isGmail = host === 'smtp.gmail.com';
+
     this.transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: isSecure,
+      ...(isGmail
+        ? { service: 'gmail' }
+        : { host, port, secure: isSecure }),
       auth: {
         user,
         pass,
       },
-    });
+      family: 4, // Force IPv4 to prevent IPv6 routing timeouts
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    } as any);
 
-    this.logger.log(`MailProcessor worker initialized with SMTP: ${host}:${port}`);
+    this.logger.log(`MailProcessor worker initialized with SMTP: ${host}:${port} (family: 4)`);
   }
 
   async process(job: Job<MailJobData>): Promise<void> {

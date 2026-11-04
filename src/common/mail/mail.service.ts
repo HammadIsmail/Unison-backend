@@ -17,13 +17,14 @@ export class MailService {
       'send-otp',
       { type: 'otp', to, otp },
       {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
+        priority: 1,
+        attempts: 2,
+        backoff: { type: 'fixed', delay: 1000 },
         removeOnComplete: true,
-        removeOnFail: 50,
+        removeOnFail: 20,
       },
     );
-    this.logger.log(`Enqueued OTP email job for "${to}"`);
+    this.logger.log(`Enqueued OTP email job for "${to}" (priority: 1)`);
   }
 
   async sendApprovalEmail(to: string, name: string): Promise<void> {

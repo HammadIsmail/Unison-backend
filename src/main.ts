@@ -1,13 +1,8 @@
 import 'dotenv/config';
 import * as dns from 'node:dns';
 
-// Ensure reliable DNS resolution for MongoDB Atlas SRV lookups on Windows
+// Ensure reliable IPv4 resolution for MongoDB Atlas SRV and Gmail SMTP lookups on Windows
 dns.setDefaultResultOrder?.('ipv4first');
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1']);
-} catch {
-  // fallback if environment restricts DNS overrides
-}
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
