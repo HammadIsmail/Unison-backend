@@ -178,7 +178,7 @@ async function runSeed() {
         slug: defaultSlug,
         name: defaultName,
         status: 'active',
-        allowed_email_domains: ['uet.edu.pk', 'gmail.com'],
+        allowed_email_domains: [], // Whitelist all email domains
         contact_email: 'admin@uet.edu.pk',
         createdAt: new Date(),
         updatedAt: new Date(),

@@ -81,7 +81,7 @@ async function migrate() {
         slug: defaultSlug,
         name: defaultName,
         status: 'active',
-        allowed_email_domains: ['uet.edu.pk'],
+        allowed_email_domains: [], // Whitelist all email domains
         createdAt: new Date(),
         updatedAt: new Date(),
       };

@@ -186,8 +186,12 @@ export class AuthService {
             dto.role !== 'partner'
         ) {
             const emailDomain = dto.email.split('@')[1]?.toLowerCase().trim();
-            const allowed = tenant.allowed_email_domains.map((d) => d.toLowerCase().trim());
-            if (!allowed.includes(emailDomain)) {
+            const allowed = tenant.allowed_email_domains.map((d) => d.toLowerCase().trim().replace(/^@/, ''));
+            const isWildcard = allowed.includes('*') || allowed.includes('all');
+            const isAllowed = isWildcard || allowed.some(
+                (d) => d === emailDomain || (emailDomain ? emailDomain.endsWith('.' + d) : false)
+            );
+            if (!isAllowed) {
                 throw new BadRequestException('Email domain is not allowed for this university.');
             }
         }
