@@ -131,70 +131,98 @@ export class MailProcessor extends WorkerHost {
     });
   }
 
+  private getFrontendUrl(): string {
+    const raw =
+      this.config.get<string>('FRONTEND_URL') ||
+      this.config.get<string>('VERCEL_MAIL_URL') ||
+      'https://unison-lovat.vercel.app';
+    return raw.replace(/\/+$/, '');
+  }
+
   private async handleSendOtp(to: string, otp: string): Promise<void> {
     await this.dispatchMail(
       to,
       'Your UNISON OTP Code',
       `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #4F46E5; text-align: center;">UNISON Alumni Network</h2>
-          <p>Your One-Time Password (OTP) is:</p>
-          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center;">
-            <h1 style="letter-spacing: 8px; color: #111827; margin: 0;">${otp}</h1>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #4F46E5; text-align: center; margin-top: 0;">UNISON Alumni Network</h2>
+          <p style="color: #374151; font-size: 15px;">Your One-Time Password (OTP) is:</p>
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <h1 style="letter-spacing: 8px; color: #111827; margin: 0; font-size: 32px;">${otp}</h1>
           </div>
-          <p style="margin-top: 20px;">This OTP is valid for <strong>10 minutes</strong>.</p>
-          <p style="color: #6b7280; font-size: 14px;">If you did not request this, please ignore this email.</p>
+          <p style="margin-top: 20px; color: #374151; font-size: 14px;">This OTP is valid for <strong>10 minutes</strong>.</p>
+          <p style="color: #6b7280; font-size: 13px; margin-bottom: 0;">If you did not request this, please ignore this email.</p>
         </div>
       `
     );
   }
 
   private async handleSendApproval(to: string, name: string): Promise<void> {
+    const frontendUrl = this.getFrontendUrl();
+    const loginUrl = `${frontendUrl}/login`;
+
     await this.dispatchMail(
       to,
       'Your UNISON Account Has Been Approved!',
       `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #10b981;">Welcome to UNISON, ${name}!</h2>
-          <p>Your account has been <strong>approved</strong> by the admin.</p>
-          <p>You can now log in and explore the alumni network, discover opportunities, and connect with fellow graduates.</p>
-          <div style="margin-top: 30px; text-align: center;">
-            <a href="#" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Login Now</a>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #10b981; margin-top: 0;">Welcome to UNISON, ${name}!</h2>
+          <p style="color: #374151; font-size: 15px; line-height: 1.6;">Your account has been <strong>approved</strong> by the admin.</p>
+          <p style="color: #374151; font-size: 15px; line-height: 1.6;">You can now log in and explore the alumni network, discover opportunities, and connect with fellow graduates.</p>
+          <div style="margin: 32px 0; text-align: center;">
+            <a href="${loginUrl}" target="_blank" style="background-color: #4F46E5; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block;">Login Now</a>
           </div>
+          <p style="margin-top: 24px; font-size: 13px; color: #6b7280; text-align: center; line-height: 1.4;">
+            If the button above does not open, copy and paste this URL into your browser:<br/>
+            <a href="${loginUrl}" target="_blank" style="color: #4F46E5; word-break: break-all;">${loginUrl}</a>
+          </p>
         </div>
       `
     );
   }
 
   private async handleSendRejection(to: string, name: string, reason: string): Promise<void> {
+    const frontendUrl = this.getFrontendUrl();
+    const registerUrl = `${frontendUrl}/register`;
+
     await this.dispatchMail(
       to,
       'UNISON Account Registration Update',
       `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #ef4444;">Hello ${name},</h2>
-          <p>Unfortunately, your account registration has been <strong>rejected</strong>.</p>
-          <p style="background: #fff1f2; padding: 15px; border-radius: 6px; border-left: 4px solid #ef4444;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #ef4444; margin-top: 0;">Hello ${name},</h2>
+          <p style="color: #374151; font-size: 15px; line-height: 1.6;">Unfortunately, your account registration has been <strong>rejected</strong>.</p>
+          <p style="background: #fff1f2; padding: 16px; border-radius: 8px; border-left: 4px solid #ef4444; color: #991b1b; font-size: 14px;">
             <strong>Reason:</strong> ${reason}
           </p>
-          <p style="margin-top: 20px;">Please contact the department if you believe this is an error or try registering again with the correct details.</p>
+          <p style="margin-top: 20px; color: #374151; font-size: 14px; line-height: 1.6;">Please contact the department if you believe this is an error or try registering again with the correct details.</p>
+          <div style="margin-top: 24px; text-align: center;">
+            <a href="${registerUrl}" target="_blank" style="background-color: #4F46E5; color: #ffffff !important; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;">Register Again</a>
+          </div>
         </div>
       `
     );
   }
 
   private async handleSendUpgradeApproval(to: string, name: string): Promise<void> {
+    const frontendUrl = this.getFrontendUrl();
+    const feedUrl = `${frontendUrl}/feed`;
+
     await this.dispatchMail(
       to,
       'Your UNISON Profile Has Been Upgraded!',
       `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #10b981;">Congratulations, ${name}!</h2>
-          <p>Your request to upgrade your profile to <strong>Alumni</strong> has been approved by the admin.</p>
-          <p>You now have full access to all alumni features on the platform.</p>
-          <div style="margin-top: 30px; text-align: center;">
-            <a href="#" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Explore Alumni Features</a>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #10b981; margin-top: 0;">Congratulations, ${name}!</h2>
+          <p style="color: #374151; font-size: 15px; line-height: 1.6;">Your request to upgrade your profile to <strong>Alumni</strong> has been approved by the admin.</p>
+          <p style="color: #374151; font-size: 15px; line-height: 1.6;">You now have full access to all alumni features on the platform.</p>
+          <div style="margin: 32px 0; text-align: center;">
+            <a href="${feedUrl}" target="_blank" style="background-color: #4F46E5; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block;">Explore Alumni Features</a>
           </div>
+          <p style="margin-top: 24px; font-size: 13px; color: #6b7280; text-align: center; line-height: 1.4;">
+            If the button above does not open, copy and paste this URL into your browser:<br/>
+            <a href="${feedUrl}" target="_blank" style="color: #4F46E5; word-break: break-all;">${feedUrl}</a>
+          </p>
         </div>
       `
     );
@@ -205,13 +233,13 @@ export class MailProcessor extends WorkerHost {
       to,
       'UNISON Profile Upgrade Update',
       `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #ef4444;">Hello ${name},</h2>
-          <p>Unfortunately, your request to upgrade your profile to Alumni has been <strong>rejected</strong>.</p>
-          <p style="background: #fff1f2; padding: 15px; border-radius: 6px; border-left: 4px solid #ef4444;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px; background: #ffffff;">
+          <h2 style="color: #ef4444; margin-top: 0;">Hello ${name},</h2>
+          <p style="color: #374151; font-size: 15px; line-height: 1.6;">Unfortunately, your request to upgrade your profile to Alumni has been <strong>rejected</strong>.</p>
+          <p style="background: #fff1f2; padding: 16px; border-radius: 8px; border-left: 4px solid #ef4444; color: #991b1b; font-size: 14px;">
             <strong>Reason:</strong> ${reason}
           </p>
-          <p style="margin-top: 20px;">Please contact the administration if you have any questions or need further clarification.</p>
+          <p style="margin-top: 20px; color: #374151; font-size: 14px; line-height: 1.6;">Please contact the administration if you have any questions or need further clarification.</p>
         </div>
       `
     );
